@@ -1,0 +1,224 @@
+import React, { useState } from 'react';
+import type { PersonLocatorProps, PersonResult, PersonType } from '../types';
+import { highlightMatch } from '../utils/highlightMatch';
+
+interface ResultCardProps {
+  person: PersonResult;
+  query: string;
+  isLast?: boolean;
+  lastRef?: (node: HTMLElement | null) => void;
+  onSelect: (person: PersonResult) => void;
+  openTikAsir?: PersonLocatorProps['openTikAsir'];
+  navigate?: PersonLocatorProps['navigate'];
+  HidePhotosSugAdam?: PersonLocatorProps['HidePhotosSugAdam'];
+  HideMishmorot?: PersonLocatorProps['HideMishmorot'];
+  hideNavigationLinks?: PersonLocatorProps['hideNavigationLinks'];
+  additionalResultFields?: string[];
+}
+
+// ── Type metadata ──────────────────────────────────────────────────────────────
+const TYPE_META: Record<PersonType, { label: string; textClass: string }> = {
+  asir: { label: 'אסיר',  textClass: 'text-rose-500' },
+  soher:    { label: 'סוהר',  textClass: 'text-blue-500' },
+  ezrach: { label: 'אזרח',  textClass: 'text-emerald-500' },
+};
+
+// ── Inline tooltip ─────────────────────────────────────────────────────────────
+const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="relative group flex items-center">
+    {children}
+    <div
+      className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-[11px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
+      role="tooltip"
+    >
+      {label}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+    </div>
+  </div>
+);
+
+// ── Icons ──────────────────────────────────────────────────────────────────────
+const TikAsirIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+
+const ExternalIcon = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+const ChevronDown = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const ChevronUp = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+);
+
+// ── Component ──────────────────────────────────────────────────────────────────
+const ResultCard: React.FC<ResultCardProps> = ({
+  person,
+  query,
+  isLast,
+  lastRef,
+  onSelect,
+  openTikAsir,
+  navigate,
+  HidePhotosSugAdam,
+  HideMishmorot,
+  hideNavigationLinks,
+  additionalResultFields = [],
+}) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const showPhoto =
+    Boolean(person.photoUrl) &&
+    !(HidePhotosSugAdam ?? []).includes(person.personType);
+
+  const hasExpandableFields = additionalResultFields.some(
+    (f) => person.additionalFields?.[f] != null
+  );
+
+  const typeMeta = TYPE_META[person.personType];
+
+  const handleClick = () => onSelect(person);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(person); }
+  };
+
+  return (
+    <div
+      ref={isLast ? lastRef : undefined}
+      className="px-3 py-2.5 hover:bg-gray-50 transition-colors duration-100 animate-fadeIn"
+    >
+      {/* ── Main row ── */}
+      <div
+        className="flex items-center gap-3 cursor-pointer"
+        role="option"
+        aria-label={person.fullName}
+        aria-selected={false}
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+      >
+        {/* ── Avatar ── */}
+        {showPhoto ? (
+          <img src={person.photoUrl} alt={person.fullName} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400">
+              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+            </svg>
+          </div>
+        )}
+
+        {/* ── Info ── */}
+        <div className="flex-1 min-w-0">
+
+          {/* Row 1 – name | type + active */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {highlightMatch(person.fullName, query)}
+              </p>
+              {!hideNavigationLinks && person.personType === 'asir' && openTikAsir && (
+                <Tip label="תיק אסיר">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); openTikAsir(person); }}
+                    className="text-rose-400 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400 rounded transition-colors"
+                    aria-label={`תיק אסיר – ${person.fullName}`}
+                  >
+                    <TikAsirIcon />
+                  </button>
+                </Tip>
+              )}
+              {!hideNavigationLinks && navigate && (
+                <Tip label="פרופיל">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/person/${person.id}`); }}
+                    className="text-gray-300 hover:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 rounded transition-colors"
+                    aria-label={`פרופיל – ${person.fullName}`}
+                  >
+                    <ExternalIcon />
+                  </button>
+                </Tip>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span className={`text-[10px] font-semibold ${typeMeta.textClass}`}>{typeMeta.label}</span>
+              <span className="flex items-center gap-0.5">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${person.isActive ? 'bg-green-400' : 'bg-gray-300'}`}
+                  aria-hidden="true"
+                />
+                <span className={`text-[10px] ${person.isActive ? 'text-green-500' : 'text-gray-400'}`}>
+                  {person.isActive ? 'פעיל' : 'לא פעיל'}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2 – id / prisoner number / rank */}
+          {[person.idNumber, person.prisonerNumber, person.rank].some(Boolean) && (
+            <p className="text-gray-400 text-xs text-right mt-0.5">
+              {[person.idNumber, person.prisonerNumber, person.rank].filter(Boolean).join(' · ')}
+            </p>
+          )}
+
+          {/* Row 3 – unit / shibutz / phone */}
+          {[person.unit, person.shibutz, !HideMishmorot ? person.phone : undefined].some(Boolean) && (
+            <p className="text-gray-400 text-xs text-right mt-0.5">
+              {[person.unit, person.shibutz, !HideMishmorot ? person.phone : undefined].filter(Boolean).join(' · ')}
+            </p>
+          )}
+        </div>
+
+        {/* ── Expand arrow (left side) ── */}
+        {hasExpandableFields && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+            className="flex-shrink-0 text-gray-300 hover:text-gray-500 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded p-0.5"
+            aria-expanded={expanded}
+            aria-label={expanded ? 'סגור פרטים' : 'פרטים נוספים'}
+          >
+            {expanded ? <ChevronUp /> : <ChevronDown />}
+          </button>
+        )}
+      </div>
+
+      {/* ── Expanded fields ── */}
+      {expanded && (
+        <div className="mt-2 mx-1 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
+          {additionalResultFields.map((field) => {
+            const val = person.additionalFields?.[field];
+            if (val == null) return null;
+            return (
+              <div key={field} className="text-right">
+                <p className="text-[10px] text-gray-400 mb-0.5">{field}</p>
+                <p className="text-xs text-gray-700 font-medium">{String(val)}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ResultCard;

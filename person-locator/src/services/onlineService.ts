@@ -1,0 +1,41 @@
+import type { PersonResult, PersonType, ServiceConfig } from '../types';
+
+function buildHeaders(config: ServiceConfig): HeadersInit {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (config.authToken) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${config.authToken}`;
+  }
+  return headers;
+}
+
+/**
+ * Fetch persons from the online DB service.
+ * On any failure, returns [] silently so ES results still display.
+ */
+export async function fetchOnlinePersons(params: {
+  query: string;
+  personType?: PersonType;
+  config: ServiceConfig;
+  signal: AbortSignal;
+}): Promise<PersonResult[]> {
+  const { query, personType, config, signal } = params;
+
+  try {
+    const url = new URL(`${config.onlineServiceUrl}/search`);
+    url.searchParams.set('q', query);
+    if (personType) url.searchParams.set('type', personType);
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: buildHeaders(config),
+      signal,
+    });
+
+    if (!response.ok) return [];
+
+    const data = (await response.json()) as { results?: PersonResult[] };
+    return (data.results ?? []).map((p) => ({ ...p, source: 'online' as const }));
+  } catch {
+    return [];
+  }
+}

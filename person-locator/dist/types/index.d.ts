@@ -1,0 +1,95 @@
+export type PersonType = 'prisoner' | 'guard' | 'civilian';
+export type FilterOperator = 'equals' | 'exists' | 'gt' | 'lt' | 'contains';
+export interface Filter {
+    fieldName: string;
+    value: string | number | null;
+    operator: FilterOperator;
+}
+export interface PersonResult {
+    id: string;
+    personType: PersonType;
+    fullName: string;
+    photoUrl?: string;
+    idNumber?: string;
+    unit?: string;
+    rank?: string;
+    phone?: string;
+    prisonerNumber?: string;
+    isActive: boolean;
+    source: 'elasticsearch' | 'online' | 'offline';
+    additionalFields?: Record<string, unknown>;
+}
+export interface SearchResults {
+    prisoners: PersonResult[];
+    guards: PersonResult[];
+    civilians: PersonResult[];
+    totalCount: number;
+}
+export interface PagingState {
+    prisoners: {
+        offset: number;
+        hasMore: boolean;
+    };
+    guards: {
+        offset: number;
+        hasMore: boolean;
+    };
+    civilians: {
+        offset: number;
+        hasMore: boolean;
+    };
+}
+export interface SingleSearch {
+    key: string;
+    value: string;
+}
+export interface ServiceConfig {
+    elasticsearchUrl: string;
+    onlineServiceUrl: string;
+    offlineServiceUrl: string;
+    authToken?: string;
+    pageSize?: number;
+    timeoutMs?: number;
+}
+export interface PersonLocatorProps {
+    /** Service URLs and auth config. Required. */
+    serviceConfig: ServiceConfig;
+    /** Restrict search to one category. Omit to search all three. */
+    type?: PersonType;
+    /** Minimum characters before triggering search. Default: 3 */
+    minChars?: number;
+    /** Fires when user selects a person from the list. */
+    onSelect?: (person: PersonResult) => void;
+    /** Disables all input and interaction. */
+    disabled?: boolean;
+    /** Direction the results dropdown opens. Default: 'down' */
+    resultDirection?: 'up' | 'down';
+    /** Extra ES index fields to include in the search query. */
+    additionalSearchFields?: string[];
+    /** Extra ES fields to return and display in result cards. */
+    additionalResultFields?: string[];
+    /** Dynamic filters applied to every ES query. */
+    filters?: Filter[];
+    /** Enable offline DB fallback when ES is unreachable. Default: false */
+    enableOfflineSearch?: boolean;
+    /** Pre-fill the component by fetching a person by this key/value from ES. Component stays editable. */
+    singleSearch?: SingleSearch;
+    /** Controlled selected person value. Pass null to clear. */
+    state?: PersonResult | null;
+    /** Callback to open external "prisoner file" system. Available in all modes. */
+    openTikAsir?: (person: PersonResult) => void;
+    /** Callback fired when the search input is cleared (manual or programmatic). */
+    clearData?: () => void;
+    /** react-router navigate function for icon-button navigation. */
+    navigate?: (path: string) => void;
+    /** Person types whose photos should be hidden. */
+    HidePhotosSugAdam?: PersonType[];
+    /** Hide shift/mishmoret data in result cards. */
+    HideMishmorot?: boolean;
+    /** Hide all navigation link buttons in result cards. */
+    hideNavigationLinks?: boolean;
+    /** Search only active persons. Hides the active toggle entirely. */
+    activeOnly?: boolean;
+    /** Default value for the active toggle (only when activeOnly is undefined). */
+    isDefaultActive?: boolean;
+}
