@@ -29,13 +29,7 @@ jest.mock('../src/hooks/usePersonSearch', () => ({
   }),
 }));
 
-const minimalProps: PersonLocatorProps = {
-  serviceConfig: {
-    elasticsearchUrl: 'http://es:9200',
-    onlineServiceUrl: 'http://online',
-    offlineServiceUrl: 'http://offline',
-  },
-};
+const minimalProps: PersonLocatorProps = {};
 
 describe('PersonLocator', () => {
   it('renders without crashing with minimal props', () => {

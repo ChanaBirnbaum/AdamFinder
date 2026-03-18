@@ -60,9 +60,6 @@ export interface ServiceConfig {
 
 // The root component props – EVERY prop must have JSDoc
 export interface PersonLocatorProps {
-  /** Service URLs and auth config. Required. */
-  serviceConfig: ServiceConfig;
-
   /** Restrict search to one category. Omit to search all three. */
   type?: PersonType;
 

@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import terser from '@rollup/plugin-terser';
+import postcss from 'rollup-plugin-postcss';
 
 const config = [
   {
@@ -20,6 +21,11 @@ const config = [
     ],
     plugins: [
       peerDepsExternal(),
+      postcss({
+        inject: true,
+        minimize: true,
+        config: { path: './postcss.config.ts' },
+      }),
       typescript({
         tsconfig: './tsconfig.json',
         declaration: true,

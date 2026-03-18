@@ -1,5 +1,5 @@
 import { PersonLocator } from '@org/person-locator';
-import type { PersonResult, ServiceConfig } from '@org/person-locator';
+import type { PersonResult } from '@org/person-locator';
 import './index.css';
 
 // ─── Mock data ─────────────────────────────────────────────────────────────────
@@ -32,9 +32,9 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Res
     const q = String(query).toLowerCase();
 
     const typeFilter =
-      url.includes('/prisoners/') ? 'asir' :
-      url.includes('/guards/')    ? 'soher'    :
-      url.includes('/civilians/') ? 'ezrach' : null;
+      url.includes('/asirs/')   ? 'asir' :
+      url.includes('/sohers/')  ? 'soher' :
+      url.includes('/ezrachs/') ? 'ezrach' : null;
 
     const filterClauses: unknown[] = body?.query?.bool?.filter ?? [];
     const activeOnly = filterClauses.some(
@@ -68,13 +68,6 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Res
   return originalFetch(input, init);
 };
 
-const serviceConfig: ServiceConfig = {
-  elasticsearchUrl: 'http://elasticsearch',
-  onlineServiceUrl: 'http://online-service',
-  offlineServiceUrl: 'http://offline-service',
-  pageSize: 10,
-};
-
 export default function App() {
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4" dir="rtl">
@@ -95,7 +88,6 @@ export default function App() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
           <p className="text-xs text-gray-400 mb-3 text-right">כל הסוגים · לחצי על אייקון לסינון</p>
           <PersonLocator
-            serviceConfig={serviceConfig}
             minChars={2}
             additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה', 'קשר_לאסיר', 'ת_ביקור_אחרון', 'תקן', 'תחנה', 'תפקיד', 'תאריך_גיוס', 'מפקד_יחידה', 'הכשרות']}
             onSelect={(p: PersonResult) => console.log('נבחר:', p.fullName, p.personType)}
@@ -107,8 +99,7 @@ export default function App() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
           <p className="text-xs text-gray-400 mb-3 text-right">דוגמה לרשומה עם הרחבה · חפשי "אדם"</p>
           <PersonLocator
-            serviceConfig={serviceConfig}
-            type="guard"
+            type="soher"
             minChars={2}
             additionalResultFields={['תפקיד', 'תאריך_גיוס', 'מפקד_יחידה', 'הכשרות']}
             onSelect={(p: PersonResult) => console.log('נבחר:', p)}
@@ -119,8 +110,7 @@ export default function App() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
           <p className="text-xs text-gray-400 mb-3 text-right">נעול לאסירים בלבד · ללא כפתורי סינון</p>
           <PersonLocator
-            serviceConfig={serviceConfig}
-            type="prisoner"
+            type="asir"
             minChars={2}
             additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה']}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.prisonerNumber)}

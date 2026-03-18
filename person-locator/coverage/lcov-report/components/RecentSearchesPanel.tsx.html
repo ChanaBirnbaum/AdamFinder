@@ -226,18 +226,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -294,6 +294,7 @@ const RecentSearchesPanel: React.FC&lt;RecentSearchesPanelProps&gt; = <span clas
     &lt;div className={panelClass} role="listbox" aria-label="חיפושים אחרונים" dir="rtl"&gt;
       {/* Header */}
       &lt;div className="flex items-center justify-between px-3 py-2 border-b border-gray-100"&gt;
+        &lt;span className="text-[11px] text-gray-400 font-medium"&gt;חיפושים אחרונים&lt;/span&gt;
         &lt;button
           type="button"
           onClick={onClearAll}
@@ -301,7 +302,6 @@ const RecentSearchesPanel: React.FC&lt;RecentSearchesPanelProps&gt; = <span clas
         &gt;
           נקה הכל
         &lt;/button&gt;
-        &lt;span className="text-[11px] text-gray-400 font-medium"&gt;חיפושים אחרונים&lt;/span&gt;
       &lt;/div&gt;
 &nbsp;
       {/* Items */}
@@ -317,17 +317,7 @@ const RecentSearchesPanel: React.FC&lt;RecentSearchesPanelProps&gt; = <span clas
             onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >onSelect(person)}</span>
             onKeyDown={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" ><span class="missing-if-branch" title="if path not taken" >I</span>if (e.key === 'Enter' || e.key === ' ') { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>onSelect(person); </span>} </span>}}
           &gt;
-            {/* Remove button — on the left in RTL */}
-            &lt;button
-              type="button"
-              onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.stopPropagation(); <span class="cstat-no" title="statement not covered" ></span>onRemove(person.id); </span>}}
-              className="text-gray-300 hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded p-0.5 flex-shrink-0"
-              aria-label={`הסר ${person.fullName}`}
-            &gt;
-              &lt;XSmall /&gt;
-            &lt;/button&gt;
-&nbsp;
-            {/* Name + type badge — on the right in RTL */}
+            {/* Name + type badge — right in RTL (first child) */}
             &lt;div className="flex items-center gap-2 min-w-0"&gt;
               {/* Type badge */}
               &lt;div className="flex items-center gap-1 flex-shrink-0"&gt;
@@ -337,6 +327,16 @@ const RecentSearchesPanel: React.FC&lt;RecentSearchesPanelProps&gt; = <span clas
               {/* Name */}
               &lt;span className="text-sm text-gray-700 truncate"&gt;{person.fullName}&lt;/span&gt;
             &lt;/div&gt;
+&nbsp;
+            {/* Remove button — left in RTL (last child) */}
+            &lt;button
+              type="button"
+              onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.stopPropagation(); <span class="cstat-no" title="statement not covered" ></span>onRemove(person.id); </span>}}
+              className="text-gray-300 hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded p-0.5 flex-shrink-0"
+              aria-label={`הסר ${person.fullName}`}
+            &gt;
+              &lt;XSmall /&gt;
+            &lt;/button&gt;
           &lt;/div&gt;
         );
       })}
@@ -352,7 +352,7 @@ export default RecentSearchesPanel;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-17T11:42:48.463Z
+                at 2026-03-18T10:16:33.347Z
             </div>
         <script src="../prettify.js"></script>
         <script>

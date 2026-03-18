@@ -3,6 +3,7 @@ import { OfflineError, fetchSinglePerson, searchPersons } from '../services/elas
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
 import { mergeResults } from '../utils/mergeResults';
+import serviceConfig from '../serviceConfig';
 import type {
   PersonLocatorProps,
   PersonResult,
@@ -47,7 +48,6 @@ function firstTabWithResults(results: SearchResults): PersonType {
 
 export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchReturn {
   const {
-    serviceConfig,
     type,
     minChars = 3,
     onSelect,

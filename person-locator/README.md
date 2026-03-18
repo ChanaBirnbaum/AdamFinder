@@ -22,8 +22,10 @@ This is within the 3-level threshold specified in the spec. Zustand would add co
 ```bash
 npm install @org/person-locator
 # Peer dependencies:
-npm install react react-dom tailwindcss
+npm install react react-dom
 ```
+
+CSS is injected automatically — no Tailwind setup required.
 
 ## Usage
 
@@ -33,14 +35,6 @@ import { PersonLocator } from '@org/person-locator';
 function App() {
   return (
     <PersonLocator
-      serviceConfig={{
-        elasticsearchUrl: 'https://es.example.com',
-        onlineServiceUrl: 'https://api.example.com',
-        offlineServiceUrl: 'https://local.example.com',
-        authToken: 'Bearer ...',
-        pageSize: 3,
-        timeoutMs: 5000,
-      }}
       minChars={3}
       onSelect={(person) => console.log(person)}
     />
@@ -54,7 +48,6 @@ See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented wi
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `serviceConfig` | `ServiceConfig` | required | URLs and auth config |
 | `type` | `PersonType` | — | Restrict to one category |
 | `minChars` | `number` | `3` | Min chars before search fires |
 | `onSelect` | `(person) => void` | — | Person selection callback |
@@ -79,7 +72,7 @@ See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented wi
 
 - **React 18** functional components with hooks only
 - **TypeScript 5** strict mode
-- **Tailwind CSS v3** for all styling (RTL-first, `dir="rtl"`)
+- **Tailwind CSS v3** compiled and bundled — no consumer setup required
 - **No Zustand** (see decision above)
 - **Services**: Elasticsearch (primary), Online DB (parallel), Offline DB (fallback)
 - **Infinite scroll** via `IntersectionObserver`

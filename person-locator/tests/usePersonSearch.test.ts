@@ -4,6 +4,7 @@ import * as esService from '../src/services/elasticSearchService';
 import * as onlineService from '../src/services/onlineService';
 import * as offlineService from '../src/services/offlineService';
 import type { PersonLocatorProps, PersonResult } from '../src/types';
+import { jest } from '@jest/globals';
 
 jest.mock('../src/services/elasticSearchService');
 jest.mock('../src/services/onlineService');
@@ -22,14 +23,7 @@ const makeResult = (id: string, personType: PersonResult['personType'] = 'ezrach
   source: 'elasticsearch',
 });
 
-const baseConfig: PersonLocatorProps = {
-  serviceConfig: {
-    elasticsearchUrl: 'http://es:9200',
-    onlineServiceUrl: 'http://online-service',
-    offlineServiceUrl: 'http://offline-service',
-    pageSize: 3,
-  },
-};
+const baseConfig: PersonLocatorProps = {};
 
 beforeEach(() => {
   jest.clearAllMocks();

@@ -1,4 +1,5 @@
 // Public API barrel export
+import './styles.css';
 
 export { default as PersonLocator } from './components/PersonLocator';
 export { usePersonSearch } from './hooks/usePersonSearch';
@@ -16,6 +17,5 @@ export type {
   SearchResults,
   PagingState,
   SingleSearch,
-  ServiceConfig,
   PersonLocatorProps,
 } from './types';

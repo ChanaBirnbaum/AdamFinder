@@ -64,7 +64,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     ? recents.filter((r) => r.personType === effectiveType)
     : recents;
 
-  const showResults = selectedPerson !== null ? isFocused : inputValue.length >= minChars;
+  const showResults = isFocused && (selectedPerson !== null || inputValue.length >= minChars);
   const showRecents = isFocused && !showResults && filteredRecents.length > 0;
   const isOpen = showResults || showRecents;
   const showTabBar = !effectiveType;

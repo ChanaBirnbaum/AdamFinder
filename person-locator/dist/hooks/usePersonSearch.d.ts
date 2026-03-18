@@ -14,5 +14,7 @@ export interface UsePersonSearchReturn {
     selectPerson: (person: PersonResult) => void;
     clearSelection: () => void;
     loadMore: (tab: PersonType) => void;
+    showActiveOnly: boolean;
+    setShowActiveOnly: (v: boolean) => void;
 }
 export declare function usePersonSearch(props: PersonLocatorProps): UsePersonSearchReturn;

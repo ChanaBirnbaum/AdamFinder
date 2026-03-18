@@ -1,4 +1,4 @@
-export type PersonType = 'prisoner' | 'guard' | 'civilian';
+export type PersonType = 'asir' | 'soher' | 'ezrach';
 export type FilterOperator = 'equals' | 'exists' | 'gt' | 'lt' | 'contains';
 export interface Filter {
     fieldName: string;
@@ -14,27 +14,28 @@ export interface PersonResult {
     unit?: string;
     rank?: string;
     phone?: string;
+    shibutz?: string;
     prisonerNumber?: string;
     isActive: boolean;
     source: 'elasticsearch' | 'online' | 'offline';
     additionalFields?: Record<string, unknown>;
 }
 export interface SearchResults {
-    prisoners: PersonResult[];
-    guards: PersonResult[];
-    civilians: PersonResult[];
+    asirs: PersonResult[];
+    sohers: PersonResult[];
+    ezrachs: PersonResult[];
     totalCount: number;
 }
 export interface PagingState {
-    prisoners: {
+    asirs: {
         offset: number;
         hasMore: boolean;
     };
-    guards: {
+    sohers: {
         offset: number;
         hasMore: boolean;
     };
-    civilians: {
+    ezrachs: {
         offset: number;
         hasMore: boolean;
     };
@@ -52,8 +53,6 @@ export interface ServiceConfig {
     timeoutMs?: number;
 }
 export interface PersonLocatorProps {
-    /** Service URLs and auth config. Required. */
-    serviceConfig: ServiceConfig;
     /** Restrict search to one category. Omit to search all three. */
     type?: PersonType;
     /** Minimum characters before triggering search. Default: 3 */
