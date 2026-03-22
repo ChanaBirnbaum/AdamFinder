@@ -25,7 +25,7 @@ const originalFetch = window.fetch.bind(window);
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   const url = String(input);
 
-  if (url.includes('elasticsearch')) {
+  if (url.includes('elastic')) {
     const body = init?.body ? JSON.parse(String(init.body)) : {};
     const query: string =
       String(body?.query?.bool?.must?.[0]?.multi_match?.query ?? '');
@@ -61,7 +61,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Res
     return new Response(JSON.stringify({ hits: { hits } }), { status: 200 });
   }
 
-  if (url.includes('online-service')) {
+  if (url.includes('online-')) {
     return new Response(JSON.stringify({ results: [] }), { status: 200 });
   }
 
@@ -88,6 +88,7 @@ export default function App() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
           <p className="text-xs text-gray-400 mb-3 text-right">כל הסוגים · לחצי על אייקון לסינון</p>
           <PersonLocator
+            env="dev"
             minChars={2}
             additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה', 'קשר_לאסיר', 'ת_ביקור_אחרון', 'תקן', 'תחנה', 'תפקיד', 'תאריך_גיוס', 'מפקד_יחידה', 'הכשרות']}
             onSelect={(p: PersonResult) => console.log('נבחר:', p.fullName, p.personType)}
@@ -99,6 +100,7 @@ export default function App() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
           <p className="text-xs text-gray-400 mb-3 text-right">דוגמה לרשומה עם הרחבה · חפשי "אדם"</p>
           <PersonLocator
+            env="dev"
             type="soher"
             minChars={2}
             additionalResultFields={['תפקיד', 'תאריך_גיוס', 'מפקד_יחידה', 'הכשרות']}
@@ -110,6 +112,7 @@ export default function App() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
           <p className="text-xs text-gray-400 mb-3 text-right">נעול לאסירים בלבד · ללא כפתורי סינון</p>
           <PersonLocator
+            env="dev"
             type="asir"
             minChars={2}
             additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה']}

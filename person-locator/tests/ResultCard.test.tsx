@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { vi, describe, it, expect } from 'vitest';
 import ResultCard from '../src/components/ResultCard';
 import type { PersonResult } from '../src/types';
 
@@ -20,7 +20,7 @@ describe('ResultCard', () => {
       <ResultCard
         person={person}
         query=""
-        onSelect={jest.fn()}
+        onSelect={vi.fn()}
         HidePhotosSugAdam={['asir']}
       />
     );
@@ -33,7 +33,7 @@ describe('ResultCard', () => {
       <ResultCard
         person={person}
         query=""
-        onSelect={jest.fn()}
+        onSelect={vi.fn()}
         HidePhotosSugAdam={['asir']}
       />
     );
@@ -46,8 +46,8 @@ describe('ResultCard', () => {
       <ResultCard
         person={prisoner}
         query=""
-        onSelect={jest.fn()}
-        openTikAsir={jest.fn()}
+        onSelect={vi.fn()}
+        openTikAsir={vi.fn()}
       />
     );
     expect(screen.getByText('תיק אסיר')).toBeInTheDocument();
@@ -57,8 +57,8 @@ describe('ResultCard', () => {
       <ResultCard
         person={civilian}
         query=""
-        onSelect={jest.fn()}
-        openTikAsir={jest.fn()}
+        onSelect={vi.fn()}
+        openTikAsir={vi.fn()}
       />
     );
     expect(screen.queryByText('תיק אסיר')).not.toBeInTheDocument();
@@ -70,9 +70,9 @@ describe('ResultCard', () => {
       <ResultCard
         person={person}
         query=""
-        onSelect={jest.fn()}
-        openTikAsir={jest.fn()}
-        navigate={jest.fn()}
+        onSelect={vi.fn()}
+        openTikAsir={vi.fn()}
+        navigate={vi.fn()}
         hideNavigationLinks
       />
     );
@@ -85,7 +85,7 @@ describe('ResultCard', () => {
       <ResultCard
         person={person}
         query="ישראל"
-        onSelect={jest.fn()}
+        onSelect={vi.fn()}
       />
     );
     const bold = document.querySelectorAll('strong');
@@ -94,7 +94,7 @@ describe('ResultCard', () => {
   });
 
   it('calls onSelect when card is clicked', () => {
-    const onSelect = jest.fn();
+    const onSelect = vi.fn();
     const person = makePerson();
     render(<ResultCard person={person} query="" onSelect={onSelect} />);
     screen.getByRole('option').click();

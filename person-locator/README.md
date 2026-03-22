@@ -35,6 +35,7 @@ import { PersonLocator } from '@org/person-locator';
 function App() {
   return (
     <PersonLocator
+      env="prod"
       minChars={3}
       onSelect={(person) => console.log(person)}
     />
@@ -67,6 +68,7 @@ See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented wi
 | `hideNavigationLinks` | `boolean` | — | Hide nav buttons |
 | `activeOnly` | `boolean` | — | Search active persons only |
 | `isDefaultActive` | `boolean` | — | Default toggle value |
+| `env` | `'dev' \| 'test' \| 'lrn' \| 'prod'` | **required** | Deployment environment — determines backend URLs |
 
 ## Architecture
 

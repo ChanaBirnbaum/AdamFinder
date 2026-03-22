@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { mergeResults } from '../src/utils/mergeResults';
 import type { PersonResult } from '../src/types';
 

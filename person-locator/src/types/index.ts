@@ -1,6 +1,9 @@
 // Person categories
 export type PersonType = 'asir' | 'soher' | 'ezrach';
 
+// Deployment environment
+export type Environment = 'dev' | 'test' | 'lrn' | 'prod';
+
 // Filter operators
 export type FilterOperator = 'equals' | 'exists' | 'gt' | 'lt' | 'contains';
 
@@ -116,4 +119,7 @@ export interface PersonLocatorProps {
 
   /** Default value for the active toggle (only when activeOnly is undefined). */
   isDefaultActive?: boolean;
+
+  /** Deployment environment — determines which backend URLs the library uses. */
+  env: Environment;
 }

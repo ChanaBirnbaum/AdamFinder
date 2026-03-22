@@ -1,12 +1,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
+import { vi, describe, it, expect } from 'vitest';
 import PersonLocator from '../src/components/PersonLocator';
 import type { PersonLocatorProps } from '../src/types';
 
 // Mock hooks and services so no real fetch calls happen
-jest.mock('../src/hooks/usePersonSearch', () => ({
+vi.mock('../src/hooks/usePersonSearch', () => ({
   usePersonSearch: () => ({
     results: { asirs: [], sohers: [], ezrachs: [], totalCount: 0 },
     isLoading: false,
@@ -21,15 +20,15 @@ jest.mock('../src/hooks/usePersonSearch', () => ({
       sohers: { offset: 0, hasMore: false },
       ezrachs: { offset: 0, hasMore: false },
     },
-    setInputValue: jest.fn(),
-    setActiveTab: jest.fn(),
-    selectPerson: jest.fn(),
-    clearSelection: jest.fn(),
-    loadMore: jest.fn(),
+    setInputValue: vi.fn(),
+    setActiveTab: vi.fn(),
+    selectPerson: vi.fn(),
+    clearSelection: vi.fn(),
+    loadMore: vi.fn(),
   }),
 }));
 
-const minimalProps: PersonLocatorProps = {};
+const minimalProps: PersonLocatorProps = { env: 'dev' };
 
 describe('PersonLocator', () => {
   it('renders without crashing with minimal props', () => {

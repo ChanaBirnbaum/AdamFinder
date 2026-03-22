@@ -3,7 +3,7 @@ import { OfflineError, fetchSinglePerson, searchPersons } from '../services/elas
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
 import { mergeResults } from '../utils/mergeResults';
-import serviceConfig from '../serviceConfig';
+import { getConfig } from '../serviceConfig';
 import type {
   PersonLocatorProps,
   PersonResult,
@@ -60,9 +60,11 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     clearData,
     activeOnly,
     isDefaultActive,
+    env,
   } = props;
 
-  const pageSize = serviceConfig.pageSize ?? 3;
+  const config = getConfig(env);
+  const pageSize = config.pageSize ?? 3;
 
   const [inputValue, setInputValueState] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
@@ -95,7 +97,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       key: singleSearch.key,
       value: singleSearch.value,
       personType: type,
-      config: serviceConfig,
+      config: config,
       signal: controller.signal,
     })
       .then((person) => {
@@ -161,18 +163,18 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           offset: isLoadMore ? baseOffset : 0,
           pageSize,
           activeOnly: effectiveActiveOnly,
-          config: serviceConfig,
+          config: config,
           signal: controllers[i].signal,
         });
       });
 
       // Online service promises — asirs and sohers only (no ezrachs)
       const onlinePrisonerPromise = !isLoadMore && types.includes('asir')
-        ? fetchOnlinePersons({ query, personType: 'asir', config: serviceConfig, signal: controllers[3].signal })
+        ? fetchOnlinePersons({ query, personType: 'asir', config: config, signal: controllers[3].signal })
         : Promise.resolve([] as PersonResult[]);
 
       const onlineGuardPromise = !isLoadMore && types.includes('soher')
-        ? fetchOnlinePersons({ query, personType: 'soher', config: serviceConfig, signal: controllers[4].signal })
+        ? fetchOnlinePersons({ query, personType: 'soher', config: config, signal: controllers[4].signal })
         : Promise.resolve([] as PersonResult[]);
 
       const [asirSettled, soherSettled, ezrachSettled, onlinePrisonerSettled, onlineGuardSettled] =
@@ -199,7 +201,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           const offlineResults = await searchOffline({
             query,
             personType: type,
-            config: serviceConfig,
+            config: config,
             signal: offlineController.signal,
           });
 
@@ -285,7 +287,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       cancelPendingRequests, enableOfflineSearch, filters, additionalSearchFields,
-      additionalResultFields, pageSize, serviceConfig, type, effectiveActiveOnly,
+      additionalResultFields, pageSize, config, type, effectiveActiveOnly,
     ]
   );
 

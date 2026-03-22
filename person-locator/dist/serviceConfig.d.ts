@@ -1,3 +1,2 @@
-import type { ServiceConfig } from './types';
-declare const serviceConfig: ServiceConfig;
-export default serviceConfig;
+import type { Environment, ServiceConfig } from './types';
+export declare function getConfig(env: Environment): ServiceConfig;

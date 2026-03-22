@@ -1,4 +1,5 @@
 export type PersonType = 'asir' | 'soher' | 'ezrach';
+export type Environment = 'dev' | 'test' | 'lrn' | 'prod';
 export type FilterOperator = 'equals' | 'exists' | 'gt' | 'lt' | 'contains';
 export interface Filter {
     fieldName: string;
@@ -91,4 +92,6 @@ export interface PersonLocatorProps {
     activeOnly?: boolean;
     /** Default value for the active toggle (only when activeOnly is undefined). */
     isDefaultActive?: boolean;
+    /** Deployment environment — determines which backend URLs the library uses. */
+    env: Environment;
 }

@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { buildFilters } from '../src/utils/buildFilters';
 import type { Filter } from '../src/types';
 
