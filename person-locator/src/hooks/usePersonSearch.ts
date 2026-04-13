@@ -159,7 +159,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           personType: pt,
           filters,
           additionalSearchFields,
-          additionalResultFields,
           offset: isLoadMore ? baseOffset : 0,
           pageSize,
           activeOnly: effectiveActiveOnly,
@@ -343,7 +342,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     (person: PersonResult) => {
       justSelectedRef.current = true;
       setSelectedPerson(person);
-      setInputValueState(person.fullName);
+      setInputValueState(String(person.data['fullName'] ?? ''));
       onSelect?.(person);
     },
     [onSelect]

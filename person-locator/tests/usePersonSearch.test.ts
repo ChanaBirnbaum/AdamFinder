@@ -19,9 +19,9 @@ const mockSearchOffline = offlineService.searchOffline as MockedFunction<typeof 
 const makeResult = (id: string, personType: PersonResult['personType'] = 'ezrach'): PersonResult => ({
   id,
   personType,
-  fullName: `Person ${id}`,
   isActive: true,
   source: 'elasticsearch',
+  data: { fullName: `Person ${id}` },
 });
 
 const baseConfig: PersonLocatorProps = { env: 'dev' };

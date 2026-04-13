@@ -4,18 +4,21 @@ import { vi, describe, it, expect } from 'vitest';
 import ResultCard from '../src/components/ResultCard';
 import type { PersonResult } from '../src/types';
 
-const makePerson = (overrides: Partial<PersonResult> = {}): PersonResult => ({
-  id: '1',
-  personType: 'ezrach',
-  fullName: 'ישראל ישראלי',
-  isActive: true,
-  source: 'elasticsearch',
-  ...overrides,
-});
+const makePerson = (overrides: Partial<PersonResult> & { data?: Record<string, unknown> } = {}): PersonResult => {
+  const { data: overrideData, ...rest } = overrides;
+  return {
+    id: '1',
+    personType: 'ezrach',
+    isActive: true,
+    source: 'elasticsearch',
+    data: { fullName: 'ישראל ישראלי', ...overrideData },
+    ...rest,
+  };
+};
 
 describe('ResultCard', () => {
   it('hides photo when person type is in HidePhotosSugAdam', () => {
-    const person = makePerson({ personType: 'asir', photoUrl: 'http://photo.jpg' });
+    const person = makePerson({ personType: 'asir', data: { photoUrl: 'http://photo.jpg' } });
     render(
       <ResultCard
         person={person}
@@ -28,7 +31,7 @@ describe('ResultCard', () => {
   });
 
   it('shows photo when person type is NOT in HidePhotosSugAdam', () => {
-    const person = makePerson({ personType: 'ezrach', photoUrl: 'http://photo.jpg' });
+    const person = makePerson({ personType: 'ezrach', data: { photoUrl: 'http://photo.jpg' } });
     render(
       <ResultCard
         person={person}
@@ -80,7 +83,7 @@ describe('ResultCard', () => {
   });
 
   it('shows matched text bolded (via strong element)', () => {
-    const person = makePerson({ fullName: 'ישראל ישראלי' });
+    const person = makePerson({ data: { fullName: 'ישראל ישראלי' } });
     render(
       <ResultCard
         person={person}

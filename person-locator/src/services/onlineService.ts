@@ -21,7 +21,7 @@ export async function fetchOnlinePersons(params: {
   const { query, personType, config, signal } = params;
 
   try {
-    const url = new URL(`${config.onlineServiceUrl}/search`);
+    const url = new URL(`${config.online.baseUrl}${config.online.methods.search}`);
     url.searchParams.set('q', query);
     if (personType) url.searchParams.set('type', personType);
 
@@ -33,8 +33,14 @@ export async function fetchOnlinePersons(params: {
 
     if (!response.ok) return [];
 
-    const data = (await response.json()) as { results?: PersonResult[] };
-    return (data.results ?? []).map((p) => ({ ...p, source: 'online' as const }));
+    const data = (await response.json()) as { results?: Record<string, unknown>[] };
+    return (data.results ?? []).map((p) => ({
+      id: String(p['id'] ?? ''),
+      personType: (p['personType'] as PersonType) ?? 'ezrach',
+      isActive: Boolean(p['isActive'] ?? true),
+      source: 'online' as const,
+      data: { ...p },
+    }));
   } catch {
     return [];
   }

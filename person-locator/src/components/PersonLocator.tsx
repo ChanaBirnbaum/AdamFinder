@@ -70,7 +70,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
   const showTabBar = !effectiveType;
 
   const handleSelect = useCallback((person: Parameters<typeof selectPerson>[0]) => {
-    addPerson({ id: person.id, fullName: person.fullName, personType: person.personType });
+    addPerson({ id: person.id, fullName: String(person.data['fullName'] ?? ''), personType: person.personType });
     selectPerson(person);
     setIsFocused(false);
   }, [addPerson, selectPerson]);
