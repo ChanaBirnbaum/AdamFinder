@@ -45,27 +45,12 @@ function mapHitToPersonResult(
 ): PersonResult {
   const source = (hit._source as Record<string, unknown>) ?? {};
 
-  const additionalFields: Record<string, unknown> = {};
-  for (const [field, value] of Object.entries(source)) {
-    if (!TYPED_PERSON_FIELDS.has(field) && value !== undefined) {
-      additionalFields[field] = value;
-    }
-  }
-
   return {
     id: String(hit._id ?? source['id'] ?? ''),
     personType,
-    fullName: String(source['fullName'] ?? ''),
-    photoUrl: source['photoUrl'] ? String(source['photoUrl']) : undefined,
-    idNumber: source['idNumber'] ? String(source['idNumber']) : undefined,
-    unit: source['unit'] ? String(source['unit']) : undefined,
-    rank: source['rank'] ? String(source['rank']) : undefined,
-    phone: source['phone'] ? String(source['phone']) : undefined,
-    shibutz: source['shibutz'] ? String(source['shibutz']) : undefined,
-    prisonerNumber: source['prisonerNumber'] ? String(source['prisonerNumber']) : undefined,
     isActive: Boolean(source['isActive'] ?? true),
     source: 'elasticsearch',
-    additionalFields: Object.keys(additionalFields).length > 0 ? additionalFields : undefined,
+    data: { ...source },
   };
 }
 
@@ -103,7 +88,6 @@ export async function searchPersons(params: {
   personType: PersonType;
   filters: Filter[];
   additionalSearchFields: string[];
-  additionalResultFields: string[];
   offset: number;
   pageSize: number;
   activeOnly?: boolean;
@@ -115,7 +99,6 @@ export async function searchPersons(params: {
     personType,
     filters,
     additionalSearchFields,
-    additionalResultFields,
     offset,
     pageSize,
     activeOnly,
@@ -150,13 +133,14 @@ export async function searchPersons(params: {
         filter: filterClauses,
       },
     },
-    _source: [...new Set([...DEFAULT_RESULT_FIELDS[personType], ...additionalResultFields])],
   };
+
+  const searchPath = config.elasticsearch.methods.search.replace('{index}', index);
 
   let response: Response;
   try {
     response = await fetchWithTimeout(
-      `${config.elasticsearchUrl}/${index}/_search`,
+      `${config.elasticsearch.baseUrl}${searchPath}`,
       {
         method: 'POST',
         headers: buildHeaders(config),
@@ -218,10 +202,12 @@ export async function fetchSinglePerson(params: {
     },
   };
 
+  const searchPath = config.elasticsearch.methods.search.replace('{index}', indexStr);
+
   let response: Response;
   try {
     response = await fetchWithTimeout(
-      `${config.elasticsearchUrl}/${indexStr}/_search`,
+      `${config.elasticsearch.baseUrl}${searchPath}`,
       {
         method: 'POST',
         headers: buildHeaders(config),

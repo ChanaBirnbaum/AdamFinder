@@ -20,7 +20,7 @@ export async function searchOffline(params: {
 }): Promise<PersonResult[]> {
   const { query, personType, config, signal } = params;
 
-  const url = new URL(`${config.offlineServiceUrl}/search`);
+  const url = new URL(`${config.offline.baseUrl}${config.offline.methods.search}`);
   url.searchParams.set('q', query);
   if (personType) url.searchParams.set('type', personType);
 
@@ -34,6 +34,12 @@ export async function searchOffline(params: {
     throw new Error(`Offline service error: ${response.status}`);
   }
 
-  const data = (await response.json()) as { results?: PersonResult[] };
-  return (data.results ?? []).map((p) => ({ ...p, source: 'offline' as const }));
+  const data = (await response.json()) as { results?: Record<string, unknown>[] };
+  return (data.results ?? []).map((p) => ({
+    id: String(p['id'] ?? ''),
+    personType: (p['personType'] as PersonType) ?? 'ezrach',
+    isActive: Boolean(p['isActive'] ?? true),
+    source: 'offline' as const,
+    data: { ...p },
+  }));
 }

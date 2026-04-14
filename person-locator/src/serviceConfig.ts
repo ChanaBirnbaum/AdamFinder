@@ -1,35 +1,39 @@
 import type { Environment, ServiceConfig } from './types';
 
-const CONFIGS: Record<Environment, ServiceConfig> = {
-  dev: {
-    elasticsearchUrl: 'https://elastic-dev.internal',
-    onlineServiceUrl: 'https://online-dev.internal',
-    offlineServiceUrl: 'https://offline-dev.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
+// ─── Endpoint paths — shared across all environments ──────────────────────────
+// To add a new endpoint, add it here once and use it in the services.
+const METHODS = {
+  elasticsearch: {
+    search: '/{index}/_search',
   },
-  test: {
-    elasticsearchUrl: 'https://elastic-test.internal',
-    onlineServiceUrl: 'https://online-test.internal',
-    offlineServiceUrl: 'https://offline-test.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
+  online: {
+    search: '/search',
   },
-  lrn: {
-    elasticsearchUrl: 'https://elastic-lrn.internal',
-    onlineServiceUrl: 'https://online-lrn.internal',
-    offlineServiceUrl: 'https://offline-lrn.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
+  offline: {
+    search: '/search',
   },
-  prod: {
-    elasticsearchUrl: 'https://elastic.prod.internal',
-    onlineServiceUrl: 'https://online.prod.internal',
-    offlineServiceUrl: 'https://offline.prod.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
-  },
+} as const;
+
+// ─── Base URLs per environment ────────────────────────────────────────────────
+const BASE_URLS: Record<Environment, { elasticsearch: string; online: string; offline: string }> = {
+  dev:  { elasticsearch: 'https://elastic-dev.internal',  online: 'https://online-dev.internal',  offline: 'https://offline-dev.internal'  },
+  test: { elasticsearch: 'https://elastic-test.internal', online: 'https://online-test.internal', offline: 'https://offline-test.internal' },
+  lrn:  { elasticsearch: 'https://elastic-lrn.internal',  online: 'https://online-lrn.internal',  offline: 'https://offline-lrn.internal'  },
+  prod: { elasticsearch: 'https://elastic.prod.internal', online: 'https://online.prod.internal', offline: 'https://offline.prod.internal' },
 };
+
+const CONFIGS: Record<Environment, ServiceConfig> = Object.fromEntries(
+  (Object.keys(BASE_URLS) as Environment[]).map((env) => [
+    env,
+    {
+      elasticsearch: { baseUrl: BASE_URLS[env].elasticsearch, methods: METHODS.elasticsearch },
+      online:        { baseUrl: BASE_URLS[env].online,        methods: METHODS.online        },
+      offline:       { baseUrl: BASE_URLS[env].offline,       methods: METHODS.offline       },
+      pageSize:  3,
+      timeoutMs: 5000,
+    } satisfies ServiceConfig,
+  ])
+) as unknown as Record<Environment, ServiceConfig>;
 
 export function getConfig(env: Environment): ServiceConfig {
   return CONFIGS[env] ?? CONFIGS['dev'];

@@ -15,19 +15,13 @@ export interface Filter {
 
 // A single search result person
 export interface PersonResult {
-  id: string;                     // Unique person ID (used for dedup)
+  id: string;           // Unique person ID (used for dedup)
   personType: PersonType;
-  fullName: string;
-  photoUrl?: string;
-  idNumber?: string;
-  unit?: string;
-  rank?: string;
-  phone?: string;
-  shibutz?: string;
-  prisonerNumber?: string;
   isActive: boolean;
   source: 'elasticsearch' | 'online' | 'offline';
-  additionalFields?: Record<string, unknown>;  // additionalResultFields values land here
+  /** All fields returned from the service, keyed by their original field name.
+   *  e.g. data['fullName'], data['idNumber'], data['rank'], data['prisonerNumber'] etc. */
+  data: Record<string, unknown>;
 }
 
 // Grouped results per category
@@ -51,14 +45,24 @@ export interface SingleSearch {
   value: string;  // field value to look up
 }
 
+// ─── Service endpoints ─────────────────────────────────────────────────────
+
+export interface ServiceEndpoints {
+  /** Base URL, no trailing slash */
+  baseUrl: string;
+  /** Named endpoint paths — add any key freely, no interface change needed.
+   *  Use `{index}` as a placeholder where relevant, e.g. `/{index}/_search` */
+  methods: Record<string, string>;
+}
+
 // Service config injected by consumer
 export interface ServiceConfig {
-  elasticsearchUrl: string;       // Base ES URL (no trailing slash)
-  onlineServiceUrl: string;       // Base online-DB service URL
-  offlineServiceUrl: string;      // Base offline/local-DB service URL
-  authToken?: string;             // Bearer token for all calls
-  pageSize?: number;              // Default: 3
-  timeoutMs?: number;             // Default: 5000
+  elasticsearch: ServiceEndpoints;
+  online: ServiceEndpoints;
+  offline: ServiceEndpoints;
+  authToken?: string;   // Bearer token for all calls
+  pageSize?: number;    // Default: 3
+  timeoutMs?: number;   // Default: 5000
 }
 
 // The root component props – EVERY prop must have JSDoc

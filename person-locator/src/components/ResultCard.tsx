@@ -85,11 +85,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
   const [expanded, setExpanded] = useState(false);
 
   const showPhoto =
-    Boolean(person.photoUrl) &&
+    Boolean(person.data['photoUrl']) &&
     !(HidePhotosSugAdam ?? []).includes(person.personType);
 
   const hasExpandableFields = additionalResultFields.some(
-    (f) => person.additionalFields?.[f] != null
+    (f) => person.data[f] != null
   );
 
   const typeMeta = TYPE_META[person.personType];
@@ -108,7 +108,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
       <div
         className="flex items-center gap-3 cursor-pointer"
         role="option"
-        aria-label={person.fullName}
+        aria-label={String(person.data['fullName'] ?? '')}
         aria-selected={false}
         tabIndex={0}
         onClick={handleClick}
@@ -116,7 +116,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
       >
         {/* ── Avatar ── */}
         {showPhoto ? (
-          <img src={person.photoUrl} alt={person.fullName} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+          <img src={person.data['photoUrl'] as string} alt={String(person.data['fullName'] ?? '')} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
         ) : (
           <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400">
@@ -132,7 +132,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {highlightMatch(person.fullName, query)}
+                {highlightMatch(String(person.data['fullName'] ?? ''), query)}
               </p>
               {!hideNavigationLinks && person.personType === 'asir' && openTikAsir && (
                 <Tip label="תיק אסיר">
@@ -140,7 +140,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openTikAsir(person); }}
                     className="text-rose-400 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400 rounded transition-colors"
-                    aria-label={`תיק אסיר – ${person.fullName}`}
+                    aria-label={`תיק אסיר – ${String(person.data['fullName'] ?? '')}`}
                   >
                     <TikAsirIcon />
                   </button>
@@ -152,7 +152,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                     type="button"
                     onClick={(e) => { e.stopPropagation(); navigate(`/person/${person.id}`); }}
                     className="text-gray-300 hover:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 rounded transition-colors"
-                    aria-label={`פרופיל – ${person.fullName}`}
+                    aria-label={`פרופיל – ${String(person.data['fullName'] ?? '')}`}
                   >
                     <ExternalIcon />
                   </button>
@@ -174,16 +174,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
           </div>
 
           {/* Row 2 – id / prisoner number / rank */}
-          {[person.idNumber, person.prisonerNumber, person.rank].some(Boolean) && (
+          {[person.data['idNumber'], person.data['prisonerNumber'], person.data['rank']].some(Boolean) && (
             <p className="text-gray-400 text-xs text-right mt-0.5">
-              {[person.idNumber, person.prisonerNumber, person.rank].filter(Boolean).join(' · ')}
+              {[person.data['idNumber'], person.data['prisonerNumber'], person.data['rank']].filter(Boolean).join(' · ')}
             </p>
           )}
 
           {/* Row 3 – unit / shibutz / phone */}
-          {[person.unit, person.shibutz, !HideMishmorot ? person.phone : undefined].some(Boolean) && (
+          {[person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].some(Boolean) && (
             <p className="text-gray-400 text-xs text-right mt-0.5">
-              {[person.unit, person.shibutz, !HideMishmorot ? person.phone : undefined].filter(Boolean).join(' · ')}
+              {[person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
@@ -206,7 +206,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
       {expanded && (
         <div className="mt-2 mx-1 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
           {additionalResultFields.map((field) => {
-            const val = person.additionalFields?.[field];
+            const val = person.data[field];
             if (val == null) return null;
             return (
               <div key={field} className="text-right">

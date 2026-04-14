@@ -48,14 +48,14 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Res
     const hits = pool
       .filter(p =>
         (!q ||
-          p.fullName.includes(q) ||
-          (p.idNumber ?? '').includes(q) ||
-          (p.prisonerNumber ?? '').includes(q) ||
-          (p.unit ?? '').includes(q)
+          String(p.data['fullName'] ?? '').toLowerCase().includes(q) ||
+          String(p.data['idNumber'] ?? '').includes(q) ||
+          String(p.data['prisonerNumber'] ?? '').includes(q) ||
+          String(p.data['unit'] ?? '').includes(q)
         ) &&
         (!activeOnly || p.isActive)
       )
-      .map(p => ({ _id: p.id, _index: `${p.personType}s`, _source: { ...p, ...(p.additionalFields ?? {}) } }));
+      .map(p => ({ _id: p.id, _index: `${p.personType}s`, _source: { ...p.data, isActive: p.isActive } }));
 
     await new Promise(r => setTimeout(r, 350));
     return new Response(JSON.stringify({ hits: { hits } }), { status: 200 });
@@ -91,8 +91,8 @@ export default function App() {
             env="dev"
             minChars={2}
             additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה', 'קשר_לאסיר', 'ת_ביקור_אחרון', 'תקן', 'תחנה', 'תפקיד', 'תאריך_גיוס', 'מפקד_יחידה', 'הכשרות']}
-            onSelect={(p: PersonResult) => console.log('נבחר:', p.fullName, p.personType)}
-            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.prisonerNumber)}
+            onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
+            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
           />
         </div>
 
