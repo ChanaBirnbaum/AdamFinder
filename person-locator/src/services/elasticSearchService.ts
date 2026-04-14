@@ -15,6 +15,12 @@ const DEFAULT_FIELDS: Record<PersonType, string[]> = {
   ezrach: ['fullName', 'idNumber', 'phone'],
 };
 
+const DEFAULT_RESULT_FIELDS: Record<PersonType, string[]> = {
+  asir: ['fullName', 'idNumber', 'unit', 'prisonerNumber', 'isActive', 'photoUrl'],
+  soher: ['fullName', 'rank', 'unit', 'phone', 'isActive', 'photoUrl'],
+  ezrach: ['fullName', 'idNumber', 'phone', 'isActive', 'photoUrl'],
+};
+
 const INDEX_MAP: Record<PersonType, string> = {
   asir: 'asirs',
   soher: 'sohers',
@@ -29,21 +35,20 @@ function buildHeaders(config: ServiceConfig): HeadersInit {
   return headers;
 }
 
+const TYPED_PERSON_FIELDS = new Set([
+  'fullName', 'idNumber', 'unit', 'rank', 'phone', 'shibutz', 'prisonerNumber', 'isActive', 'photoUrl',
+]);
+
 function mapHitToPersonResult(
   hit: Record<string, unknown>,
   personType: PersonType,
-  additionalResultFields: string[]
 ): PersonResult {
   const source = (hit._source as Record<string, unknown>) ?? {};
 
-  const knownFields = new Set([
-    'fullName', 'idNumber', 'unit', 'rank', 'phone', 'prisonerNumber', 'isActive', 'photoUrl',
-  ]);
-
   const additionalFields: Record<string, unknown> = {};
-  for (const field of additionalResultFields) {
-    if (!knownFields.has(field) && source[field] !== undefined) {
-      additionalFields[field] = source[field];
+  for (const [field, value] of Object.entries(source)) {
+    if (!TYPED_PERSON_FIELDS.has(field) && value !== undefined) {
+      additionalFields[field] = value;
     }
   }
 
@@ -56,6 +61,7 @@ function mapHitToPersonResult(
     unit: source['unit'] ? String(source['unit']) : undefined,
     rank: source['rank'] ? String(source['rank']) : undefined,
     phone: source['phone'] ? String(source['phone']) : undefined,
+    shibutz: source['shibutz'] ? String(source['shibutz']) : undefined,
     prisonerNumber: source['prisonerNumber'] ? String(source['prisonerNumber']) : undefined,
     isActive: Boolean(source['isActive'] ?? true),
     source: 'elasticsearch',
@@ -144,10 +150,7 @@ export async function searchPersons(params: {
         filter: filterClauses,
       },
     },
-    _source: [
-      'fullName', 'idNumber', 'unit', 'rank', 'phone', 'prisonerNumber',
-      'isActive', 'photoUrl', ...additionalResultFields,
-    ],
+    _source: [...new Set([...DEFAULT_RESULT_FIELDS[personType], ...additionalResultFields])],
   };
 
   let response: Response;
@@ -183,7 +186,7 @@ export async function searchPersons(params: {
   const hasMore = hits.length > pageSize;
   const results = hits
     .slice(0, pageSize)
-    .map((hit) => mapHitToPersonResult(hit, personType, additionalResultFields));
+    .map((hit) => mapHitToPersonResult(hit, personType));
 
   return { results, hasMore };
 }
@@ -201,8 +204,13 @@ export async function fetchSinglePerson(params: {
   const indices = personType ? [INDEX_MAP[personType]] : Object.values(INDEX_MAP);
   const indexStr = indices.join(',');
 
+  const sourceFields = personType
+    ? DEFAULT_RESULT_FIELDS[personType]
+    : [...new Set(Object.values(DEFAULT_RESULT_FIELDS).flat())];
+
   const body = {
     size: 1,
+    _source: sourceFields,
     query: {
       bool: {
         must: [{ term: { [key]: value } }],
@@ -243,5 +251,5 @@ export async function fetchSinglePerson(params: {
     index.includes('soher') ? 'soher' :
     'ezrach';
 
-  return mapHitToPersonResult(hit, personType ?? resolvedType, []);
+  return mapHitToPersonResult(hit, personType ?? resolvedType);
 }
