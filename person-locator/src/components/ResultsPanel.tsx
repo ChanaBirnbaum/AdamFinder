@@ -58,8 +58,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       : 'absolute top-full w-full z-50 bg-white rounded-b-xl shadow-lg max-h-96 overflow-y-auto border border-t-0 border-gray-200';
 
   const activeResults = results[RESULTS_MAP[activeTab]] as PersonResult[];
-  const hasMore = false; // we'll use pagingState from parent — loadMore is called via scroll
-
   const lastCardRef = useInfiniteScroll(
     () => loadMore(activeTab),
     !isLoading && !isLoadingMore

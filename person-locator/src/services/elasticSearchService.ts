@@ -35,10 +35,6 @@ function buildHeaders(config: ServiceConfig): HeadersInit {
   return headers;
 }
 
-const TYPED_PERSON_FIELDS = new Set([
-  'fullName', 'idNumber', 'unit', 'rank', 'phone', 'shibutz', 'prisonerNumber', 'isActive', 'photoUrl',
-]);
-
 function mapHitToPersonResult(
   hit: Record<string, unknown>,
   personType: PersonType,
