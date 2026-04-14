@@ -5,20 +5,20 @@ import './index.css';
 // ─── Mock data ─────────────────────────────────────────────────────────────────
 const ALL_PERSONS: PersonResult[] = [
   // אסירים
-  { id: 'p1', personType: 'asir', fullName: 'אחמד אל-חלבי',  idNumber: '123456789', prisonerNumber: 'A-042', unit: 'כנף ב', isActive: true,  source: 'elasticsearch', additionalFields: { עורך_דין: 'ח. ספיר', תאריך_מעצר: '12/03/2022', עבירה: 'ביטחונית' } },
-  { id: 'p2', personType: 'asir', fullName: 'כמאל אבו עמר',  idNumber: '234567890', prisonerNumber: 'B-117', unit: 'כנף א', isActive: true,  source: 'elasticsearch', additionalFields: { עורך_דין: 'מ. ברק', תאריך_מעצר: '05/07/2021' } },
-  { id: 'p3', personType: 'asir', fullName: 'עלי חסן',        idNumber: '345678901', prisonerNumber: 'C-305', unit: 'כנף ג', isActive: false, source: 'elasticsearch', additionalFields: { עורך_דין: 'א. לוי', תאריך_מעצר: '18/01/2020', עבירה: 'פלילית' } },
-  { id: 'p4', personType: 'asir', fullName: 'יוסף אל-מסרי',  idNumber: '456789012', prisonerNumber: 'D-088', unit: 'כנף ד', isActive: true,  source: 'elasticsearch' },
+  { id: 'p1', personType: 'asir', isActive: true,  source: 'elasticsearch', data: { fullName: 'אחמד אל-חלבי',  idNumber: '123456789', prisonerNumber: 'A-042', unit: 'כנף ב', עורך_דין: 'ח. ספיר', תאריך_מעצר: '12/03/2022', עבירה: 'ביטחונית' } },
+  { id: 'p2', personType: 'asir', isActive: true,  source: 'elasticsearch', data: { fullName: 'כמאל אבו עמר',  idNumber: '234567890', prisonerNumber: 'B-117', unit: 'כנף א', עורך_דין: 'מ. ברק',  תאריך_מעצר: '05/07/2021' } },
+  { id: 'p3', personType: 'asir', isActive: false, source: 'elasticsearch', data: { fullName: 'עלי חסן',        idNumber: '345678901', prisonerNumber: 'C-305', unit: 'כנף ג', עורך_דין: 'א. לוי',  תאריך_מעצר: '18/01/2020', עבירה: 'פלילית' } },
+  { id: 'p4', personType: 'asir', isActive: true,  source: 'elasticsearch', data: { fullName: 'יוסף אל-מסרי',  idNumber: '456789012', prisonerNumber: 'D-088', unit: 'כנף ד' } },
   // סוהרים
-  { id: 'g1', personType: 'soher',    fullName: 'יוסי כהן',       rank: 'סוהר בכיר', unit: 'משמרת א', phone: '050-1234567', isActive: true,  source: 'elasticsearch', additionalFields: { תקן: 'מ-5', תחנה: 'שאטה' } },
-  { id: 'g2', personType: 'soher',    fullName: 'עלי מזרחי',      rank: 'סוהר',       unit: 'משמרת ב', phone: '052-7654321', isActive: true,  source: 'elasticsearch', additionalFields: { תקן: 'מ-3', תחנה: 'רימון' } },
-  { id: 'g3', personType: 'soher',    fullName: 'כמאל ביטון',     rank: 'סוהר בכיר', unit: 'משמרת ג', phone: '054-1122334', isActive: false, source: 'elasticsearch', additionalFields: { תקן: 'מ-5', תחנה: 'אשל' } },
+  { id: 'g1', personType: 'soher', isActive: true,  source: 'elasticsearch', data: { fullName: 'יוסי כהן',   rank: 'סוהר בכיר', unit: 'משמרת א', phone: '050-1234567', תקן: 'מ-5', תחנה: 'שאטה' } },
+  { id: 'g2', personType: 'soher', isActive: true,  source: 'elasticsearch', data: { fullName: 'עלי מזרחי',  rank: 'סוהר',       unit: 'משמרת ב', phone: '052-7654321', תקן: 'מ-3', תחנה: 'רימון' } },
+  { id: 'g3', personType: 'soher', isActive: false, source: 'elasticsearch', data: { fullName: 'כמאל ביטון', rank: 'סוהר בכיר', unit: 'משמרת ג', phone: '054-1122334', תקן: 'מ-5', תחנה: 'אשל' } },
   // דוגמה עם כל השדות
-  { id: 'g4', personType: 'soher', fullName: 'אדם לוי', idNumber: '987654321', rank: 'סוהר בכיר', unit: 'כנף ב', phone: '053-1111222', shibutz: 'שמירה ראשית', isActive: true, source: 'elasticsearch', additionalFields: { תפקיד: 'קצין תורן', תאריך_גיוס: '01/06/2018', מפקד_יחידה: 'רס"ן דוד כהן', הכשרות: 'כיתת כוננות, מגע' } },
+  { id: 'g4', personType: 'soher', isActive: true,  source: 'elasticsearch', data: { fullName: 'אדם לוי', idNumber: '987654321', rank: 'סוהר בכיר', unit: 'כנף ב', phone: '053-1111222', shibutz: 'שמירה ראשית', תפקיד: 'קצין תורן', תאריך_גיוס: '01/06/2018', מפקד_יחידה: 'רס"ן דוד כהן', הכשרות: 'כיתת כוננות, מגע' } },
   // אזרחים
-  { id: 'c1', personType: 'ezrach', fullName: 'שרה לוי',        idNumber: '567890123', phone: '054-9876543', isActive: true,  source: 'online', additionalFields: { קשר_לאסיר: 'אחות', ת_ביקור_אחרון: '01/03/2026' } },
-  { id: 'c2', personType: 'ezrach', fullName: 'עלי אבו חמד',    idNumber: '678901234', phone: '050-5544332', isActive: true,  source: 'online', additionalFields: { קשר_לאסיר: 'אב', ת_ביקור_אחרון: '10/02/2026' } },
-  { id: 'c3', personType: 'ezrach', fullName: 'יוסף בן-דוד',    idNumber: '789012345', phone: '052-3344556', isActive: true,  source: 'online' },
+  { id: 'c1', personType: 'ezrach', isActive: true, source: 'online', data: { fullName: 'שרה לוי',      idNumber: '567890123', phone: '054-9876543', קשר_לאסיר: 'אחות', ת_ביקור_אחרון: '01/03/2026' } },
+  { id: 'c2', personType: 'ezrach', isActive: true, source: 'online', data: { fullName: 'עלי אבו חמד',  idNumber: '678901234', phone: '050-5544332', קשר_לאסיר: 'אב',   ת_ביקור_אחרון: '10/02/2026' } },
+  { id: 'c3', personType: 'ezrach', isActive: true, source: 'online', data: { fullName: 'יוסף בן-דוד',  idNumber: '789012345', phone: '052-3344556' } },
 ];
 
 const originalFetch = window.fetch.bind(window);
@@ -116,7 +116,7 @@ export default function App() {
             type="asir"
             minChars={2}
             additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה']}
-            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.prisonerNumber)}
+            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
             onSelect={(p: PersonResult) => console.log(p)}
           />
         </div>
