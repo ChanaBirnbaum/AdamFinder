@@ -159,6 +159,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           personType: pt,
           filters,
           additionalSearchFields,
+          additionalResultFields,
           offset: isLoadMore ? baseOffset : 0,
           pageSize,
           activeOnly: effectiveActiveOnly,

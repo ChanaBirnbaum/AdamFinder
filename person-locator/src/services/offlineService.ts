@@ -1,9 +1,10 @@
+import axios from 'axios';
 import type { PersonResult, PersonType, ServiceConfig } from '../types';
 
-function buildHeaders(config: ServiceConfig): HeadersInit {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+function buildHeaders(config: ServiceConfig): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (config.authToken) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${config.authToken}`;
+    headers['Authorization'] = `Bearer ${config.authToken}`;
   }
   return headers;
 }
@@ -20,22 +21,19 @@ export async function searchOffline(params: {
 }): Promise<PersonResult[]> {
   const { query, personType, config, signal } = params;
 
+  const source = axios.CancelToken.source();
+  signal.addEventListener('abort', () => source.cancel('AbortError'));
+
   const url = new URL(`${config.offline.baseUrl}${config.offline.methods.search}`);
   url.searchParams.set('q', query);
   if (personType) url.searchParams.set('type', personType);
 
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: buildHeaders(config),
-    signal,
-  });
+  const response = await axios.get<{ results?: Record<string, unknown>[] }>(
+    url.toString(),
+    { headers: buildHeaders(config), cancelToken: source.token },
+  );
 
-  if (!response.ok) {
-    throw new Error(`Offline service error: ${response.status}`);
-  }
-
-  const data = (await response.json()) as { results?: Record<string, unknown>[] };
-  return (data.results ?? []).map((p) => ({
+  return (response.data.results ?? []).map((p) => ({
     id: String(p['id'] ?? ''),
     personType: (p['personType'] as PersonType) ?? 'ezrach',
     isActive: Boolean(p['isActive'] ?? true),

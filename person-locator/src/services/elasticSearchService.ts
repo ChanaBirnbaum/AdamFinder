@@ -1,5 +1,19 @@
-import type { Filter, PersonResult, PersonType, ServiceConfig } from '../types';
+import axios from 'axios';
+import type {
+  ElasticQuerySettings,
+  Filter,
+  PersonResult,
+  PersonType,
+  ServiceConfig,
+} from '../types';
 import { buildFilters } from '../utils/buildFilters';
+
+/** Convert an AbortSignal to an axios CancelToken. */
+function signalToCancelToken(signal: AbortSignal) {
+  const source = axios.CancelToken.source();
+  signal.addEventListener('abort', () => source.cancel('AbortError'));
+  return source.token;
+}
 
 /** Custom error thrown when ES is unreachable or returns 5xx. */
 export class OfflineError extends Error {
@@ -9,29 +23,141 @@ export class OfflineError extends Error {
   }
 }
 
-const DEFAULT_FIELDS: Record<PersonType, string[]> = {
-  asir: ['fullName', 'idNumber', 'unit', 'prisonerNumber'],
-  soher: ['fullName', 'rank', 'unit', 'phone'],
-  ezrach: ['fullName', 'idNumber', 'phone'],
-};
-
-const DEFAULT_RESULT_FIELDS: Record<PersonType, string[]> = {
-  asir: ['fullName', 'idNumber', 'unit', 'prisonerNumber', 'isActive', 'photoUrl'],
-  soher: ['fullName', 'rank', 'unit', 'phone', 'isActive', 'photoUrl'],
-  ezrach: ['fullName', 'idNumber', 'phone', 'isActive', 'photoUrl'],
-};
+// ─── Index map ────────────────────────────────────────────────────────────────
 
 const INDEX_MAP: Record<PersonType, string> = {
-  asir: 'asirs',
-  soher: 'sohers',
+  asir:   'asirs',
+  soher:  'sohers',
   ezrach: 'ezrachs',
 };
 
-function buildHeaders(config: ServiceConfig): HeadersInit {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (config.authToken) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${config.authToken}`;
+// ─── Built-in default query settings per type ────────────────────────────────
+// Consumers override these via ServiceConfig.querySettings
+
+const DEFAULT_QUERY_SETTINGS: Record<PersonType, ElasticQuerySettings> = {
+  asir: {
+    wrapMode:     'prefix',
+    searchFields: ['fullName', 'idNumber', 'unit', 'prisonerNumber'],
+    sourceFields: ['fullName', 'idNumber', 'unit', 'prisonerNumber', 'isActive', 'photoUrl'],
+  },
+  soher: {
+    wrapMode:     'wildcard',
+    searchFields: ['fullName', 'rank', 'unit', 'phone'],
+    sourceFields: ['fullName', 'rank', 'unit', 'phone', 'isActive', 'photoUrl'],
+  },
+  ezrach: {
+    wrapMode:     'exact',
+    searchFields: ['fullName', 'idNumber', 'phone'],
+    sourceFields: ['fullName', 'idNumber', 'phone', 'isActive', 'photoUrl'],
+  },
+};
+
+// ─── Generic query builder ────────────────────────────────────────────────────
+
+/**
+ * Builds a complete Elasticsearch request body from a settings object.
+ *
+ * Structure produced (mirrors production queries):
+ * ```
+ * {
+ *   [script_fields],          // optional — when settings.scriptFields is set
+ *   query: { bool: { must: [
+ *     { bool: {
+ *         must: [
+ *           { bool: { minimum_should_match: 1 } },
+ *           { query_string: { query, fields } },
+ *           ...requiredFields  → { exists }
+ *           ...atLeastOneField → { bool: { should, minimum_should_match:1 } }
+ *           ...conditions      (injected as-is)
+ *         ],
+ *         filter: { terms: { allowedList.field: [...] } }  // optional
+ *     } }
+ *   ] } },
+ *   sort: [ { _script }, { _score: "desc" } ],   // or just _score
+ *   _source: [...],
+ *   size, from
+ * }
+ * ```
+ */
+export function buildElasticQuery(
+  settings: ElasticQuerySettings,
+  { query, size, from }: { query: string; size: number; from: number },
+): Record<string, unknown> {
+  // ── 1. Build query_string value ──────────────────────────────────────────
+  const terms =
+    settings.splitTerms !== false
+      ? query.trim().split(/\s+/).filter(Boolean)
+      : [query.trim()];
+
+  const joined = terms.join(' AND ');
+  let queryStr: string;
+  switch (settings.wrapMode ?? 'prefix') {
+    case 'wildcard': queryStr = `*${joined}*`; break;
+    case 'exact':    queryStr = joined;         break;
+    default:         queryStr = `${joined}*`;  break; // prefix
   }
+
+  // ── 2. Inner must clauses ────────────────────────────────────────────────
+  const innerMust: Record<string, unknown>[] = [
+    { bool: { minimum_should_match: 1 } },
+    { query_string: { query: queryStr, fields: settings.searchFields } },
+    ...(settings.requiredFields ?? []).map((f) => ({ exists: { field: f } })),
+    ...(settings.conditions ?? []),
+  ];
+
+  if (settings.atLeastOneField?.length) {
+    innerMust.push({
+      bool: {
+        should: settings.atLeastOneField.map((f) => ({ exists: { field: f } })),
+        minimum_should_match: 1,
+      },
+    });
+  }
+
+  // ── 3. Inner bool — optional allowedList terms filter ───────────────────
+  const innerBool: Record<string, unknown> = { must: innerMust };
+  if (settings.allowedList?.values.length) {
+    innerBool['filter'] = {
+      terms: { [settings.allowedList.field]: settings.allowedList.values },
+    };
+  }
+
+  // ── 4. Sort ──────────────────────────────────────────────────────────────
+  const sort: Record<string, unknown>[] = [];
+  if (settings.scriptSort) {
+    sort.push({
+      _script: {
+        script: settings.scriptSort.script,
+        type:   settings.scriptSort.type  ?? 'number',
+        order:  settings.scriptSort.order ?? 'desc',
+      },
+      _score: 'desc',
+    });
+  } else {
+    sort.push({ _score: 'desc' });
+  }
+
+  // ── 5. Assemble body ─────────────────────────────────────────────────────
+  const body: Record<string, unknown> = {
+    query:   { bool: { must: [{ bool: innerBool }] } },
+    sort,
+    _source: settings.sourceFields,
+    size,
+    from,
+  };
+
+  if (settings.scriptFields) {
+    body['script_fields'] = settings.scriptFields;
+  }
+
+  return body;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function buildHeaders(config: ServiceConfig): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (config.authToken) headers['Authorization'] = `Bearer ${config.authToken}`;
   return headers;
 }
 
@@ -39,51 +165,24 @@ function mapHitToPersonResult(
   hit: Record<string, unknown>,
   personType: PersonType,
 ): PersonResult {
-  const source = (hit._source as Record<string, unknown>) ?? {};
-
+  const source = (hit['_source'] as Record<string, unknown>) ?? {};
   return {
-    id: String(hit._id ?? source['id'] ?? ''),
+    id:         String(hit['_id'] ?? source['id'] ?? ''),
     personType,
-    isActive: Boolean(source['isActive'] ?? true),
-    source: 'elasticsearch',
-    data: { ...source },
+    isActive:   Boolean(source['isActive'] ?? true),
+    source:     'elasticsearch',
+    data:       { ...source },
   };
 }
 
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs: number
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: options.signal
-        ? // Combine external signal with timeout signal
-          (() => {
-            const combined = new AbortController();
-            (options.signal as AbortSignal).addEventListener('abort', () => combined.abort());
-            controller.signal.addEventListener('abort', () => combined.abort());
-            return combined.signal;
-          })()
-        : controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
-  }
-}
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function searchPersons(params: {
   query: string;
   personType: PersonType;
   filters: Filter[];
   additionalSearchFields: string[];
+  additionalResultFields: string[];
   offset: number;
   pageSize: number;
   activeOnly?: boolean;
@@ -95,6 +194,7 @@ export async function searchPersons(params: {
     personType,
     filters,
     additionalSearchFields,
+    additionalResultFields,
     offset,
     pageSize,
     activeOnly,
@@ -102,71 +202,52 @@ export async function searchPersons(params: {
     signal,
   } = params;
 
-  const timeoutMs = config.timeoutMs ?? 5000;
-  const index = INDEX_MAP[personType];
-  const searchFields = [...DEFAULT_FIELDS[personType], ...additionalSearchFields];
+  // Merge consumer-provided settings on top of defaults
+  const base = config.querySettings?.[personType] ?? DEFAULT_QUERY_SETTINGS[personType];
 
-  const filterClauses = buildFilters(filters);
-  if (activeOnly) {
-    filterClauses.push({ term: { isActive: true } });
-  }
+  const conditions: Record<string, unknown>[] = [
+    ...(base.conditions ?? []),
+    ...buildFilters(filters),
+    ...(activeOnly ? [{ term: { isActive: true } }] : []),
+  ];
 
-  const body = {
-    from: offset,
-    size: pageSize + 1, // fetch one extra to determine hasMore
-    query: {
-      bool: {
-        must: [
-          {
-            multi_match: {
-              query,
-              fields: searchFields,
-              type: 'best_fields',
-              fuzziness: 'AUTO',
-            },
-          },
-        ],
-        filter: filterClauses,
-      },
-    },
+  const settings: ElasticQuerySettings = {
+    ...base,
+    searchFields: [...base.searchFields, ...additionalSearchFields],
+    sourceFields: [...base.sourceFields, ...additionalResultFields],
+    conditions,
   };
 
-  const searchPath = config.elasticsearch.methods.search.replace('{index}', index);
+  const body = buildElasticQuery(settings, {
+    query,
+    size: pageSize + 1, // fetch one extra to determine hasMore
+    from: offset,
+  });
 
-  let response: Response;
+  const searchPath = config.elasticsearch.methods['search'].replace('{index}', INDEX_MAP[personType]);
+  const cancelToken = signalToCancelToken(signal);
+  const timeoutMs   = config.timeoutMs ?? 5000;
+
+  let data: { hits: { hits: Array<Record<string, unknown>> } };
   try {
-    response = await fetchWithTimeout(
+    const response = await axios.post<typeof data>(
       `${config.elasticsearch.baseUrl}${searchPath}`,
-      {
-        method: 'POST',
-        headers: buildHeaders(config),
-        body: JSON.stringify(body),
-        signal,
-      },
-      timeoutMs
+      body,
+      { headers: buildHeaders(config), timeout: timeoutMs, cancelToken },
     );
+    data = response.data;
   } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') throw err;
+    if (axios.isCancel(err)) throw new DOMException('Aborted', 'AbortError');
+    if (axios.isAxiosError(err) && err.response && err.response.status >= 500)
+      throw new OfflineError(`ES returned ${err.response.status}`);
+    if (axios.isAxiosError(err) && err.response)
+      throw new Error(`ES error: ${err.response.status}`);
     throw new OfflineError(`ES request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  if (response.status >= 500) {
-    throw new OfflineError(`ES returned ${response.status}`);
-  }
-
-  if (!response.ok) {
-    throw new Error(`ES error: ${response.status}`);
-  }
-
-  const data = (await response.json()) as {
-    hits: { hits: Array<Record<string, unknown>> };
-  };
-
-  const hits = data.hits?.hits ?? [];
+  const hits    = data.hits?.hits ?? [];
   const hasMore = hits.length > pageSize;
-  const results = hits
-    .slice(0, pageSize)
-    .map((hit) => mapHitToPersonResult(hit, personType));
+  const results = hits.slice(0, pageSize).map((hit) => mapHitToPersonResult(hit, personType));
 
   return { results, hasMore };
 }
@@ -179,59 +260,57 @@ export async function fetchSinglePerson(params: {
   signal: AbortSignal;
 }): Promise<PersonResult | null> {
   const { key, value, personType, config, signal } = params;
-  const timeoutMs = config.timeoutMs ?? 5000;
 
-  const indices = personType ? [INDEX_MAP[personType]] : Object.values(INDEX_MAP);
+  const indices  = personType ? [INDEX_MAP[personType]] : Object.values(INDEX_MAP);
   const indexStr = indices.join(',');
 
+  // Collect source fields from all relevant types
   const sourceFields = personType
-    ? DEFAULT_RESULT_FIELDS[personType]
-    : [...new Set(Object.values(DEFAULT_RESULT_FIELDS).flat())];
+    ? (config.querySettings?.[personType] ?? DEFAULT_QUERY_SETTINGS[personType]).sourceFields
+    : [...new Set(
+        (['asir', 'soher', 'ezrach'] as PersonType[]).flatMap(
+          (t) => (config.querySettings?.[t] ?? DEFAULT_QUERY_SETTINGS[t]).sourceFields,
+        ),
+      )];
 
-  const body = {
-    size: 1,
-    _source: sourceFields,
-    query: {
-      bool: {
-        must: [{ term: { [key]: value } }],
-      },
-    },
+  const settings: ElasticQuerySettings = {
+    wrapMode:     'exact',
+    splitTerms:   false,
+    searchFields: [key],
+    sourceFields,
   };
 
-  const searchPath = config.elasticsearch.methods.search.replace('{index}', indexStr);
+  const body = buildElasticQuery(settings, { query: value, size: 1, from: 0 });
 
-  let response: Response;
+  const searchPath = config.elasticsearch.methods['search'].replace('{index}', indexStr);
+  const cancelToken = signalToCancelToken(signal);
+  const timeoutMs   = config.timeoutMs ?? 5000;
+
+  let data: { hits: { hits: Array<Record<string, unknown>> } };
   try {
-    response = await fetchWithTimeout(
+    const response = await axios.post<typeof data>(
       `${config.elasticsearch.baseUrl}${searchPath}`,
-      {
-        method: 'POST',
-        headers: buildHeaders(config),
-        body: JSON.stringify(body),
-        signal,
-      },
-      timeoutMs
+      body,
+      { headers: buildHeaders(config), timeout: timeoutMs, cancelToken },
     );
+    data = response.data;
   } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') throw err;
-    throw new OfflineError(`ES request failed: ${err instanceof Error ? err.message : String(err)}`);
+    if (axios.isCancel(err)) throw new DOMException('Aborted', 'AbortError');
+    if (axios.isAxiosError(err) && (!err.response || err.response.status >= 500))
+      throw new OfflineError(`ES request failed: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
   }
-
-  if (!response.ok) return null;
-
-  const data = (await response.json()) as {
-    hits: { hits: Array<Record<string, unknown>>; _index?: string };
-  };
 
   const hits = data.hits?.hits ?? [];
   if (hits.length === 0) return null;
 
   const hit = hits[0];
-  const index = String((hit as Record<string, unknown>)['_index'] ?? '');
+  const index = String(hit['_index'] ?? '');
   const resolvedType: PersonType =
-    index.includes('asir') ? 'asir' :
+    index.includes('asir')  ? 'asir'  :
     index.includes('soher') ? 'soher' :
     'ezrach';
 
   return mapHitToPersonResult(hit, personType ?? resolvedType);
 }
+

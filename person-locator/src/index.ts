@@ -7,7 +7,7 @@ export type { UsePersonSearchReturn } from './hooks/usePersonSearch';
 export { mergeResults } from './utils/mergeResults';
 export { buildFilters } from './utils/buildFilters';
 export { highlightMatch } from './utils/highlightMatch';
-export { OfflineError } from './services/elasticSearchService';
+export { OfflineError, buildElasticQuery } from './services/elasticSearchService';
 
 export type {
   PersonType,
@@ -18,4 +18,8 @@ export type {
   PagingState,
   SingleSearch,
   PersonLocatorProps,
+  QueryWrapMode,
+  AllowedListFilter,
+  ScriptSort,
+  ElasticQuerySettings,
 } from './types';

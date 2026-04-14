@@ -45,6 +45,67 @@ export interface SingleSearch {
   value: string;  // field value to look up
 }
 
+// ─── Elasticsearch query builder ───────────────────────────────────────────
+
+/** Controls how the search term is wrapped inside the query_string value.
+ *  - `'prefix'`   → `"term1 AND term2*"`   (good for IDs / prisoner numbers)
+ *  - `'wildcard'` → `"*term1 AND term2*"`  (broader, used for guard search)
+ *  - `'exact'`    → `"term1 AND term2"`    (no wildcards, used for citizens / single lookup) */
+export type QueryWrapMode = 'prefix' | 'wildcard' | 'exact';
+
+/** Restrict results to documents whose `field` value is in `values`. */
+export interface AllowedListFilter {
+  /** ES field name, e.g. `"idnt_asir"` */
+  field: string;
+  /** Allowed values — when empty the filter clause is omitted. */
+  values: (string | number)[];
+}
+
+/** Script-based primary sort (added before `_score`). */
+export interface ScriptSort {
+  script: string;
+  type?: 'number' | 'string';
+  order?: 'asc' | 'desc';
+}
+
+/**
+ * Full settings describing how to build an Elasticsearch query for one PersonType.
+ * Pass via `ServiceConfig.querySettings` to override library defaults.
+ *
+ * @example — Prisoners with allowed-list guard
+ * ```ts
+ * asir: {
+ *   wrapMode: 'prefix',
+ *   searchFields: ['text_name_prati', 'text_name_mishpacha^2', 'idnt_asir'],
+ *   sourceFields: ['idnt_adam', 'text_name_prati', 'text_name_mishpacha', 'idnt_asir'],
+ *   allowedList: { field: 'idnt_asir', values: allowedAsirimList },
+ *   conditions: [Condition_Active_Asirim],
+ * }
+ * ```
+ */
+export interface ElasticQuerySettings {
+  /** How the search term is wrapped in `query_string`. Default: `'prefix'`. */
+  wrapMode?: QueryWrapMode;
+  /** Split whitespace into terms and join with `AND`. Default: `true`. */
+  splitTerms?: boolean;
+  /** Fields to search in. Supports Lucene boost notation e.g. `"fieldName^25"`. */
+  searchFields: string[];
+  /** Fields to return in `_source`. */
+  sourceFields: string[];
+  /** Each field generates an `{ exists: { field } }` must clause. */
+  requiredFields?: string[];
+  /** At least one of these fields must exist in the document. */
+  atLeastOneField?: string[];
+  /** Raw ES bool clauses injected into the inner `bool.must`. */
+  conditions?: Record<string, unknown>[];
+  /** Restrict results to a set of document IDs on a given field. */
+  allowedList?: AllowedListFilter | null;
+  /** Computed fields added as ES `script_fields`. */
+  scriptFields?: Record<string, { script: string }>;
+  /** Primary sort by script — appended before `_score` sort. */
+  scriptSort?: ScriptSort;
+}
+
 // ─── Service endpoints ─────────────────────────────────────────────────────
 
 export interface ServiceEndpoints {
@@ -63,6 +124,8 @@ export interface ServiceConfig {
   authToken?: string;   // Bearer token for all calls
   pageSize?: number;    // Default: 3
   timeoutMs?: number;   // Default: 5000
+  /** Per-type query settings — override library defaults per PersonType. */
+  querySettings?: Partial<Record<PersonType, ElasticQuerySettings>>;
 }
 
 // The root component props – EVERY prop must have JSDoc
