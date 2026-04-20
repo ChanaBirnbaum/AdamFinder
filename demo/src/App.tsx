@@ -90,7 +90,6 @@ export default function App() {
           <PersonLocator
             env="dev"
             minChars={2}
-            additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה', 'קשר_לאסיר', 'ת_ביקור_אחרון', 'תקן', 'תחנה', 'תפקיד', 'תאריך_גיוס', 'מפקד_יחידה', 'הכשרות']}
             onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
           />
@@ -103,7 +102,6 @@ export default function App() {
             env="dev"
             type="soher"
             minChars={2}
-            additionalResultFields={['תפקיד', 'תאריך_גיוס', 'מפקד_יחידה', 'הכשרות']}
             onSelect={(p: PersonResult) => console.log('נבחר:', p)}
           />
         </div>
@@ -115,7 +113,6 @@ export default function App() {
             env="dev"
             type="asir"
             minChars={2}
-            additionalResultFields={['עורך_דין', 'תאריך_מעצר', 'עבירה']}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
             onSelect={(p: PersonResult) => console.log(p)}
           />

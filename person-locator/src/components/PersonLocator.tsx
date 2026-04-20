@@ -13,7 +13,6 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     disabled,
     resultDirection = 'down',
     minChars = 3,
-    additionalResultFields = [],
     openTikAsir,
     navigate,
     HidePhotosSugAdam,
@@ -56,6 +55,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
+    displayFields,
   } = usePersonSearch(effectiveProps);
 
   const { recents, addPerson, removePerson, clearAll } = useRecentSearches();
@@ -152,7 +152,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
           HidePhotosSugAdam={HidePhotosSugAdam}
           HideMishmorot={HideMishmorot}
           hideNavigationLinks={hideNavigationLinks}
-          additionalResultFields={additionalResultFields}
+          additionalResultFields={displayFields}
         />
       )}
 

@@ -148,9 +148,6 @@ export interface PersonLocatorProps {
   /** Extra ES index fields to include in the search query. */
   additionalSearchFields?: string[];
 
-  /** Extra ES fields to return and display in result cards. */
-  additionalResultFields?: string[];
-
   /** Dynamic filters applied to every ES query. */
   filters?: Filter[];
 

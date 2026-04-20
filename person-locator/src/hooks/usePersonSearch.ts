@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { OfflineError, fetchSinglePerson, searchPersons } from '../services/elasticSearchService';
+import { OfflineError, fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
+import { initFromServiceConfig } from '../services/axiosInstance';
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
 import { mergeResults } from '../utils/mergeResults';
@@ -31,6 +32,8 @@ export interface UsePersonSearchReturn {
   loadMore: (tab: PersonType) => void;
   showActiveOnly: boolean;
   setShowActiveOnly: (v: boolean) => void;
+  /** Fields to display in the expanded card section — sourced from config.querySettings[activeTab].sourceFields */
+  displayFields: string[];
 }
 
 const emptyResults: SearchResults = {
@@ -53,7 +56,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     onSelect,
     filters = [],
     additionalSearchFields = [],
-    additionalResultFields = [],
     enableOfflineSearch = false,
     singleSearch,
     state,
@@ -65,6 +67,9 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   const config = getConfig(env);
   const pageSize = config.pageSize ?? 3;
+
+  // Initialise the shared HTTP client whenever the resolved config changes
+  useEffect(() => { initFromServiceConfig(config); }, [env]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [inputValue, setInputValueState] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
@@ -386,6 +391,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
+    displayFields: (config.querySettings?.[activeTab] ?? DEFAULT_QUERY_SETTINGS[activeTab]).sourceFields,
   };
 }
 

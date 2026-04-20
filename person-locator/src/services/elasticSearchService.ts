@@ -1,4 +1,5 @@
-import axios from 'axios';
+
+import { post, OfflineError } from './axiosInstance';
 import type {
   ElasticQuerySettings,
   Filter,
@@ -7,21 +8,6 @@ import type {
   ServiceConfig,
 } from '../types';
 import { buildFilters } from '../utils/buildFilters';
-
-/** Convert an AbortSignal to an axios CancelToken. */
-function signalToCancelToken(signal: AbortSignal) {
-  const source = axios.CancelToken.source();
-  signal.addEventListener('abort', () => source.cancel('AbortError'));
-  return source.token;
-}
-
-/** Custom error thrown when ES is unreachable or returns 5xx. */
-export class OfflineError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'OfflineError';
-  }
-}
 
 // ─── Index map ────────────────────────────────────────────────────────────────
 
@@ -34,7 +20,7 @@ const INDEX_MAP: Record<PersonType, string> = {
 // ─── Built-in default query settings per type ────────────────────────────────
 // Consumers override these via ServiceConfig.querySettings
 
-const DEFAULT_QUERY_SETTINGS: Record<PersonType, ElasticQuerySettings> = {
+export const DEFAULT_QUERY_SETTINGS: Record<PersonType, ElasticQuerySettings> = {
   asir: {
     wrapMode:     'prefix',
     searchFields: ['fullName', 'idNumber', 'unit', 'prisonerNumber'],
@@ -155,12 +141,6 @@ export function buildElasticQuery(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildHeaders(config: ServiceConfig): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (config.authToken) headers['Authorization'] = `Bearer ${config.authToken}`;
-  return headers;
-}
-
 function mapHitToPersonResult(
   hit: Record<string, unknown>,
   personType: PersonType,
@@ -181,8 +161,6 @@ export async function searchPersons(params: {
   query: string;
   personType: PersonType;
   filters: Filter[];
-  additionalSearchFields: string[];
-  additionalResultFields: string[];
   offset: number;
   pageSize: number;
   activeOnly?: boolean;
@@ -193,8 +171,6 @@ export async function searchPersons(params: {
     query,
     personType,
     filters,
-    additionalSearchFields,
-    additionalResultFields,
     offset,
     pageSize,
     activeOnly,
@@ -211,12 +187,7 @@ export async function searchPersons(params: {
     ...(activeOnly ? [{ term: { isActive: true } }] : []),
   ];
 
-  const settings: ElasticQuerySettings = {
-    ...base,
-    searchFields: [...base.searchFields, ...additionalSearchFields],
-    sourceFields: [...base.sourceFields, ...additionalResultFields],
-    conditions,
-  };
+  const settings: ElasticQuerySettings = { ...base, conditions };
 
   const body = buildElasticQuery(settings, {
     query,
@@ -225,25 +196,12 @@ export async function searchPersons(params: {
   });
 
   const searchPath = config.elasticsearch.methods['search'].replace('{index}', INDEX_MAP[personType]);
-  const cancelToken = signalToCancelToken(signal);
-  const timeoutMs   = config.timeoutMs ?? 5000;
 
-  let data: { hits: { hits: Array<Record<string, unknown>> } };
-  try {
-    const response = await axios.post<typeof data>(
-      `${config.elasticsearch.baseUrl}${searchPath}`,
-      body,
-      { headers: buildHeaders(config), timeout: timeoutMs, cancelToken },
-    );
-    data = response.data;
-  } catch (err: unknown) {
-    if (axios.isCancel(err)) throw new DOMException('Aborted', 'AbortError');
-    if (axios.isAxiosError(err) && err.response && err.response.status >= 500)
-      throw new OfflineError(`ES returned ${err.response.status}`);
-    if (axios.isAxiosError(err) && err.response)
-      throw new Error(`ES error: ${err.response.status}`);
-    throw new OfflineError(`ES request failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
+  const { data } = await post<{ hits: { hits: Array<Record<string, unknown>> } }>(
+    `${config.elasticsearch.baseUrl}${searchPath}`,
+    body,
+    { signal },
+  );
 
   const hits    = data.hits?.hits ?? [];
   const hasMore = hits.length > pageSize;
@@ -283,22 +241,18 @@ export async function fetchSinglePerson(params: {
   const body = buildElasticQuery(settings, { query: value, size: 1, from: 0 });
 
   const searchPath = config.elasticsearch.methods['search'].replace('{index}', indexStr);
-  const cancelToken = signalToCancelToken(signal);
-  const timeoutMs   = config.timeoutMs ?? 5000;
 
   let data: { hits: { hits: Array<Record<string, unknown>> } };
   try {
-    const response = await axios.post<typeof data>(
+    ({ data } = await post<typeof data>(
       `${config.elasticsearch.baseUrl}${searchPath}`,
       body,
-      { headers: buildHeaders(config), timeout: timeoutMs, cancelToken },
-    );
-    data = response.data;
+      { signal },
+    ));
   } catch (err: unknown) {
-    if (axios.isCancel(err)) throw new DOMException('Aborted', 'AbortError');
-    if (axios.isAxiosError(err) && (!err.response || err.response.status >= 500))
-      throw new OfflineError(`ES request failed: ${err instanceof Error ? err.message : String(err)}`);
-    return null;
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    if (err instanceof OfflineError) throw err;
+    return null; // 4xx — treat as not found
   }
 
   const hits = data.hits?.hits ?? [];
