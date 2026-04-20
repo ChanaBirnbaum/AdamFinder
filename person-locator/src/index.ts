@@ -7,7 +7,8 @@ export type { UsePersonSearchReturn } from './hooks/usePersonSearch';
 export { mergeResults } from './utils/mergeResults';
 export { buildFilters } from './utils/buildFilters';
 export { highlightMatch } from './utils/highlightMatch';
-export { OfflineError, buildElasticQuery } from './services/elasticSearchService';
+export { OfflineError } from './services/axiosInstance';
+export { buildElasticQuery } from './services/elasticSearchService';
 
 export type {
   PersonType,
