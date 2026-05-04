@@ -25,16 +25,19 @@ export const DEFAULT_QUERY_SETTINGS: Record<PersonType, ElasticQuerySettings> = 
     wrapMode:     'prefix',
     searchFields: ['fullName', 'idNumber', 'unit', 'prisonerNumber'],
     sourceFields: ['fullName', 'idNumber', 'unit', 'prisonerNumber', 'isActive', 'photoUrl'],
+    activeField:  'isActive',
   },
   soher: {
     wrapMode:     'wildcard',
     searchFields: ['fullName', 'rank', 'unit', 'phone'],
     sourceFields: ['fullName', 'rank', 'unit', 'phone', 'isActive', 'photoUrl'],
+    activeField:  'isActive',
   },
   ezrach: {
     wrapMode:     'exact',
     searchFields: ['fullName', 'idNumber', 'phone'],
     sourceFields: ['fullName', 'idNumber', 'phone', 'isActive', 'photoUrl'],
+    activeField:  'isActive',
   },
 };
 
@@ -144,12 +147,13 @@ export function buildElasticQuery(
 function mapHitToPersonResult(
   hit: Record<string, unknown>,
   personType: PersonType,
+  activeField = 'isActive',
 ): PersonResult {
   const source = (hit['_source'] as Record<string, unknown>) ?? {};
   return {
     id:         String(hit['_id'] ?? source['id'] ?? ''),
     personType,
-    isActive:   Boolean(source['isActive'] ?? true),
+    isActive:   Boolean(source[activeField] ?? true),
     source:     'elasticsearch',
     data:       { ...source },
   };
@@ -184,7 +188,10 @@ export async function searchPersons(params: {
   const conditions: Record<string, unknown>[] = [
     ...(base.conditions ?? []),
     ...buildFilters(filters),
-    ...(activeOnly ? [{ term: { isActive: true } }] : []),
+    ...(activeOnly ? [{ term: { [base.activeField ?? 'isActive']: true } }] : []),
+    ...(base.personTypeField && base.personTypeValue
+      ? [{ term: { [base.personTypeField]: base.personTypeValue } }]
+      : []),
   ];
 
   const settings: ElasticQuerySettings = { ...base, conditions };
@@ -197,15 +204,20 @@ export async function searchPersons(params: {
 
   const searchPath = config.elasticsearch.methods['search'].replace('{index}', INDEX_MAP[personType]);
 
-  const { data } = await post<{ hits: { hits: Array<Record<string, unknown>> } }>(
+  const { data: raw } = await post<string>(
     `${config.elasticsearch.baseUrl}${searchPath}`,
     body,
     { signal },
   );
 
+  const data: { hits: { hits: Array<Record<string, unknown>> } } =
+    typeof raw === 'string' ? JSON.parse(raw) : raw;
+
   const hits    = data.hits?.hits ?? [];
   const hasMore = hits.length > pageSize;
-  const results = hits.slice(0, pageSize).map((hit) => mapHitToPersonResult(hit, personType));
+  const results = hits.slice(0, pageSize).map((hit) =>
+    mapHitToPersonResult(hit, personType, base.activeField),
+  );
 
   return { results, hasMore };
 }
@@ -244,11 +256,12 @@ export async function fetchSinglePerson(params: {
 
   let data: { hits: { hits: Array<Record<string, unknown>> } };
   try {
-    ({ data } = await post<typeof data>(
+    const { data: raw } = await post<string>(
       `${config.elasticsearch.baseUrl}${searchPath}`,
       body,
       { signal },
-    ));
+    );
+    data = typeof raw === 'string' ? JSON.parse(raw) : raw;
   } catch (err: unknown) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err;
     if (err instanceof OfflineError) throw err;
@@ -265,6 +278,7 @@ export async function fetchSinglePerson(params: {
     index.includes('soher') ? 'soher' :
     'ezrach';
 
-  return mapHitToPersonResult(hit, personType ?? resolvedType);
+  const activeField = (config.querySettings?.[personType ?? resolvedType] ?? DEFAULT_QUERY_SETTINGS[personType ?? resolvedType]).activeField;
+  return mapHitToPersonResult(hit, personType ?? resolvedType, activeField);
 }
 

@@ -21,6 +21,16 @@ export class OfflineError extends Error {
   }
 }
 
+function defaultResponseErrorHandler(error: AxiosError): never {
+  const status = error.response?.status;
+  if (!status || status >= 500) {
+    throw new OfflineError(
+      status ? `Server returned ${status}` : `Network error: ${error.message}`,
+    );
+  }
+  throw new Error(`HTTP error: ${status}`);
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface HttpClientConfig extends AxiosRequestConfig {
@@ -30,31 +40,13 @@ export interface HttpClientConfig extends AxiosRequestConfig {
   /** Hook שרץ על כל תגובה מוצלחת לפני שהיא מוחזרת לקורא */
   onResponse?: (response: AxiosResponse) => AxiosResponse | Promise<AxiosResponse>;
 
-  /**
-   * Hook שרץ על כל שגיאת רשת / HTTP לפני שהיא נזרקת.
-   * ברירת המחדל ממיר שגיאות axios לשגיאות דומיין:
-   *  - ביטול בקשה        → DOMException('Aborted', 'AbortError')
-   *  - 5xx / אין תגובה   → OfflineError
-   *  - שגיאת HTTP אחרת   → Error
-   */
+  /** Hook שרץ על כל שגיאת רשת / HTTP לפני שהיא נזרקת */
   onResponseError?: (error: AxiosError) => unknown;
 }
 
 export interface InterceptorHandlers<V> {
   onFulfilled?: (value: V) => V | Promise<V>;
   onRejected?: (error: unknown) => unknown;
-}
-
-// ─── Default error handler ────────────────────────────────────────────────────
-
-function defaultResponseErrorHandler(error: AxiosError): never {
-  const status = error.response?.status;
-  if (!status || status >= 500) {
-    throw new OfflineError(
-      status ? `Server returned ${status}` : `Network error: ${error.message}`,
-    );
-  }
-  throw new Error(`HTTP error: ${status}`);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -78,7 +70,6 @@ export function initHttpClient(config: HttpClientConfig, force = false): void {
 
       const dynamicHeaders = config.getHeaders?.() ?? {};
       req.headers = {
-        'Content-Type': 'application/json',
         ...dynamicHeaders,
         ...req.headers,
       } as AxiosRequestHeaders;
@@ -108,7 +99,7 @@ export function initHttpClient(config: HttpClientConfig, force = false): void {
 
 /** מחזיר את ה-instance הגולמי של axios לשימושים מתקדמים */
 export function http(): AxiosInstance {
-  if (!instance) throw new Error('httpClient not initialized. Call initHttpClient first.');
+  if (!instance) throw new Error('httpClient not initialized');
   return instance;
 }
 

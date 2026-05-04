@@ -104,6 +104,20 @@ export interface ElasticQuerySettings {
   scriptFields?: Record<string, { script: string }>;
   /** Primary sort by script — appended before `_score` sort. */
   scriptSort?: ScriptSort;
+  /**
+   * The document field that represents the active/inactive state.
+   * Used when `activeOnly` filtering is requested.
+   * Default: `'isActive'`.
+   */
+  activeField?: string;
+  /**
+   * The document field that holds the person type (e.g. `'sugAdam'`).
+   * When set together with `personTypeValue`, a `term` filter is injected
+   * so each query only returns documents of the correct type.
+   */
+  personTypeField?: string;
+  /** The value to match against `personTypeField` for this person type. */
+  personTypeValue?: string;
 }
 
 // ─── Service endpoints ─────────────────────────────────────────────────────

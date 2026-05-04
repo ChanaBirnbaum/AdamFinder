@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
-import { initFromServiceConfig, OfflineError } from '../services/axiosInstance';
+import { OfflineError } from '../services/axiosInstance';
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
 import { mergeResults } from '../utils/mergeResults';
@@ -67,9 +67,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   const config = getConfig(env);
   const pageSize = config.pageSize ?? 3;
-
-  // Initialise the shared HTTP client whenever the resolved config changes
-  useEffect(() => { initFromServiceConfig(config); }, [env]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [inputValue, setInputValueState] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
@@ -163,8 +160,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           query,
           personType: pt,
           filters,
-          additionalSearchFields,
-          additionalResultFields,
           offset: isLoadMore ? baseOffset : 0,
           pageSize,
           activeOnly: effectiveActiveOnly,
@@ -291,8 +286,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      cancelPendingRequests, enableOfflineSearch, filters, additionalSearchFields,
-      additionalResultFields, pageSize, config, type, effectiveActiveOnly,
+      cancelPendingRequests, enableOfflineSearch, filters,
+      pageSize, config, type, effectiveActiveOnly,
     ]
   );
 
