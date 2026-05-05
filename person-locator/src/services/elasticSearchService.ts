@@ -198,7 +198,7 @@ export async function searchPersons(params: {
 
   const body = buildElasticQuery(settings, {
     query,
-    size: pageSize + 1, // fetch one extra to determine hasMore
+    size: pageSize,
     from: offset,
   });
 
@@ -210,12 +210,15 @@ export async function searchPersons(params: {
     { signal },
   );
 
-  const data: { hits: { hits: Array<Record<string, unknown>> } } =
+  const data: { hits: { hits: Array<Record<string, unknown>>; total?: { value: number } | number } } =
     typeof raw === 'string' ? JSON.parse(raw) : raw;
 
-  const hits    = data.hits?.hits ?? [];
-  const hasMore = hits.length > pageSize;
-  const results = hits.slice(0, pageSize).map((hit) =>
+  const hits  = data.hits?.hits ?? [];
+  const total = typeof data.hits?.total === 'object'
+    ? (data.hits.total as { value: number }).value
+    : (data.hits?.total as number | undefined) ?? hits.length;
+  const hasMore = offset + hits.length < total;
+  const results = hits.map((hit) =>
     mapHitToPersonResult(hit, personType, base.activeField),
   );
 

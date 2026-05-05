@@ -78,7 +78,12 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const [activeTab, setActiveTabState] = useState<PersonType>(type ?? 'asir');
   const [showActiveOnly, setShowActiveOnly] = useState(isDefaultActive ?? false);
 
-  const { pagingState, advance, setHasMore, reset: resetPaging } = usePaging();
+  const { pagingState, advance, reset: resetPaging } = usePaging();
+
+  // Always keep a ref in sync so runSearch can read the latest pagingState
+  // without needing it in its useCallback dependency array.
+  const pagingStateRef = useRef(pagingState);
+  pagingStateRef.current = pagingState;
 
   const abortControllers = useRef<AbortController[]>([]);
   const justSelectedRef = useRef(false);
@@ -145,7 +150,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         : ['asir', 'soher', 'ezrach'];
 
       const baseOffset = isLoadMore && loadMoreTab
-        ? pagingState[loadMoreTab === 'asir' ? 'asirs' : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs'].offset
+        ? pagingStateRef.current[loadMoreTab === 'asir' ? 'asirs' : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs'].offset
         : 0;
 
       // Build ES promises per category
@@ -264,10 +269,11 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         };
         setResults(newResults);
 
-        // Update hasMore per category
-        if (asirES) setHasMore('asir', asirES.hasMore);
-        if (soherES) setHasMore('soher', soherES.hasMore);
-        if (ezrachES) setHasMore('ezrach', ezrachES.hasMore);
+        // Advance offset and update hasMore per category so the first
+        // load-more request uses offset=pageSize instead of 0.
+        if (asirES) advance('asir', pageSize, asirES.hasMore);
+        if (soherES) advance('soher', pageSize, soherES.hasMore);
+        if (ezrachES) advance('ezrach', pageSize, ezrachES.hasMore);
 
         // Set active tab to first category with results
         setActiveTabState(firstTabWithResults(newResults));

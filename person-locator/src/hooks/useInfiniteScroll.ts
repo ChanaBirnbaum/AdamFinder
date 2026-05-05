@@ -1,12 +1,16 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { RefObject, useCallback, useEffect, useRef } from 'react';
 
 /**
  * Attaches an IntersectionObserver to the returned ref.
- * Calls `onIntersect` when the element enters the viewport.
+ * Calls `onIntersect` when the element enters the scroll container (root).
+ * Pass the scroll container's RefObject as `rootRef` so intersection is
+ * measured relative to the container — not the global viewport — which
+ * prevents the observer from firing immediately on first render.
  */
 export function useInfiniteScroll(
   onIntersect: () => void,
-  enabled: boolean
+  enabled: boolean,
+  rootRef?: RefObject<Element | null>,
 ): (node: HTMLElement | null) => void {
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -25,12 +29,12 @@ export function useInfiniteScroll(
             onIntersect();
           }
         },
-        { threshold: 0.1 }
+        { root: rootRef?.current ?? null, threshold: 0.1 },
       );
 
       observer.current.observe(node);
     },
-    [onIntersect, enabled]
+    [onIntersect, enabled, rootRef],
   );
 
   useEffect(() => {

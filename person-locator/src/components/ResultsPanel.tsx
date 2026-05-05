@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import type { PersonLocatorProps, PersonResult, PersonType, SearchResults } from '../types';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import TabBar from './TabBar';
@@ -57,14 +57,19 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
       ? 'absolute bottom-full w-full z-50 bg-white rounded-t-xl shadow-lg max-h-96 overflow-y-auto border border-b-0 border-gray-200'
       : 'absolute top-full w-full z-50 bg-white rounded-b-xl shadow-lg max-h-96 overflow-y-auto border border-t-0 border-gray-200';
 
+  const panelRef = useRef<HTMLDivElement>(null);
   const activeResults = results[RESULTS_MAP[activeTab]] as PersonResult[];
+  // Memoise so the IntersectionObserver is not torn down and recreated on
+  // every render (which would fire a spurious load-more on each re-render).
+  const handleLoadMore = useCallback(() => loadMore(activeTab), [loadMore, activeTab]);
   const lastCardRef = useInfiniteScroll(
-    () => loadMore(activeTab),
-    !isLoading && !isLoadingMore
+    handleLoadMore,
+    !isLoading && !isLoadingMore,
+    panelRef,
   );
 
   return (
-    <div className={panelClass} role="listbox" aria-label="תוצאות חיפוש">
+    <div ref={panelRef} className={panelClass} role="listbox" aria-label="תוצאות חיפוש">
       {isOffline && <OfflineBanner />}
 
       {showTabBar && (
