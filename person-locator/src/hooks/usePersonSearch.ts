@@ -63,9 +63,10 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     activeOnly,
     isDefaultActive,
     env,
+    serviceConfig: serviceConfigOverride,
   } = props;
 
-  const config = getConfig(env);
+  const config = { ...getConfig(env), ...serviceConfigOverride };
   const pageSize = config.pageSize ?? 3;
 
   const [inputValue, setInputValueState] = useState('');

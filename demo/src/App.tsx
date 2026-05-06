@@ -2,6 +2,22 @@ import { PersonLocator } from '@org/person-locator';
 import type { PersonResult } from '@org/person-locator';
 import './index.css';
 
+declare const __VITE_MOCK__: boolean;
+
+// In mock mode, point ES at the Vite dev server (which intercepts /_search)
+const mockBase = typeof __VITE_MOCK__ !== 'undefined' && __VITE_MOCK__
+  ? window.location.origin
+  : undefined;
+
+const mockServiceConfig = mockBase
+  ? {
+      elasticsearch: {
+        baseUrl: mockBase,
+        methods: { search: '/{index}/_search' },
+      },
+    }
+  : undefined;
+
 export default function App() {
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4" dir="rtl">
@@ -24,6 +40,7 @@ export default function App() {
           <PersonLocator
             env="dev"
             minChars={2}
+            serviceConfig={mockServiceConfig}
             onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
           />
@@ -36,6 +53,7 @@ export default function App() {
             env="dev"
             type="soher"
             minChars={2}
+            serviceConfig={mockServiceConfig}
             onSelect={(p: PersonResult) => console.log('נבחר:', p)}
           />
         </div>
@@ -47,6 +65,7 @@ export default function App() {
             env="dev"
             type="asir"
             minChars={2}
+            serviceConfig={mockServiceConfig}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
             onSelect={(p: PersonResult) => console.log(p)}
           />

@@ -29,7 +29,7 @@ const CONFIGS: Record<Environment, ServiceConfig> = Object.fromEntries(
       elasticsearch: { baseUrl: BASE_URLS[env].elasticsearch, methods: METHODS.elasticsearch },
       online:        { baseUrl: BASE_URLS[env].online,        methods: METHODS.online        },
       offline:       { baseUrl: BASE_URLS[env].offline,       methods: METHODS.offline       },
-      pageSize:  3,
+      pageSize: 5,
       timeoutMs: 5000,
     } satisfies ServiceConfig,
   ])

@@ -54,22 +54,22 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
 }) => {
   const panelClass =
     resultDirection === 'up'
-      ? 'absolute bottom-full w-full z-50 bg-white rounded-t-xl shadow-lg max-h-96 overflow-y-auto border border-b-0 border-gray-200'
-      : 'absolute top-full w-full z-50 bg-white rounded-b-xl shadow-lg max-h-96 overflow-y-auto border border-t-0 border-gray-200';
+      ? 'absolute bottom-full w-full z-50 bg-white rounded-t-xl shadow-lg max-h-64 flex flex-col border border-b-0 border-gray-200'
+      : 'absolute top-full w-full z-50 bg-white rounded-b-xl shadow-lg max-h-64 flex flex-col border border-t-0 border-gray-200';
 
-  const panelRef = useRef<HTMLDivElement>(null);
+  const scrollClass = 'flex-1 overflow-y-auto';
+
+  const scrollRef = useRef<HTMLDivElement>(null);
   const activeResults = results[RESULTS_MAP[activeTab]] as PersonResult[];
-  // Memoise so the IntersectionObserver is not torn down and recreated on
-  // every render (which would fire a spurious load-more on each re-render).
   const handleLoadMore = useCallback(() => loadMore(activeTab), [loadMore, activeTab]);
   const lastCardRef = useInfiniteScroll(
     handleLoadMore,
     !isLoading && !isLoadingMore,
-    panelRef,
+    scrollRef,
   );
 
   return (
-    <div ref={panelRef} className={panelClass} role="listbox" aria-label="תוצאות חיפוש">
+    <div className={panelClass} role="listbox" aria-label="תוצאות חיפוש">
       {isOffline && <OfflineBanner />}
 
       {showTabBar && (
@@ -81,43 +81,41 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         />
       )}
 
-      {isLoading ? (
-        <>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </>
-      ) : results.totalCount === 0 ? (
-        <EmptyState />
-      ) : (
-        <div
-          id={`panel-${activeTab}`}
-          role="group"
-          aria-label={activeTab}
-        >
-          {activeResults.map((person, idx) => (
-            <ResultCard
-              key={person.id}
-              person={person}
-              query={query}
-              isLast={idx === activeResults.length - 1}
-              lastRef={lastCardRef}
-              onSelect={onSelect}
-              openTikAsir={openTikAsir}
-              navigate={navigate}
-              HidePhotosSugAdam={HidePhotosSugAdam}
-              HideMishmorot={HideMishmorot}
-              hideNavigationLinks={hideNavigationLinks}
-              additionalResultFields={additionalResultFields}
-            />
-          ))}
-          {isLoadingMore && (
-            <>
-              <SkeletonCard />
-            </>
-          )}
-        </div>
-      )}
+      <div ref={scrollRef} className={scrollClass}>
+        {isLoading ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : results.totalCount === 0 ? (
+          <EmptyState />
+        ) : (
+          <div
+            id={`panel-${activeTab}`}
+            role="group"
+            aria-label={activeTab}
+          >
+            {activeResults.map((person, idx) => (
+              <ResultCard
+                key={person.id}
+                person={person}
+                query={query}
+                isLast={idx === activeResults.length - 1}
+                lastRef={lastCardRef}
+                onSelect={onSelect}
+                openTikAsir={openTikAsir}
+                navigate={navigate}
+                HidePhotosSugAdam={HidePhotosSugAdam}
+                HideMishmorot={HideMishmorot}
+                hideNavigationLinks={hideNavigationLinks}
+                additionalResultFields={additionalResultFields}
+              />
+            ))}
+            {isLoadingMore && <SkeletonCard />}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

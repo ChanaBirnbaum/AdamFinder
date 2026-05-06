@@ -200,4 +200,7 @@ export interface PersonLocatorProps {
 
   /** Deployment environment — determines which backend URLs the library uses. */
   env: Environment;
+
+  /** Override the service config (URLs, page size, query settings). Useful for testing / mock mode. */
+  serviceConfig?: Partial<ServiceConfig>;
 }

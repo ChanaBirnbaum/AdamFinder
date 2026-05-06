@@ -129,7 +129,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
       {/* ── Single bar ──────────────────────────────────────────────────────── */}
       <div
         className={[
-          'flex items-center gap-1.5 border bg-white px-3 h-10 transition-all',
+          'group/filters flex items-center gap-1.5 border bg-white px-3 h-10 transition-all',
           isOpen ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm',
           disabled
             ? 'border-gray-200 opacity-60 cursor-not-allowed'
@@ -171,73 +171,77 @@ const SearchInput: React.FC<SearchInputProps> = ({
           </button>
         )}
 
-        {/* ── Active toggle ─────────────────────────────────────────────── */}
-        {activeOnly === undefined && (
-          <>
-            <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isActive}
-              onClick={handleToggle}
-              disabled={disabled}
-              dir="ltr"
-              className={[
-                'flex items-center gap-1.5 flex-shrink-0 select-none',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 rounded',
-                disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-              ].join(' ')}
-              aria-label="פעילים בלבד"
-            >
-              <span
-                className={[
-                  'relative inline-flex w-[28px] h-[15px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0',
-                  isActive ? 'bg-green-400' : 'bg-gray-300',
-                ].join(' ')}
-              >
-                <span
+        {/* ── Active toggle + type filter icons — visible on hover ──────── */}
+        <div className="flex items-center gap-1.5 opacity-0 group-hover/filters:opacity-100 focus-within:opacity-100 transition-opacity duration-150 flex-shrink-0">
+
+            {/* ── Active toggle ─────────────────────────────────────────── */}
+            {activeOnly === undefined && (
+              <>
+                <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isActive}
+                  onClick={handleToggle}
+                  disabled={disabled}
+                  dir="ltr"
                   className={[
-                    'absolute top-[2px] h-[11px] w-[11px] rounded-full bg-white shadow-sm transition-[left] duration-200',
-                    isActive ? 'left-[15px]' : 'left-[2px]',
+                    'flex items-center gap-1.5 flex-shrink-0 select-none',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 rounded',
+                    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
                   ].join(' ')}
-                />
-              </span>
-              <span dir="rtl" className={`text-[11px] font-medium transition-colors ${isActive ? 'text-green-500' : 'text-gray-400'}`}>
-                פעיל
-              </span>
-            </button>
-          </>
-        )}
-
-        {/* ── Type filter icons ─────────────────────────────────────────── */}
-        {showTypeButtons && (
-          <>
-            <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
-
-            {TYPE_CONFIG.map(({ type, label, Icon, activeClass, idleClass }) => {
-              const isSelected = typeFilter === type;
-              return (
-                <Tip key={type} label={label}>
-                  <button
-                    type="button"
-                    onClick={() => handleTypeClick(type)}
-                    disabled={disabled}
+                  aria-label="פעילים בלבד"
+                >
+                  <span
                     className={[
-                      'flex items-center justify-center p-1 rounded transition-all flex-shrink-0',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-                      isSelected ? activeClass : idleClass,
-                      disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                      'relative inline-flex w-[28px] h-[15px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0',
+                      isActive ? 'bg-green-400' : 'bg-gray-300',
                     ].join(' ')}
-                    aria-pressed={isSelected}
-                    aria-label={`סנן לפי ${label}`}
                   >
-                    <Icon />
-                  </button>
-                </Tip>
-              );
-            })}
-          </>
-        )}
+                    <span
+                      className={[
+                        'absolute top-[2px] h-[11px] w-[11px] rounded-full bg-white shadow-sm transition-[left] duration-200',
+                        isActive ? 'left-[15px]' : 'left-[2px]',
+                      ].join(' ')}
+                    />
+                  </span>
+                  <span dir="rtl" className={`text-[11px] font-medium transition-colors ${isActive ? 'text-green-500' : 'text-gray-400'}`}>
+                    פעיל
+                  </span>
+                </button>
+              </>
+            )}
+
+            {/* ── Type filter icons ─────────────────────────────────────── */}
+            {showTypeButtons && (
+              <>
+                <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
+
+                {TYPE_CONFIG.map(({ type, label, Icon, activeClass, idleClass }) => {
+                  const isSelected = typeFilter === type;
+                  return (
+                    <Tip key={type} label={label}>
+                      <button
+                        type="button"
+                        onClick={() => handleTypeClick(type)}
+                        disabled={disabled}
+                        className={[
+                          'flex items-center justify-center p-1 rounded transition-all flex-shrink-0',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+                          isSelected ? activeClass : idleClass,
+                          disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                        ].join(' ')}
+                        aria-pressed={isSelected}
+                        aria-label={`סנן לפי ${label}`}
+                      >
+                        <Icon />
+                      </button>
+                    </Tip>
+                  );
+                })}
+              </>
+            )}
+          </div>
       </div>
 
       {/* Hint */}
