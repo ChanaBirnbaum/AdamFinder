@@ -1,0 +1,9 @@
+src/
+tests/
+coverage/
+*.config.ts
+*.config.js
+tsconfig*.json
+vitest.config.ts
+rollup.config.ts
+.env*

@@ -1,15 +1,35 @@
 {
   "name": "@org/person-locator",
   "version": "1.0.0",
-  "description": "Generic person-search React component",
+  "description": "Generic person-search React component for organizational use",
+  "license": "UNLICENSED",
+  "author": "Your Org",
+  "keywords": ["react", "search", "person-locator", "elasticsearch"],
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "sideEffects": ["dist/**/*.css"],
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "restricted"
+  },
   "scripts": {
     "build": "rollup -c rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "prepublishOnly": "npm run build",
     "test": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
