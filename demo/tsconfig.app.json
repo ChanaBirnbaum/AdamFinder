@@ -24,7 +24,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@org/person-locator": ["../person-locator/src/index.ts"]
+      "@ips/searchAdam": ["../person-locator/src/index.ts"]
     }
   },
   "include": ["src"]

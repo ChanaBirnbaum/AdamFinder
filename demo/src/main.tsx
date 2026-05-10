@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { initHttpClient } from '@org/person-locator'
+import { initHttpClient } from '@ips/searchAdam'
 
 declare const __VITE_MOCK__: boolean;
 

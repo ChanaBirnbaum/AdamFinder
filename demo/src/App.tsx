@@ -1,5 +1,5 @@
-import { PersonLocator } from '@org/person-locator';
-import type { PersonResult } from '@org/person-locator';
+import { PersonLocator } from '@ips/searchAdam';
+import type { PersonResult } from '@ips/searchAdam';
 import './index.css';
 
 declare const __VITE_MOCK__: boolean;

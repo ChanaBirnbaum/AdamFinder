@@ -1,5 +1,5 @@
 {
-  "name": "@org/person-locator",
+  "name": "@ips/searchAdam",
   "version": "1.0.0",
   "description": "Generic person-search React component for organizational use",
   "license": "UNLICENSED",

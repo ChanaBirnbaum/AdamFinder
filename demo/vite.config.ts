@@ -52,7 +52,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Point to the library source so Tailwind classes are processed
-      '@org/person-locator': path.resolve(__dirname, '../person-locator/src/index.ts'),
+      '@ips/searchAdam': path.resolve(__dirname, '../person-locator/src/index.ts'),
     },
   },
   plugins: [

@@ -1,4 +1,4 @@
-# @org/person-locator
+# @ips/searchAdam
 
 Generic person-search React component library. Hebrew UI, RTL, TypeScript-first.
 
@@ -20,7 +20,7 @@ This is within the 3-level threshold specified in the spec. Zustand would add co
 ## Installation
 
 ```bash
-npm install @org/person-locator
+npm install @ips/searchAdam
 # Peer dependencies:
 npm install react react-dom
 ```
@@ -30,7 +30,7 @@ CSS is injected automatically — no Tailwind setup required.
 ## Usage
 
 ```tsx
-import { PersonLocator } from '@org/person-locator';
+import { PersonLocator } from '@ips/searchAdam';
 
 function App() {
   return (

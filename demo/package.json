@@ -12,7 +12,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "@org/person-locator": "file:../person-locator",
+    "@ips/searchAdam": "file:../person-locator",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
     "react": "^18.3.1",
