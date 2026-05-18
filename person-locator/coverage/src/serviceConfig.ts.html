@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>33/33</span>
+                <span class='fraction'>36/36</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/2</span>
+                <span class='fraction'>2/3</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>33/33</span>
+                <span class='fraction'>36/36</span>
             </div>
         
             
@@ -99,7 +99,17 @@
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a>
 <a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -115,20 +125,26 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -137,36 +153,44 @@
 <span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { Environment, ServiceConfig } from './types';
 &nbsp;
-const CONFIGS: Record&lt;Environment, ServiceConfig&gt; = {
-  dev: {
-    elasticsearchUrl: 'https://elastic-dev.internal',
-    onlineServiceUrl: 'https://online-dev.internal',
-    offlineServiceUrl: 'https://offline-dev.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
+// ─── Endpoint paths — shared across all environments ──────────────────────────
+// To add a new endpoint, add it here once and use it in the services.
+const METHODS = {
+  elasticsearch: {
+    search: '/{index}/_search',
   },
-  test: {
-    elasticsearchUrl: 'https://elastic-test.internal',
-    onlineServiceUrl: 'https://online-test.internal',
-    offlineServiceUrl: 'https://offline-test.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
+  online: {
+    search: '/search',
   },
-  lrn: {
-    elasticsearchUrl: 'https://elastic-lrn.internal',
-    onlineServiceUrl: 'https://online-lrn.internal',
-    offlineServiceUrl: 'https://offline-lrn.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
+  offline: {
+    search: '/search',
   },
-  prod: {
-    elasticsearchUrl: 'https://elastic.prod.internal',
-    onlineServiceUrl: 'https://online.prod.internal',
-    offlineServiceUrl: 'https://offline.prod.internal',
-    pageSize: 3,
-    timeoutMs: 5000,
+  photos: {
+    byIds: '/photos',
   },
+} as const;
+&nbsp;
+// ─── Base URLs per environment ────────────────────────────────────────────────
+const BASE_URLS: Record&lt;Environment, { elasticsearch: string; online: string; offline: string }&gt; = {
+  dev:  { elasticsearch: 'https://elastic-dev.internal',  online: 'https://online-dev.internal',  offline: 'https://offline-dev.internal'  },
+  test: { elasticsearch: 'https://elastic-test.internal', online: 'https://online-test.internal', offline: 'https://offline-test.internal' },
+  lrn:  { elasticsearch: 'https://elastic-lrn.internal',  online: 'https://online-lrn.internal',  offline: 'https://offline-lrn.internal'  },
+  prod: { elasticsearch: 'https://elastic.prod.internal', online: 'https://online.prod.internal', offline: 'https://offline.prod.internal' },
 };
+&nbsp;
+const CONFIGS: Record&lt;Environment, ServiceConfig&gt; = Object.fromEntries(
+  (Object.keys(BASE_URLS) as Environment[]).map((env) =&gt; [
+    env,
+    {
+      elasticsearch: { baseUrl: BASE_URLS[env].elasticsearch, methods: METHODS.elasticsearch },
+      online:        { baseUrl: BASE_URLS[env].online,        methods: METHODS.online        },
+      offline:       { baseUrl: BASE_URLS[env].offline,       methods: METHODS.offline       },
+      photos:        { baseUrl: BASE_URLS[env].online,        methods: METHODS.photos        },
+      pageSize: 5,
+      timeoutMs: 5000,
+    } satisfies ServiceConfig,
+  ])
+) as unknown as Record&lt;Environment, ServiceConfig&gt;;
 &nbsp;
 export function getConfig(env: Environment): ServiceConfig {
   return CONFIGS[env<span class="branch-0 cbranch-no" title="branch not covered" >] ?? CONFIGS['dev'];</span>
@@ -178,7 +202,7 @@ export function getConfig(env: Environment): ServiceConfig {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-19T14:38:11.776Z
+                at 2026-05-17T06:09:27.349Z
             </div>
         <script src="../prettify.js"></script>
         <script>

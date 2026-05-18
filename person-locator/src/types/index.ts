@@ -135,6 +135,8 @@ export interface ServiceConfig {
   elasticsearch: ServiceEndpoints;
   online: ServiceEndpoints;
   offline: ServiceEndpoints;
+  /** Optional photo service for resolving image URLs by person id. */
+  photos?: ServiceEndpoints;
   authToken?: string;   // Bearer token for all calls
   pageSize?: number;    // Default: 3
   timeoutMs?: number;   // Default: 5000

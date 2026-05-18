@@ -3,6 +3,7 @@ import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../ser
 import { OfflineError } from '../services/axiosInstance';
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
+import { enrichPersonsWithPhotoUrls } from '../services/photoService';
 import { mergeResults } from '../utils/mergeResults';
 import { getConfig } from '../serviceConfig';
 import type {
@@ -14,6 +15,16 @@ import type {
 } from '../types';
 import { useDebounce } from './useDebounce';
 import { usePaging } from './usePaging';
+
+function isOfflineErrorLike(error: unknown): boolean {
+  if (error == null) return true;
+  if (error instanceof OfflineError) return true;
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { name?: unknown }).name === 'OfflineError'
+  );
+}
 
 export interface UsePersonSearchReturn {
   results: SearchResults;
@@ -134,6 +145,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         new AbortController(), // 2: ES ezrachs
         new AbortController(), // 3: online asirs
         new AbortController(), // 4: online sohers
+        new AbortController(), // 5: photos enrichment
       ];
       abortControllers.current = controllers;
 
@@ -193,13 +205,14 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       // Check if all ES calls failed with OfflineError
       const esSettled = [asirSettled, soherSettled, ezrachSettled];
-      const allOffline = esSettled
-        .filter((_, i) => types.includes((['asir', 'soher', 'ezrach'] as PersonType[])[i]))
-        .every(
-          (s) => s.status === 'rejected' && s.reason instanceof OfflineError
-        );
+      const relevantEsSettled = esSettled
+        .filter((_, i) => types.includes((['asir', 'soher', 'ezrach'] as PersonType[])[i]));
+      const allRejected = relevantEsSettled.every((s) => s.status === 'rejected');
+      const allOffline = relevantEsSettled.every(
+        (s) => s.status === 'rejected' && isOfflineErrorLike(s.reason)
+      );
 
-      if (allOffline && enableOfflineSearch) {
+      if ((allOffline || allRejected) && enableOfflineSearch) {
         setIsOffline(true);
         try {
           const offlineController = new AbortController();
@@ -242,13 +255,23 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const asirMerged = mergeResults(asirES?.results ?? [], onlinePrisoners);
       const soherMerged = mergeResults(soherES?.results ?? [], onlineGuards);
       const ezrachMerged = ezrachES?.results ?? [];
+      const allMerged = [...asirMerged, ...soherMerged, ...ezrachMerged];
+      const enrichedAll = await enrichPersonsWithPhotoUrls({
+        persons: allMerged,
+        config,
+        signal: controllers[5].signal,
+      });
+
+      const asirEnriched = enrichedAll.filter((p) => p.personType === 'asir');
+      const soherEnriched = enrichedAll.filter((p) => p.personType === 'soher');
+      const ezrachEnriched = enrichedAll.filter((p) => p.personType === 'ezrach');
 
       if (isLoadMore && loadMoreTab) {
         setResults((prev) => {
           const key = loadMoreTab === 'asir' ? 'asirs'
             : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs';
-          const newArr = loadMoreTab === 'asir' ? asirMerged
-            : loadMoreTab === 'soher' ? soherMerged : ezrachMerged;
+          const newArr = loadMoreTab === 'asir' ? asirEnriched
+            : loadMoreTab === 'soher' ? soherEnriched : ezrachEnriched;
           const merged = [...prev[key], ...newArr];
           const total = merged.length +
             (loadMoreTab === 'asir' ? prev.sohers.length + prev.ezrachs.length :
@@ -263,10 +286,10 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         advance(loadMoreTab, pageSize, hasMore);
       } else {
         const newResults: SearchResults = {
-          asirs: asirMerged,
-          sohers: soherMerged,
-          ezrachs: ezrachMerged,
-          totalCount: asirMerged.length + soherMerged.length + ezrachMerged.length,
+          asirs: asirEnriched,
+          sohers: soherEnriched,
+          ezrachs: ezrachEnriched,
+          totalCount: asirEnriched.length + soherEnriched.length + ezrachEnriched.length,
         };
         setResults(newResults);
 
@@ -281,7 +304,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
         // Handle general errors if any ES call failed with non-OfflineError
         const anyError = esSettled.find(
-          (s) => s.status === 'rejected' && !(s.reason instanceof OfflineError)
+          (s) => s.status === 'rejected' && !isOfflineErrorLike(s.reason)
         );
         if (anyError && anyError.status === 'rejected') {
           setError(`שגיאת חיפוש: ${anyError.reason?.message ?? 'שגיאה לא ידועה'}`);

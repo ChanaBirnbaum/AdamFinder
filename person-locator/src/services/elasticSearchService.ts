@@ -8,6 +8,9 @@ import type {
   ServiceConfig,
 } from '../types';
 import { buildFilters } from '../utils/buildFilters';
+import { enrichPersonsWithPhotoUrls } from './photoService';
+
+export { OfflineError };
 
 // ─── Index map ────────────────────────────────────────────────────────────────
 
@@ -282,6 +285,12 @@ export async function fetchSinglePerson(params: {
     'ezrach';
 
   const activeField = (config.querySettings?.[personType ?? resolvedType] ?? DEFAULT_QUERY_SETTINGS[personType ?? resolvedType]).activeField;
-  return mapHitToPersonResult(hit, personType ?? resolvedType, activeField);
+  const mapped = mapHitToPersonResult(hit, personType ?? resolvedType, activeField);
+  const enriched = await enrichPersonsWithPhotoUrls({
+    persons: [mapped],
+    config,
+    signal,
+  });
+  return enriched[0] ?? mapped;
 }
 

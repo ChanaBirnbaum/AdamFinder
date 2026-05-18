@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">89.13% </span>
+                <span class="strong">89.24% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>164/184</span>
+                <span class='fraction'>166/186</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">89.13% </span>
+                <span class="strong">89.24% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>164/184</span>
+                <span class='fraction'>166/186</span>
             </div>
         
             
@@ -316,7 +316,11 @@
 <a name='L251'></a><a href='#L251'>251</a>
 <a name='L252'></a><a href='#L252'>252</a>
 <a name='L253'></a><a href='#L253'>253</a>
-<a name='L254'></a><a href='#L254'>254</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -491,6 +495,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
@@ -556,6 +563,7 @@
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -700,7 +708,7 @@ const SearchInput: React.FC&lt;SearchInputProps&gt; = ({
       {/* ── Single bar ──────────────────────────────────────────────────────── */}
       &lt;div
         className={[
-          'flex items-center gap-1.5 border bg-white px-3 h-10 transition-all',
+          'group/filters flex items-center gap-1.5 border bg-white px-3 h-10 transition-all',
 <span class="branch-0 cbranch-no" title="branch not covered" >          isOpen ? 'rounded-t-xl rounded-b-none border-b-0' : '</span>rounded-xl shadow-sm',
           disabled
             ? 'border-gray-200 opacity-60 cursor-not-allowed'
@@ -742,73 +750,77 @@ const SearchInput: React.FC&lt;SearchInputProps&gt; = ({
 <span class="cstat-no" title="statement not covered" >          &lt;/button&gt;</span>
         )}
 &nbsp;
-        {/* ── Active toggle ─────────────────────────────────────────────── */}
-        {activeOnly === undefined &amp;&amp; (
-          &lt;&gt;
-            &lt;div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" /&gt;
-            &lt;button
-              type="button"
-              role="switch"
-              aria-checked={isActive}
-              onClick={handleToggle}
-              disabled={disabled}
-              dir="ltr"
-              className={[
-                'flex items-center gap-1.5 flex-shrink-0 select-none',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 rounded',
-                disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-              ].join(' ')}
-              aria-label="פעילים בלבד"
-            &gt;
-              &lt;span
-                className={[
-                  'relative inline-flex w-[28px] h-[15px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0',
-<span class="branch-0 cbranch-no" title="branch not covered" >                  isActive ? 'bg-green-400' : '</span>bg-gray-300',
-                ].join(' ')}
-              &gt;
-                &lt;span
+        {/* ── Active toggle + type filter icons — visible on hover ──────── */}
+        &lt;div className="flex items-center gap-1.5 opacity-0 group-hover/filters:opacity-100 focus-within:opacity-100 transition-opacity duration-150 flex-shrink-0"&gt;
+&nbsp;
+            {/* ── Active toggle ─────────────────────────────────────────── */}
+            {activeOnly === undefined &amp;&amp; (
+              &lt;&gt;
+                &lt;div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" /&gt;
+                &lt;button
+                  type="button"
+                  role="switch"
+                  aria-checked={isActive}
+                  onClick={handleToggle}
+                  disabled={disabled}
+                  dir="ltr"
                   className={[
-                    'absolute top-[2px] h-[11px] w-[11px] rounded-full bg-white shadow-sm transition-[left] duration-200',
-<span class="branch-0 cbranch-no" title="branch not covered" >                    isActive ? 'left-[15px]' : '</span>left-[2px]',
+                    'flex items-center gap-1.5 flex-shrink-0 select-none',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 rounded',
+                    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
                   ].join(' ')}
-                /&gt;
-              &lt;/span&gt;
-              &lt;span dir="rtl" className={`text-[11px] font-medium transition-colors ${<span class="branch-0 cbranch-no" title="branch not covered" >isActive ? 'text-green-500' : '</span>text-gray-400'}`}&gt;
-                פעיל
-              &lt;/span&gt;
-            &lt;/button&gt;
-          &lt;/&gt;
-        )}
-&nbsp;
-        {/* ── Type filter icons ─────────────────────────────────────────── */}
-        {showTypeButtons &amp;&amp; (
-          &lt;&gt;
-            &lt;div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" /&gt;
-&nbsp;
-            {TYPE_CONFIG.map(({ type, label, Icon, activeClass, idleClass }) =&gt; {
-              const isSelected = typeFilter === type;
-              return (
-                &lt;Tip key={type} label={label}&gt;
-                  &lt;button
-                    type="button"
-                    onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleTypeClick(type)}</span>
-                    disabled={disabled}
+                  aria-label="פעילים בלבד"
+                &gt;
+                  &lt;span
                     className={[
-                      'flex items-center justify-center p-1 rounded transition-all flex-shrink-0',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-<span class="branch-0 cbranch-no" title="branch not covered" >                      isSelected ? activeClass : i</span>dleClass,
-                      disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                      'relative inline-flex w-[28px] h-[15px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0',
+<span class="branch-0 cbranch-no" title="branch not covered" >                      isActive ? 'bg-green-400' : '</span>bg-gray-300',
                     ].join(' ')}
-                    aria-pressed={isSelected}
-                    aria-label={`סנן לפי ${label}`}
                   &gt;
-                    &lt;Icon /&gt;
-                  &lt;/button&gt;
-                &lt;/Tip&gt;
-              );
-            })}
-          &lt;/&gt;
-        )}
+                    &lt;span
+                      className={[
+                        'absolute top-[2px] h-[11px] w-[11px] rounded-full bg-white shadow-sm transition-[left] duration-200',
+<span class="branch-0 cbranch-no" title="branch not covered" >                        isActive ? 'left-[15px]' : '</span>left-[2px]',
+                      ].join(' ')}
+                    /&gt;
+                  &lt;/span&gt;
+                  &lt;span dir="rtl" className={`text-[11px] font-medium transition-colors ${<span class="branch-0 cbranch-no" title="branch not covered" >isActive ? 'text-green-500' : '</span>text-gray-400'}`}&gt;
+                    פעיל
+                  &lt;/span&gt;
+                &lt;/button&gt;
+              &lt;/&gt;
+            )}
+&nbsp;
+            {/* ── Type filter icons ─────────────────────────────────────── */}
+            {showTypeButtons &amp;&amp; (
+              &lt;&gt;
+                &lt;div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" /&gt;
+&nbsp;
+                {TYPE_CONFIG.map(({ type, label, Icon, activeClass, idleClass }) =&gt; {
+                  const isSelected = typeFilter === type;
+                  return (
+                    &lt;Tip key={type} label={label}&gt;
+                      &lt;button
+                        type="button"
+                        onClick={<span class="fstat-no" title="function not covered" >() =&gt; handleTypeClick(type)}</span>
+                        disabled={disabled}
+                        className={[
+                          'flex items-center justify-center p-1 rounded transition-all flex-shrink-0',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+<span class="branch-0 cbranch-no" title="branch not covered" >                          isSelected ? activeClass : i</span>dleClass,
+                          disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                        ].join(' ')}
+                        aria-pressed={isSelected}
+                        aria-label={`סנן לפי ${label}`}
+                      &gt;
+                        &lt;Icon /&gt;
+                      &lt;/button&gt;
+                    &lt;/Tip&gt;
+                  );
+                })}
+              &lt;/&gt;
+            )}
+          &lt;/div&gt;
       &lt;/div&gt;
 &nbsp;
       {/* Hint */}
@@ -829,7 +841,7 @@ export default SearchInput;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-19T14:38:11.776Z
+                at 2026-05-17T06:09:27.349Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

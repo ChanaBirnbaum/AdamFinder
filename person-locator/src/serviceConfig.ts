@@ -12,6 +12,12 @@ const METHODS = {
   offline: {
     search: '/search',
   },
+  photos: {
+    asir: '/photos/asir',
+    soher: '/photos/soher',
+    ezrach: '/photos/ezrach',
+    byId: '/photos',
+  },
 } as const;
 
 // ─── Base URLs per environment ────────────────────────────────────────────────
@@ -29,6 +35,7 @@ const CONFIGS: Record<Environment, ServiceConfig> = Object.fromEntries(
       elasticsearch: { baseUrl: BASE_URLS[env].elasticsearch, methods: METHODS.elasticsearch },
       online:        { baseUrl: BASE_URLS[env].online,        methods: METHODS.online        },
       offline:       { baseUrl: BASE_URLS[env].offline,       methods: METHODS.offline       },
+      photos:        { baseUrl: BASE_URLS[env].online,        methods: METHODS.photos        },
       pageSize: 5,
       timeoutMs: 5000,
     } satisfies ServiceConfig,
