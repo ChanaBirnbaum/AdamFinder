@@ -36,7 +36,22 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
-  const effectiveType = type ?? internalTypeFilter;
+  // Normalize type to single value for UI locking (tab bar, filter icon)
+  // When multiple types passed, treat as "no lock" for UI purposes
+  const lockedType: PersonType | undefined = Array.isArray(type)
+    ? (type.length === 1 ? type[0] : undefined)
+    : type;
+
+  // allowedTypes: the set of types the user is allowed to search/filter by
+  const allowedTypes: PersonType[] | undefined = Array.isArray(type)
+    ? (type.length > 1 ? type : undefined)
+    : undefined;
+
+  // In multi-type mode: use internalTypeFilter (single type) when selected, else fall back to the full array
+  // In single/no-type mode: use type prop if given, else internalTypeFilter
+  const effectiveType = allowedTypes
+    ? (internalTypeFilter ?? type)
+    : (type ?? internalTypeFilter);
   const effectiveProps = { ...props, type: effectiveType };
 
   const {
@@ -60,14 +75,16 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
 
   const { recents, addPerson, removePerson, clearAll } = useRecentSearches();
 
-  const filteredRecents = effectiveType
+  const filteredRecents = Array.isArray(effectiveType)
+    ? recents.filter((r) => (effectiveType as PersonType[]).includes(r.personType))
+    : effectiveType
     ? recents.filter((r) => r.personType === effectiveType)
     : recents;
 
   const showResults = isFocused && (selectedPerson !== null || inputValue.length >= minChars);
   const showRecents = isFocused && !showResults && filteredRecents.length > 0;
   const isOpen = showResults || showRecents;
-  const showTabBar = !effectiveType;
+  const showTabBar = !lockedType;
 
   const handleSelect = useCallback((person: Parameters<typeof selectPerson>[0]) => {
     addPerson({ id: person.id, fullName: String(person.data['fullName'] ?? ''), personType: person.personType });
@@ -109,7 +126,8 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
         onClear={clearSelection}
         onFocus={() => setIsFocused(true)}
         disabled={disabled}
-        lockedType={type}
+        lockedType={lockedType}
+        allowedTypes={allowedTypes}
         typeFilter={internalTypeFilter}
         onTypeFilterChange={setInternalTypeFilter}
         activeOnly={activeOnly}
@@ -144,6 +162,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
           query={inputValue}
           resultDirection={resultDirection}
           showTabBar={showTabBar}
+          allowedTypes={allowedTypes}
           onTabChange={setActiveTab}
           onSelect={handleSelect}
           loadMore={loadMore}

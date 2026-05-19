@@ -146,8 +146,8 @@ export interface ServiceConfig {
 
 // The root component props – EVERY prop must have JSDoc
 export interface PersonLocatorProps {
-  /** Restrict search to one category. Omit to search all three. */
-  type?: PersonType;
+  /** Restrict search to one or more categories. Omit to search all three. */
+  type?: PersonType | PersonType[];
 
   /** Minimum characters before triggering search. Default: 3 */
   minChars?: number;

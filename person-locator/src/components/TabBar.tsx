@@ -5,6 +5,7 @@ interface TabBarProps {
   results: SearchResults;
   activeTab: PersonType;
   isLoading: boolean;
+  allowedTypes?: PersonType[];
   onTabChange: (tab: PersonType) => void;
 }
 
@@ -26,8 +27,9 @@ const getResults = (results: SearchResults, type: PersonType): PersonResult[] =>
   return results.ezrachs;
 };
 
-const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, onTabChange }) => {
-  const visibleTabs = TABS.filter(
+const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedTypes, onTabChange }) => {
+  const baseTabs = allowedTypes ? TABS.filter(tab => allowedTypes.includes(tab.type)) : TABS;
+  const visibleTabs = baseTabs.filter(
     (tab) => isLoading || getResults(results, tab.type).length > 0
   );
 

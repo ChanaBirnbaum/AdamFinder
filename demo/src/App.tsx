@@ -46,6 +46,21 @@ export default function App() {
           />
         </div>
 
+        {/* ── Two types: asir + soher ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+          <p className="text-xs text-gray-400 mb-3 text-right">
+            אסירים + סוהרים בלבד · 2 לשוניות · 2 כפתורי סינון
+          </p>
+          <PersonLocator
+            env="dev"
+            type={['asir', 'soher']}
+            minChars={2}
+            serviceConfig={mockServiceConfig}
+            onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
+            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
+          />
+        </div>
+
         {/* ── Guard with expand example ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
           <p className="text-xs text-gray-400 mb-3 text-right">דוגמה לרשומה עם הרחבה · חפשי "אדם"</p>
@@ -68,6 +83,21 @@ export default function App() {
             serviceConfig={mockServiceConfig}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
             onSelect={(p: PersonResult) => console.log(p)}
+          />
+        </div>
+
+        {/* ── Single search (pre-filled by field/value) ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+          <p className="text-xs text-gray-400 mb-3 text-right">
+            Single Search · טעינה אוטומטית לפי שדה + ערך
+          </p>
+          <PersonLocator
+            env="dev"
+            type="asir"
+            minChars={2}
+            serviceConfig={mockServiceConfig}
+            singleSearch={{ key: 'prisonerNumber', value: 'P5' }}
+            onSelect={(p: PersonResult) => console.log('single נבחר:', p)}
           />
         </div>
 
