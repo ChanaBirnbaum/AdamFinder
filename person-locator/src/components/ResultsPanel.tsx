@@ -16,6 +16,7 @@ interface ResultsPanelProps {
   query: string;
   resultDirection?: 'up' | 'down';
   showTabBar: boolean;
+  allowedTypes?: PersonType[];
   onTabChange: (tab: PersonType) => void;
   onSelect: (person: PersonResult) => void;
   loadMore: (tab: PersonType) => void;
@@ -42,6 +43,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   query,
   resultDirection = 'down',
   showTabBar,
+  allowedTypes,
   onTabChange,
   onSelect,
   loadMore,
@@ -77,6 +79,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           results={results}
           activeTab={activeTab}
           isLoading={isLoading}
+          allowedTypes={allowedTypes}
           onTabChange={onTabChange}
         />
       )}

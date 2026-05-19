@@ -8,6 +8,7 @@ interface SearchInputProps {
   onFocus?: () => void;
   disabled?: boolean;
   lockedType?: PersonType;
+  allowedTypes?: PersonType[];
   typeFilter?: PersonType;
   onTypeFilterChange?: (type: PersonType | undefined) => void;
   activeOnly?: PersonLocatorProps['activeOnly'];
@@ -100,6 +101,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onFocus,
   disabled,
   lockedType,
+  allowedTypes,
   typeFilter,
   onTypeFilterChange,
   activeOnly,
@@ -123,6 +125,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   };
 
   const showTypeButtons = !lockedType;
+  const visibleTypes = allowedTypes ? TYPE_CONFIG.filter(c => allowedTypes.includes(c.type)) : TYPE_CONFIG;
 
   return (
     <div className="space-y-1">
@@ -217,7 +220,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
               <>
                 <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
 
-                {TYPE_CONFIG.map(({ type, label, Icon, activeClass, idleClass }) => {
+                {visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
                   const isSelected = typeFilter === type;
                   return (
                     <Tip key={type} label={label}>

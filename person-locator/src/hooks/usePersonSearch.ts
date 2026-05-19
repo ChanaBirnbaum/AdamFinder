@@ -69,6 +69,13 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const config = { ...getConfig(env), ...serviceConfigOverride };
   const pageSize = config.pageSize ?? 3;
 
+  // Normalize type → always a sorted array (or undefined = all)
+  const typeArr: PersonType[] | undefined = type
+    ? (Array.isArray(type) ? type : [type])
+    : undefined;
+  // Single locked type (for singleSearch, offline, tab locking)
+  const singleType: PersonType | undefined = typeArr?.length === 1 ? typeArr[0] : undefined;
+
   const [inputValue, setInputValueState] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +83,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const [isOffline, setIsOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null);
-  const [activeTab, setActiveTabState] = useState<PersonType>(type ?? 'asir');
+  const [activeTab, setActiveTabState] = useState<PersonType>(singleType ?? 'asir');
   const [showActiveOnly, setShowActiveOnly] = useState(isDefaultActive ?? false);
 
   const { pagingState, advance, reset: resetPaging } = usePaging();
@@ -104,7 +111,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     fetchSinglePerson({
       key: singleSearch.key,
       value: singleSearch.value,
-      personType: type,
+      personType: singleType,
       config: config,
       signal: controller.signal,
     })
@@ -146,9 +153,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         setIsLoadingMore(true);
       }
 
-      const types: PersonType[] = type
-        ? [type]
-        : ['asir', 'soher', 'ezrach'];
+      const types: PersonType[] = typeArr ?? ['asir', 'soher', 'ezrach'];
 
       const baseOffset = isLoadMore && loadMoreTab
         ? pagingStateRef.current[loadMoreTab === 'asir' ? 'asirs' : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs'].offset
@@ -206,7 +211,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           abortControllers.current.push(offlineController);
           const offlineResults = await searchOffline({
             query,
-            personType: type,
+            personType: singleType,
             config: config,
             signal: offlineController.signal,
           });
@@ -294,7 +299,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       cancelPendingRequests, enableOfflineSearch, filters,
-      pageSize, config, type, effectiveActiveOnly,
+      pageSize, config, typeArr, effectiveActiveOnly,
     ]
   );
 
@@ -317,7 +322,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       setResults(emptyResults);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type]);
+  }, [JSON.stringify(typeArr)]);
 
   // Re-run search when active toggle changes (while query is active)
   useEffect(() => {
