@@ -51,6 +51,7 @@ const emptyResults: SearchResults = {
   asirs: [],
   sohers: [],
   ezrachs: [],
+  totalsByType: { asir: 0, soher: 0, ezrach: 0 },
   totalCount: 0,
 };
 
@@ -230,9 +231,15 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           });
 
           const grouped = groupByType(offlineResults);
+          const totalsByType = {
+            asir: grouped.asirs.length,
+            soher: grouped.sohers.length,
+            ezrach: grouped.ezrachs.length,
+          };
           setResults({
             ...grouped,
-            totalCount: offlineResults.length,
+            totalsByType,
+            totalCount: totalsByType.asir + totalsByType.soher + totalsByType.ezrach,
           });
         } catch {
           setError('חיפוש לא מקוון נכשל');
@@ -245,9 +252,9 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       // Extract ES results per type
       const getESResult = (
         settled: PromiseSettledResult<unknown>
-      ): { results: PersonResult[]; hasMore: boolean } | null => {
+      ): { results: PersonResult[]; hasMore: boolean; total: number } | null => {
         if (settled.status === 'fulfilled' && settled.value !== null) {
-          return settled.value as { results: PersonResult[]; hasMore: boolean };
+          return settled.value as { results: PersonResult[]; hasMore: boolean; total: number };
         }
         return null;
       };
@@ -278,11 +285,15 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           const newArr = loadMoreTab === 'asir' ? asirEnriched
             : loadMoreTab === 'soher' ? soherEnriched : ezrachEnriched;
           const merged = [...prev[key], ...newArr];
-          const total = merged.length +
-            (loadMoreTab === 'asir' ? prev.sohers.length + prev.ezrachs.length :
-             loadMoreTab === 'soher' ? prev.asirs.length + prev.ezrachs.length :
-             prev.asirs.length + prev.sohers.length);
-          return { ...prev, [key]: merged, totalCount: total };
+          const tabTotal = loadMoreTab === 'asir' ? (asirES?.total ?? prev.totalsByType.asir)
+            : loadMoreTab === 'soher' ? (soherES?.total ?? prev.totalsByType.soher)
+            : (ezrachES?.total ?? prev.totalsByType.ezrach);
+          const totalsByType = {
+            ...prev.totalsByType,
+            [loadMoreTab]: tabTotal,
+          };
+          const totalCount = totalsByType.asir + totalsByType.soher + totalsByType.ezrach;
+          return { ...prev, [key]: merged, totalsByType, totalCount };
         });
 
         const hasMore = loadMoreTab === 'asir' ? (asirES?.hasMore ?? false)
@@ -290,11 +301,17 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           : (ezrachES?.hasMore ?? false);
         advance(loadMoreTab, pageSize, hasMore);
       } else {
+        const totalsByType = {
+          asir: asirES?.total ?? asirEnriched.length,
+          soher: soherES?.total ?? soherEnriched.length,
+          ezrach: ezrachES?.total ?? ezrachEnriched.length,
+        };
         const newResults: SearchResults = {
           asirs: asirEnriched,
           sohers: soherEnriched,
           ezrachs: ezrachEnriched,
-          totalCount: asirEnriched.length + soherEnriched.length + ezrachEnriched.length,
+          totalsByType,
+          totalCount: totalsByType.asir + totalsByType.soher + totalsByType.ezrach,
         };
         setResults(newResults);
 
@@ -425,7 +442,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   };
 }
 
-function groupByType(persons: PersonResult[]): Omit<SearchResults, 'totalCount'> {
+function groupByType(persons: PersonResult[]): Omit<SearchResults, 'totalCount' | 'totalsByType'> {
   return {
     asirs: persons.filter((p) => p.personType === 'asir'),
     sohers: persons.filter((p) => p.personType === 'soher'),

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { PersonResult, PersonType, SearchResults } from '../types';
+import type { PersonType, SearchResults } from '../types';
 
 interface TabBarProps {
   results: SearchResults;
@@ -21,16 +21,14 @@ const TYPE_STYLE: Record<PersonType, { active: string; badge: string; ring: stri
   ezrach: { active: 'border-b-2 border-emerald-500 text-emerald-600 font-medium', badge: 'bg-emerald-100 text-emerald-600', ring: 'focus-visible:ring-emerald-400' },
 };
 
-const getResults = (results: SearchResults, type: PersonType): PersonResult[] => {
-  if (type === 'asir') return results.asirs;
-  if (type === 'soher') return results.sohers;
-  return results.ezrachs;
+const getTotal = (results: SearchResults, type: PersonType): number => {
+  return results.totalsByType[type] ?? 0;
 };
 
 const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedTypes, onTabChange }) => {
   const baseTabs = allowedTypes ? TABS.filter(tab => allowedTypes.includes(tab.type)) : TABS;
   const visibleTabs = baseTabs.filter(
-    (tab) => isLoading || getResults(results, tab.type).length > 0
+    (tab) => isLoading || getTotal(results, tab.type) > 0
   );
 
   if (visibleTabs.length === 0) return null;
@@ -38,7 +36,7 @@ const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedT
   return (
     <div className="flex border-b border-gray-100" role="tablist" aria-label="קטגוריות תוצאות">
       {visibleTabs.map((tab) => {
-        const count = getResults(results, tab.type).length;
+        const count = getTotal(results, tab.type);
         const isActive = activeTab === tab.type;
         const style = TYPE_STYLE[tab.type];
         return (

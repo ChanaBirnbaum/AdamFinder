@@ -17,6 +17,8 @@ interface SearchInputProps {
   onActiveToggle?: (active: boolean) => void;
   activeToggleValue?: boolean;
   isOpen?: boolean;
+  hasSelectedPerson?: boolean;
+  isSearchActive?: boolean;
 }
 
 // ── Better contextual icons ────────────────────────────────────────────────────
@@ -110,6 +112,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onActiveToggle,
   activeToggleValue,
   isOpen = false,
+  hasSelectedPerson = false,
+  isSearchActive = false,
 }) => {
   const [internalActive, setInternalActive] = useState(isDefaultActive ?? false);
   const isActive = activeToggleValue !== undefined ? activeToggleValue : internalActive;
@@ -124,7 +128,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
     onTypeFilterChange?.(typeFilter === type ? undefined : type);
   };
 
-  const showTypeButtons = !lockedType;
+  const showTypeButtons = !lockedType && (!hasSelectedPerson || isOpen) && isSearchActive;
   const visibleTypes = allowedTypes ? TYPE_CONFIG.filter(c => allowedTypes.includes(c.type)) : TYPE_CONFIG;
 
   return (
@@ -174,8 +178,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
           </button>
         )}
 
-        {/* ── Active toggle + type filter icons — visible on hover ──────── */}
-        <div className="flex items-center gap-1.5 opacity-0 group-hover/filters:opacity-100 focus-within:opacity-100 transition-opacity duration-150 flex-shrink-0">
+        {/* ── Active toggle + type filter icons — visible while focused ─── */}
+        {showTypeButtons && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
 
             {/* ── Active toggle ─────────────────────────────────────────── */}
             {activeOnly === undefined && (
@@ -216,35 +221,32 @@ const SearchInput: React.FC<SearchInputProps> = ({
             )}
 
             {/* ── Type filter icons ─────────────────────────────────────── */}
-            {showTypeButtons && (
-              <>
-                <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
+            <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
 
-                {visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
-                  const isSelected = typeFilter === type;
-                  return (
-                    <Tip key={type} label={label}>
-                      <button
-                        type="button"
-                        onClick={() => handleTypeClick(type)}
-                        disabled={disabled}
-                        className={[
-                          'flex items-center justify-center p-1 rounded transition-all flex-shrink-0',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-                          isSelected ? activeClass : idleClass,
-                          disabled ? 'cursor-not-allowed' : 'cursor-pointer',
-                        ].join(' ')}
-                        aria-pressed={isSelected}
-                        aria-label={`סנן לפי ${label}`}
-                      >
-                        <Icon />
-                      </button>
-                    </Tip>
-                  );
-                })}
-              </>
-            )}
+            {visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
+              const isSelected = typeFilter === type;
+              return (
+                <Tip key={type} label={label}>
+                  <button
+                    type="button"
+                    onClick={() => handleTypeClick(type)}
+                    disabled={disabled}
+                    className={[
+                      'flex items-center justify-center p-1 rounded transition-all flex-shrink-0',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+                      isSelected ? activeClass : idleClass,
+                      disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                    ].join(' ')}
+                    aria-pressed={isSelected}
+                    aria-label={`סנן לפי ${label}`}
+                  >
+                    <Icon />
+                  </button>
+                </Tip>
+              );
+            })}
           </div>
+        )}
       </div>
 
       {/* Hint */}

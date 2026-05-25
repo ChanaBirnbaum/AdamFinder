@@ -102,6 +102,11 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
         asirs: selectedPerson.personType === 'asir' ? [selectedPerson] : [],
         sohers: selectedPerson.personType === 'soher' ? [selectedPerson] : [],
         ezrachs: selectedPerson.personType === 'ezrach' ? [selectedPerson] : [],
+        totalsByType: {
+          asir: selectedPerson.personType === 'asir' ? 1 : 0,
+          soher: selectedPerson.personType === 'soher' ? 1 : 0,
+          ezrach: selectedPerson.personType === 'ezrach' ? 1 : 0,
+        },
         totalCount: 1,
       }
     : results;
@@ -113,11 +118,17 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
       dir="rtl"
       aria-disabled={disabled}
       style={disabled ? { pointerEvents: 'none' } : undefined}
-      onBlur={(e) => {
-        // only blur when focus leaves the whole component
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-          setIsFocused(false);
-        }
+     onFocusCapture={() => setIsFocused(true)}
+onBlurCapture={() => {
+        // Ensure focus remains active during scrolling or internal interactions
+        requestAnimationFrame(() => {
+          if (
+            containerRef.current &&
+            (!containerRef.current.contains(document.activeElement) || document.activeElement === document.body)
+          ) {
+            setIsFocused(false);
+          }
+        });
       }}
     >
       <SearchInput
@@ -134,6 +145,8 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
         isDefaultActive={isDefaultActive}
         minChars={minChars}
         isOpen={isOpen}
+        hasSelectedPerson={selectedPerson !== null}
+        isSearchActive={isFocused && selectedPerson === null}
         activeToggleValue={showActiveOnly}
         onActiveToggle={setShowActiveOnly}
       />

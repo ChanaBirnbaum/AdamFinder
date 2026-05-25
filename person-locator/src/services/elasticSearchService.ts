@@ -173,7 +173,7 @@ export async function searchPersons(params: {
   activeOnly?: boolean;
   config: ServiceConfig;
   signal: AbortSignal;
-}): Promise<{ results: PersonResult[]; hasMore: boolean }> {
+}): Promise<{ results: PersonResult[]; hasMore: boolean; total: number }> {
   const {
     query,
     personType,
@@ -225,7 +225,7 @@ export async function searchPersons(params: {
     mapHitToPersonResult(hit, personType, base.activeField),
   );
 
-  return { results, hasMore };
+  return { results, hasMore, total };
 }
 
 export async function fetchSinglePerson(params: {

@@ -29,6 +29,7 @@ export interface SearchResults {
   asirs: PersonResult[];
   sohers: PersonResult[];
   ezrachs: PersonResult[];
+  totalsByType: Record<PersonType, number>;
   totalCount: number;
 }
 
