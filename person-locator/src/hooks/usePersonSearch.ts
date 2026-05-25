@@ -26,6 +26,16 @@ function isOfflineErrorLike(error: unknown): boolean {
   );
 }
 
+function isAbortErrorLike(error: unknown): boolean {
+  if (error == null) return false;
+  if (error instanceof DOMException && error.name === 'AbortError') return true;
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { name?: unknown }).name === 'AbortError'
+  );
+}
+
 export interface UsePersonSearchReturn {
   results: SearchResults;
   isLoading: boolean;
@@ -326,10 +336,15 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
         // Handle general errors if any ES call failed with non-OfflineError
         const anyError = esSettled.find(
-          (s) => s.status === 'rejected' && !isOfflineErrorLike(s.reason)
+          (s) =>
+            s.status === 'rejected' &&
+            !isOfflineErrorLike(s.reason) &&
+            !isAbortErrorLike(s.reason)
         );
         if (anyError && anyError.status === 'rejected') {
-          setError(`שגיאת חיפוש: ${anyError.reason?.message ?? 'שגיאה לא ידועה'}`);
+          if (newResults.totalCount === 0) {
+            setError('לא הצלחנו להשלים את החיפוש כרגע. אפשר לנסות שוב.');
+          }
         }
       }
 

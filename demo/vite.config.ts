@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import type { Connect } from 'vite'
@@ -25,7 +25,9 @@ function makeFakeHits(query: string, from: number, size: number) {
 }
 
 const mockMiddleware: Connect.NextHandleFunction = (req, res, next) => {
-  if (!req.url?.includes('_search')) return next();
+  const url = req.originalUrl ?? req.url ?? '';
+  const isSearchRequest = req.method === 'POST' && /\/_search(?:\?|$)/.test(url);
+  if (!isSearchRequest) return next();
 
   let body = '';
   req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
@@ -46,28 +48,37 @@ const mockMiddleware: Connect.NextHandleFunction = (req, res, next) => {
 };
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: '/AdamFinder/',
-  plugins: [react()],
-  resolve: {
-    alias: {
-      // Point to the library source so Tailwind classes are processed
-      '@ips/searchAdam': path.resolve(__dirname, '../person-locator/src/index.ts'),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const isMock = mode === 'mock' || env.VITE_MOCK === 'true';
+
+  return {
+    base: '/AdamFinder/',
+    server: {
+      fs: {
+        allow: [path.resolve(__dirname, '..')],
+      },
     },
-  },
-  plugins: [
-    react(),
-    ...(process.env.VITE_MOCK === 'true'
-      ? [{
-          name: 'mock-es',
-          configureServer(server: import('vite').ViteDevServer) {
-            server.middlewares.use(mockMiddleware);
-          },
-        }]
-      : []),
-  ],
-  define: {
-    // expose flag to app code so serviceConfig can use localhost
-    __VITE_MOCK__: process.env.VITE_MOCK === 'true',
-  },
+    resolve: {
+      alias: {
+        // Point to the library source so Tailwind classes are processed
+        '@ips/searchAdam': path.resolve(__dirname, '../person-locator/src/index.ts'),
+      },
+    },
+    plugins: [
+      react(),
+      ...(isMock
+        ? [{
+            name: 'mock-es',
+            configureServer(server: import('vite').ViteDevServer) {
+              server.middlewares.use(mockMiddleware);
+            },
+          }]
+        : []),
+    ],
+    define: {
+      // expose flag to app code so serviceConfig can use localhost
+      __VITE_MOCK__: JSON.stringify(isMock),
+    },
+  };
 })
