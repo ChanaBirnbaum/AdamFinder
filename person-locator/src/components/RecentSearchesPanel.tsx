@@ -54,6 +54,7 @@ const RecentSearchesPanel: React.FC<RecentSearchesPanelProps> = ({
       {/* Items */}
       {recents.map((person) => {
         const meta = TYPE_META[person.personType];
+        const fullName = String(person.data['fullName'] ?? '');
         return (
           <div
             key={person.id}
@@ -72,7 +73,7 @@ const RecentSearchesPanel: React.FC<RecentSearchesPanelProps> = ({
                 <span className={`text-[10px] font-semibold ${meta.textClass}`}>{meta.label}</span>
               </div>
               {/* Name */}
-              <span className="text-sm text-gray-700 truncate">{person.fullName}</span>
+              <span className="text-sm text-gray-700 truncate">{fullName}</span>
             </div>
 
             {/* Remove button — left in RTL (last child) */}
@@ -80,7 +81,7 @@ const RecentSearchesPanel: React.FC<RecentSearchesPanelProps> = ({
               type="button"
               onClick={(e) => { e.stopPropagation(); onRemove(person.id); }}
               className="text-gray-300 hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded p-0.5 flex-shrink-0"
-              aria-label={`הסר ${person.fullName}`}
+              aria-label={`הסר ${String(person.data['fullName'] ?? '')}`}
             >
               <XSmall />
             </button>

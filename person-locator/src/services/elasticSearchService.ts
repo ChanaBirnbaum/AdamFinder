@@ -293,4 +293,3 @@ export async function fetchSinglePerson(params: {
   });
   return enriched[0] ?? mapped;
 }
-

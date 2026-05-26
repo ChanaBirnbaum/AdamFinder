@@ -1,23 +1,20 @@
 import { useState, useCallback } from 'react';
-import type { PersonType } from '../types';
+import type { PersonResult, PersonType } from '../types';
 
-export interface RecentPerson {
-  id: string;
-  fullName: string;
-  personType: PersonType;
-}
+export type RecentPerson = PersonResult;
 
 const STORAGE_KEY = 'person-locator:recent';
 const MAX_ITEMS = 5;
 
-const VALID_TYPES = new Set(['asir', 'soher', 'ezrach']);
+const VALID_TYPES = new Set<PersonType>(['asir', 'soher', 'ezrach']);
 
 const isValidPerson = (item: unknown): item is RecentPerson =>
   typeof item === 'object' &&
   item !== null &&
   typeof (item as RecentPerson).id === 'string' &&
-  typeof (item as RecentPerson).fullName === 'string' &&
-  VALID_TYPES.has((item as RecentPerson).personType);
+  VALID_TYPES.has((item as RecentPerson).personType) &&
+  typeof (item as RecentPerson).data === 'object' &&
+  (item as RecentPerson).data !== null;
 
 const read = (): RecentPerson[] => {
   try {

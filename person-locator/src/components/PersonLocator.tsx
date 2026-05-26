@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { PersonLocatorProps, PersonType } from '../types';
 import { usePersonSearch } from '../hooks/usePersonSearch';
 import { useRecentSearches } from '../hooks/useRecentSearches';
+import type { RecentPerson } from '../hooks/useRecentSearches';
 
 import SearchInput from './SearchInput';
 import ResultsPanel from './ResultsPanel';
@@ -87,15 +88,14 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
   const showTabBar = !lockedType;
 
   const handleSelect = useCallback((person: Parameters<typeof selectPerson>[0]) => {
-    addPerson({ id: person.id, fullName: String(person.data['fullName'] ?? ''), personType: person.personType });
+    addPerson(person);
     selectPerson(person);
     setIsFocused(false);
   }, [addPerson, selectPerson]);
 
-  const handleRecentSelect = useCallback((recent: { fullName: string }) => {
-    setInputValue(recent.fullName);
-    setIsFocused(false);
-  }, [setInputValue]);
+  const handleRecentSelect = useCallback((recent: RecentPerson) => {
+    handleSelect(recent);
+  }, [handleSelect]);
 
   const selectedOnlyResults: typeof results = selectedPerson
     ? {
