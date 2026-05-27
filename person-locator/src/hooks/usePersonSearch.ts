@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
+import { fetchAsirWhitelist, checkAsirPermission } from '../services/asirAuthService';
+import type { AsirWhitelistResult } from '../services/asirAuthService';
 import { OfflineError } from '../services/axiosInstance';
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
@@ -79,6 +81,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     filters = [],
     additionalSearchFields = [],
     enableOfflineSearch = false,
+    fallbackToOfflineIfNoAuth = false,
     singleSearch,
     state,
     clearData,
@@ -106,7 +109,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const [error, setError] = useState<string | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null);
   const [activeTab, setActiveTabState] = useState<PersonType>(singleType ?? 'asir');
-  const [showActiveOnly, setShowActiveOnly] = useState(isDefaultActive ?? false);
+  const [showActiveOnly, setShowActiveOnly] = useState(isDefaultActive ?? true);
 
   const { pagingState, advance, reset: resetPaging } = usePaging();
 
@@ -117,6 +120,12 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   const abortControllers = useRef<AbortController[]>([]);
   const justSelectedRef = useRef(false);
+  /** Cached whitelist result (מידור) — specific prisoner IDs this user may see. Injected as ES filter. */
+  const asirWhitelistRef = useRef<AsirWhitelistResult | null>(null);
+  /** Cached permission result (הרשאת איתור) — true=has permission, false=no permission, null=unknown. */
+  const asirPermissionRef = useRef<boolean | null>(null);
+  /** Promise that resolves when the permission check completes. */
+  const asirPermissionPromiseRef = useRef<Promise<void> | null>(null);
   const debouncedInput = useDebounce(inputValue, 300);
 
   // Controlled state prop
@@ -141,6 +150,30 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         if (person) setSelectedPerson(person);
       })
       .catch(() => {/* silently ignore */});
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Prisoner whitelist (מידור): fetch once on mount when asir is included and endpoint is configured
+  useEffect(() => {
+    const searchesAsirs = !typeArr || typeArr.includes('asir');
+    if (!searchesAsirs || !config.asirWhitelist) return;
+    const controller = new AbortController();
+    fetchAsirWhitelist({ config, signal: controller.signal })
+      .then((result) => { asirWhitelistRef.current = result; })
+      .catch(() => { /* fail-open */ });
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Permission check (הרשאת איתור): fetch once on mount when fallbackToOfflineIfNoAuth is enabled
+  useEffect(() => {
+    const searchesAsirs = !typeArr || typeArr.includes('asir');
+    if (!fallbackToOfflineIfNoAuth || !searchesAsirs || !config.asirPermission) return;
+    const controller = new AbortController();
+    asirPermissionPromiseRef.current = checkAsirPermission({ config, signal: controller.signal })
+      .then((result) => { asirPermissionRef.current = result; })
+      .catch(() => { /* fail-open */ });
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -178,18 +211,27 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       const types: PersonType[] = typeArr ?? ['asir', 'soher', 'ezrach'];
 
+      // If fallbackToOfflineIfNoAuth is on, wait for the permission check to complete
+      if (fallbackToOfflineIfNoAuth && types.includes('asir') && asirPermissionPromiseRef.current) {
+        await asirPermissionPromiseRef.current;
+        asirPermissionPromiseRef.current = null; // only await once
+      }
+
+      // No permission at all → use offline for asirs (הרשאת איתור נדחתה)
+      const asirNoAccess =
+        fallbackToOfflineIfNoAuth &&
+        asirPermissionRef.current === false;
+
       const baseOffset = isLoadMore && loadMoreTab
         ? pagingStateRef.current[loadMoreTab === 'asir' ? 'asirs' : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs'].offset
         : 0;
 
       // Build ES promises per category
       const esPromises = (['asir', 'soher', 'ezrach'] as PersonType[]).map((pt, i) => {
-        if (!types.includes(pt)) {
-          return Promise.resolve(null);
-        }
-        if (isLoadMore && loadMoreTab !== pt) {
-          return Promise.resolve(null);
-        }
+        if (!types.includes(pt)) return Promise.resolve(null);
+        if (isLoadMore && loadMoreTab !== pt) return Promise.resolve(null);
+        // Skip ES for asir when user has no access → will use offline instead
+        if (pt === 'asir' && asirNoAccess) return Promise.resolve(null);
         return searchPersons({
           query,
           personType: pt,
@@ -197,7 +239,18 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           offset: isLoadMore ? baseOffset : 0,
           pageSize,
           activeOnly: effectiveActiveOnly,
-          config: config,
+          config: pt === 'asir' && asirWhitelistRef.current
+            ? {
+                ...config,
+                querySettings: {
+                  ...config.querySettings,
+                  asir: {
+                    ...(config.querySettings?.asir ?? DEFAULT_QUERY_SETTINGS.asir),
+                    allowedList: asirWhitelistRef.current,
+                  },
+                },
+              }
+            : config,
           signal: controllers[i].signal,
         });
       });
@@ -219,6 +272,21 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const onlineGuards: PersonResult[] =
         onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [];
 
+      // If asir has no auth access → fetch from offline service instead
+      let offlineAsirs: PersonResult[] = [];
+      if (asirNoAccess && types.includes('asir') && !isLoadMore) {
+        try {
+          const offlineController = new AbortController();
+          abortControllers.current.push(offlineController);
+          offlineAsirs = await searchOffline({
+            query,
+            personType: 'asir',
+            config,
+            signal: offlineController.signal,
+          });
+        } catch { /* fail-open */ }
+      }
+
       // Check if all ES calls failed with OfflineError
       const esSettled = [asirSettled, soherSettled, ezrachSettled];
       const relevantEsSettled = esSettled
@@ -228,7 +296,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         (s) => s.status === 'rejected' && isOfflineErrorLike(s.reason)
       );
 
-      if ((allOffline || allRejected) && enableOfflineSearch) {
+      if ((allOffline || allRejected) && (enableOfflineSearch || fallbackToOfflineIfNoAuth)) {
         setIsOffline(true);
         try {
           const offlineController = new AbortController();
@@ -274,7 +342,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const ezrachES = getESResult(ezrachSettled);
 
       // Merge ES + online per type (ezrachs: ES only)
-      const asirMerged = mergeResults(asirES?.results ?? [], onlinePrisoners);
+      const asirMerged = mergeResults(mergeResults(asirES?.results ?? [], onlinePrisoners), offlineAsirs);
       const soherMerged = mergeResults(soherES?.results ?? [], onlineGuards);
       const ezrachMerged = ezrachES?.results ?? [];
       const allMerged = [...asirMerged, ...soherMerged, ...ezrachMerged];
@@ -353,7 +421,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      cancelPendingRequests, enableOfflineSearch, filters,
+      cancelPendingRequests, enableOfflineSearch, fallbackToOfflineIfNoAuth, filters,
       pageSize, config, typeArr, effectiveActiveOnly,
     ]
   );

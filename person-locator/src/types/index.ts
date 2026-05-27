@@ -138,6 +138,20 @@ export interface ServiceConfig {
   offline: ServiceEndpoints;
   /** Optional photo service for resolving image URLs by person id. */
   photos?: ServiceEndpoints;
+  /**
+   * Prisoner whitelist endpoint (מידור) — when set, called once on mount.
+   * The server returns an array of prisoner IDs the user may see.
+   * These are injected as a `terms` filter into every Elasticsearch asir query.
+   * If the server returns an empty array or omitted → no restriction applied.
+   */
+  asirWhitelist?: ServiceEndpoints;
+  /**
+   * Permission check endpoint (הרשאת איתור) — used together with `fallbackToOfflineIfNoAuth`.
+   * Called once on mount to determine if the user has any asir-search permission at all.
+   * HTTP 200 → has permission. HTTP 403 → no permission → offline fallback.
+   * If omitted or request fails → fail-open (search ES normally).
+   */
+  asirPermission?: ServiceEndpoints;
   authToken?: string;   // Bearer token for all calls
   pageSize?: number;    // Default: 3
   timeoutMs?: number;   // Default: 5000
@@ -170,6 +184,15 @@ export interface PersonLocatorProps {
 
   /** Enable offline DB fallback when ES is unreachable. Default: false */
   enableOfflineSearch?: boolean;
+
+  /**
+   * When `true`, the library calls the `asirPermission` endpoint before each search.
+   * - HTTP 200 (has permission) → search ES normally.
+   * - HTTP 403 (no permission) → fall back to the offline service for asirs.
+   * Requires `serviceConfig.asirPermission` to be configured.
+   * Default: false
+   */
+  fallbackToOfflineIfNoAuth?: boolean;
 
   /** Pre-fill the component by fetching a person by this key/value from ES. Component stays editable. */
   singleSearch?: SingleSearch;

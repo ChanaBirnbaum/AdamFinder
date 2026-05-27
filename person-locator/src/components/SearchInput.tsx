@@ -21,34 +21,30 @@ interface SearchInputProps {
   isSearchActive?: boolean;
 }
 
-// ── Better contextual icons ────────────────────────────────────────────────────
+// ── Contextual icons ───────────────────────────────────────────────────────────
 const PrisonerIcon = () => (
-  // Person with bars in front
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <circle cx="12" cy="7" r="3" />
-    <path d="M6 21v-1a6 6 0 0 1 12 0v1" />
-    <line x1="9"  y1="11" x2="9"  y2="21" strokeWidth="1.8" />
-    <line x1="12" y1="10" x2="12" y2="21" strokeWidth="1.8" />
-    <line x1="15" y1="11" x2="15" y2="21" strokeWidth="1.8" />
+  <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <path d="M12 11C12 12.0609 12.4214 13.0783 13.1716 13.8284C13.9217 14.5786 14.9391 15 16 15C17.0609 15 18.0783 14.5786 18.8284 13.8284C19.5786 13.0783 20 12.0609 20 11C20 9.93913 19.5786 8.92172 18.8284 8.17157C18.0783 7.42143 17.0609 7 16 7C14.9391 7 13.9217 7.42143 13.1716 8.17157C12.4214 8.92172 12 9.93913 12 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 25V23C10 21.9391 10.4214 20.9217 11.1716 20.1716C11.9217 19.4214 12.9391 19 14 19H18C19.0609 19 20.0783 19.4214 20.8284 20.1716C21.5786 20.9217 22 21.9391 22 23V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M13 17V25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M15 17L15 25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M17 17L17 25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M19 17V25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const GuardIcon = () => (
-  // Badge/star shape – classic security badge
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 2l2.09 4.26L19 7.27l-3.5 3.41.83 4.82L12 13.27l-4.33 2.23.83-4.82L5 7.27l4.91-.71z" />
-    <path d="M12 22V13" strokeWidth="1.5" />
-    <path d="M5 10.5c0 5 3.13 8.5 7 9.5" strokeWidth="1.5" />
-    <path d="M19 10.5c0 5-3.13 8.5-7 9.5" strokeWidth="1.5" />
+  <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <path d="M12 11C12 12.0609 12.4214 13.0783 13.1716 13.8284C13.9217 14.5786 14.9391 15 16 15C17.0609 15 18.0783 14.5786 18.8284 13.8284C19.5786 13.0783 20 12.0609 20 11C20 9.93913 19.5786 8.92172 18.8284 8.17157C18.0783 7.42143 17.0609 7 16 7C14.9391 7 13.9217 7.42143 13.1716 8.17157C12.4214 8.92172 12 9.93913 12 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 25V23C10 21.9391 10.4214 20.9217 11.1716 20.1716C11.9217 19.4214 12.9391 19 14 19H18C19.0609 19 20.0783 19.4214 20.8284 20.1716C21.5786 20.9217 22 21.9391 22 23V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M18.6667 6H13.3333C12.597 6 12 6.59695 12 7.33333V8C12 8.73638 12.597 9.33333 13.3333 9.33333H18.6667C19.403 9.33333 20 8.73638 20 8V7.33333C20 6.59695 19.403 6 18.6667 6Z" fill="currentColor"/>
   </svg>
 );
 
 const CivilianIcon = () => (
-  // Person with ID card / briefcase feel
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <circle cx="12" cy="7" r="3.5" />
-    <path d="M5.5 21v-1.5A5.5 5.5 0 0 1 11 14h2a5.5 5.5 0 0 1 5.5 5.5V21" />
-    <rect x="9" y="3.5" width="6" height="2.5" rx="1" strokeWidth="1.5" />
+  <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <path d="M12 11C12 12.0609 12.4214 13.0783 13.1716 13.8284C13.9217 14.5786 14.9391 15 16 15C17.0609 15 18.0783 14.5786 18.8284 13.8284C19.5786 13.0783 20 12.0609 20 11C20 9.93913 19.5786 8.92172 18.8284 8.17157C18.0783 7.42143 17.0609 7 16 7C14.9391 7 13.9217 7.42143 13.1716 8.17157C12.4214 8.92172 12 9.93913 12 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 25V23C10 21.9391 10.4214 20.9217 11.1716 20.1716C11.9217 19.4214 12.9391 19 14 19H18C19.0609 19 20.0783 19.4214 20.8284 20.1716C21.5786 20.9217 22 21.9391 22 23V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -180,7 +176,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
         {/* ── Active toggle + type filter icons — visible while focused ─── */}
         {showTypeButtons && (
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-0.5 flex-shrink-0">
 
             {/* ── Active toggle ─────────────────────────────────────────── */}
             {activeOnly === undefined && (
@@ -195,25 +191,25 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   dir="ltr"
                   className={[
                     'flex items-center gap-1.5 flex-shrink-0 select-none',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 rounded',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 rounded',
                     disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
                   ].join(' ')}
                   aria-label="פעילים בלבד"
                 >
                   <span
                     className={[
-                      'relative inline-flex w-[28px] h-[15px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0',
-                      isActive ? 'bg-green-400' : 'bg-gray-300',
+                      'relative inline-flex w-[34px] h-[18px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0',
+                      isActive ? 'bg-blue-500' : 'bg-gray-300',
                     ].join(' ')}
                   >
                     <span
                       className={[
-                        'absolute top-[2px] h-[11px] w-[11px] rounded-full bg-white shadow-sm transition-[left] duration-200',
-                        isActive ? 'left-[15px]' : 'left-[2px]',
+                        'absolute top-[3px] h-[12px] w-[12px] rounded-full bg-white shadow-sm transition-[left] duration-200',
+                        isActive ? 'left-[19px]' : 'left-[3px]',
                       ].join(' ')}
                     />
                   </span>
-                  <span dir="rtl" className={`text-[11px] font-medium transition-colors ${isActive ? 'text-green-500' : 'text-gray-400'}`}>
+                  <span dir="rtl" className={`text-[11px] font-medium transition-colors ${isActive ? 'text-blue-500' : 'text-gray-400'}`}>
                     פעיל
                   </span>
                 </button>
@@ -232,7 +228,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     onClick={() => handleTypeClick(type)}
                     disabled={disabled}
                     className={[
-                      'flex items-center justify-center p-1 rounded transition-all flex-shrink-0',
+                      'flex items-center justify-center p-0.5 rounded transition-all flex-shrink-0',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
                       isSelected ? activeClass : idleClass,
                       disabled ? 'cursor-not-allowed' : 'cursor-pointer',
