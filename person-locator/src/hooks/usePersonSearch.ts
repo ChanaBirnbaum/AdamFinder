@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
 import { fetchAsirWhitelist, checkAsirPermission } from '../services/asirAuthService';
-import type { AsirWhitelistResult } from '../services/asirAuthService';
+import type { AsirWhitelistResult, AsirPermissionResult } from '../services/asirAuthService';
 import { OfflineError } from '../services/axiosInstance';
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
@@ -122,8 +122,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const justSelectedRef = useRef(false);
   /** Cached whitelist result (מידור) — specific prisoner IDs this user may see. Injected as ES filter. */
   const asirWhitelistRef = useRef<AsirWhitelistResult | null>(null);
-  /** Cached permission result (הרשאת איתור) — true=has permission, false=no permission, null=unknown. */
-  const asirPermissionRef = useRef<boolean | null>(null);
+  /** Cached permission result (הרשאת איתור) — array of per-type authorized IDs, [] = no access, null = unknown/fail-open. */
+  const asirPermissionRef = useRef<AsirPermissionResult[] | null>(null);
   /** Promise that resolves when the permission check completes. */
   const asirPermissionPromiseRef = useRef<Promise<void> | null>(null);
   const debouncedInput = useDebounce(inputValue, 300);
@@ -220,7 +220,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       // No permission at all → use offline for asirs (הרשאת איתור נדחתה)
       const asirNoAccess =
         fallbackToOfflineIfNoAuth &&
-        asirPermissionRef.current === false;
+        Array.isArray(asirPermissionRef.current) &&
+        !asirPermissionRef.current.some(r => r.type === 'asir' && r.authorizedIds.length > 0);
 
       const baseOffset = isLoadMore && loadMoreTab
         ? pagingStateRef.current[loadMoreTab === 'asir' ? 'asirs' : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs'].offset

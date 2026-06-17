@@ -1,5 +1,5 @@
 import { get } from './axiosInstance';
-import type { ServiceConfig } from '../types';
+import type { ServiceConfig, PersonType } from '../types';
 
 // ─── Prisoner whitelist (מידור) ───────────────────────────────────────────────
 
@@ -39,36 +39,45 @@ export async function fetchAsirWhitelist(params: {
 
 // ─── Permission check (הרשאת איתור) ──────────────────────────────────────────
 
+export interface AsirPermissionResult {
+  type: PersonType;
+  authorizedIds: (string | number)[];
+}
+
 /**
- * Checks whether the current user has any permission to search prisoners at all (הרשאת איתור).
+ * Checks which person types the current user is permitted to search, and which object IDs
+ * are authorised per type (הרשאת איתור).
  *
- * The server should return HTTP 200 with any truthy body when permitted,
- * or HTTP 403 / falsy body when not permitted.
+ * @param personTypes - Optional list of types to query. Omit to request all types.
  *
- * Returns `true`  — user has permission → search ES normally.
- * Returns `false` — user has no permission → fall back to offline.
- * Returns `null`  — endpoint not configured or request failed → fail-open (search ES).
+ * Returns an array (one entry per type) — may be empty when the server denies all access (403).
+ * Returns `null` when the endpoint is not configured or the request fails → fail-open (search ES).
  */
 export async function checkAsirPermission(params: {
   config: ServiceConfig;
   signal: AbortSignal;
-}): Promise<boolean | null> {
-  const { config, signal } = params;
+  personTypes?: PersonType[];
+}): Promise<AsirPermissionResult[] | null> {
+  const { config, signal, personTypes } = params;
 
   if (!config.asirPermission) return null;
 
   const method = config.asirPermission.methods['checkPermission'] ?? '/check';
-  const url = `${config.asirPermission.baseUrl}${method}`;
+  const baseUrl = `${config.asirPermission.baseUrl}${method}`;
+  const url = personTypes?.length
+    ? `${baseUrl}?${personTypes.map(t => `PERSONTYPES=${encodeURIComponent(t)}`).join('&')}`
+    : baseUrl;
 
   try {
-    await get(url, { signal });
-    return true; // 2xx → has permission
+    const { data } = await get<AsirPermissionResult[]>(url, { signal });
+    if (!Array.isArray(data)) return null;
+    return data;
   } catch (err: unknown) {
     if (
       typeof err === 'object' && err !== null &&
       (err as { response?: { status?: number } }).response?.status === 403
     ) {
-      return false; // explicit 403 → no permission
+      return []; // explicit 403 → no permission for any type
     }
     return null; // network error → fail-open
   }
