@@ -182,9 +182,6 @@ export interface PersonLocatorProps {
   /** Dynamic filters applied to every ES query. */
   filters?: Filter[];
 
-  /** Enable offline DB fallback when ES is unreachable. Default: false */
-  enableOfflineSearch?: boolean;
-
   /**
    * When `true`, the library calls the `asirPermission` endpoint before each search.
    * - HTTP 200 (has permission) → search ES normally.

@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "Bash(cd \"/c/Users/user1/AdamFinder/person-locator\" && cat package.json | grep -A3 '\"test\"')",
+      "Read(//c/c/Users/user1/AdamFinder/person-locator/**)"
     ]
   }
 }

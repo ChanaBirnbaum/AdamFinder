@@ -161,9 +161,6 @@ export interface PersonLocatorProps {
   /** Dynamic filters applied to every ES query. */
   filters?: Filter[];
 
-  /** Enable offline DB fallback when ES is unreachable. Default: false */
-  enableOfflineSearch?: boolean;
-
   /** Pre-fill the component by fetching a person by this key/value from ES. Component stays editable. */
   singleSearch?: SingleSearch;
 
@@ -259,7 +256,8 @@ export async function searchOffline(params: {
 ```
 
 - Calls `serviceConfig.offlineServiceUrl`.
-- Only invoked when `enableOfflineSearch: true` AND ES has thrown `OfflineError`.
+- Invoked whenever the ES search for a given person type fails (any error).
+- Only matches by exact numeric identifier — the query must be digits-only (length is not validated, since ID length differs per person type). Non-numeric queries short-circuit to `[]` without a network call.
 
 ---
 
@@ -309,7 +307,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
    - Online Service query
 3. Each ES call uses a fresh `AbortController`. Cancel all on new keystroke.
 4. Merge results with `mergeResults(esResults, onlineResults)`.
-5. If ALL ES calls throw `OfflineError` AND `enableOfflineSearch` is true → call `offlineService`, set `isOffline = true`.
+5. For any person type whose ES call fails (any error, excluding cancellation) → call `offlineService` for that type, set `isOffline = true`.
 6. Active tab = first category with results (priority: prisoners → guards → civilians).
 7. `singleSearch` prop: on mount, call `fetchSinglePerson` and populate `selectedPerson`. Component remains fully interactive.
 8. `state` prop: if provided, treat as controlled – sync `selectedPerson` with it.
@@ -397,7 +395,7 @@ Return as `filter` clauses inside the `bool` query.
 - CSS animation: `@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }`.
 
 ### 8.7 OfflineBanner.tsx
-- Yellow banner: `"מצב לא מקוון – מחפש במסד נתונים מקומי"`.
+- Yellow banner: `"מצב לא מקוון – ניתן לחפש לפי מספר מזהה מדויק בלבד"`.
 - Icon: wifi-off SVG.
 
 ### 8.8 EmptyState.tsx
@@ -466,7 +464,7 @@ Write **real tests with assertions**, not empty stubs.
 - Debounce: search does NOT fire before 300ms.
 - Fires exactly 3 ES calls + 1 online call in default mode.
 - Fires 1 ES call + 1 online call when `type` prop is set.
-- On `OfflineError` + `enableOfflineSearch: true` → calls offline service, sets `isOffline`.
+- On any ES rejection (not cancellation) → calls offline service for that type, sets `isOffline`.
 - `singleSearch` prop fires `fetchSinglePerson` on mount.
 - `clearSelection` resets state and calls `clearData`.
 
@@ -542,12 +540,10 @@ Build two outputs: ESM (`dist/index.esm.js`) and CJS (`dist/index.cjs.js`), plus
 
 | Scenario | Behavior |
 |----------|----------|
-| ES returns 5xx or timeout | Throw `OfflineError`; if `enableOfflineSearch` → fallback to offline service + show `OfflineBanner` |
+| ES request fails (any error, per type) | Fallback to offline service for that type + show `OfflineBanner` |
 | Online service fails | Silently return `[]`; ES results still displayed |
-| No results found | Show `EmptyState` component |
-| General network error | Show toast message + retry button; `error` state set |
+| No results found (incl. after offline fallback) | Show `EmptyState` component |
 | Input < minChars | No query fired; show hint: `"הקלד לפחות N תווים לחיפוש"` |
-| Both ES + online fail | Show error toast with retry; `isOffline` set if applicable |
 
 ---
 
@@ -559,7 +555,7 @@ The AI must verify each criterion is met before finishing:
 - [ ] 3 ES calls + 1 online call run in parallel via `Promise.allSettled`
 - [ ] DB/online results override ES on duplicate `id`
 - [ ] Paging works independently per category via `loadMore`
-- [ ] Offline fallback triggers only on `OfflineError` + `enableOfflineSearch: true`
+- [ ] Offline fallback triggers automatically on any ES failure, per person type
 - [ ] `singleSearch` populates the component; component stays editable
 - [ ] Every prop has JSDoc comment
 - [ ] Test coverage ≥ 80%

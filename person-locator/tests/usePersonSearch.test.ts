@@ -98,15 +98,15 @@ describe('usePersonSearch', () => {
     vi.useRealTimers();
   });
 
-  it('calls offline service and sets isOffline on OfflineError + enableOfflineSearch', async () => {
+  it('calls offline service and sets isOffline on any ES failure', async () => {
     vi.useFakeTimers();
-    mockSearchPersons.mockRejectedValue(new esService.OfflineError('ES down'));
+    mockSearchPersons.mockRejectedValue(new Error('Server returned 404'));
     const offlineResult = makeResult('offline-1');
     offlineResult.source = 'offline';
     mockSearchOffline.mockResolvedValue([offlineResult]);
 
     const { result } = renderHook(() =>
-      usePersonSearch({ ...baseConfig, enableOfflineSearch: true, minChars: 3 })
+      usePersonSearch({ ...baseConfig, minChars: 3 })
     );
 
     act(() => {
@@ -118,7 +118,8 @@ describe('usePersonSearch', () => {
     });
 
     expect(result.current.isOffline).toBe(true);
-    expect(mockSearchOffline).toHaveBeenCalledTimes(1);
+    // No `type` restriction in baseConfig → all 3 person types fail ES and each falls back to offline.
+    expect(mockSearchOffline).toHaveBeenCalledTimes(3);
 
     vi.useRealTimers();
   });

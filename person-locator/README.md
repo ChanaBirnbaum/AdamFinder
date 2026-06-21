@@ -57,7 +57,6 @@ See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented wi
 | `additionalSearchFields` | `string[]` | `[]` | Extra ES fields for search |
 | `additionalResultFields` | `string[]` | `[]` | Extra fields to display |
 | `filters` | `Filter[]` | `[]` | Dynamic ES filter clauses |
-| `enableOfflineSearch` | `boolean` | `false` | Enable offline fallback |
 | `singleSearch` | `SingleSearch` | — | Pre-fill by key/value |
 | `state` | `PersonResult \| null` | — | Controlled selected person |
 | `openTikAsir` | `(person) => void` | — | Open prisoner file system |

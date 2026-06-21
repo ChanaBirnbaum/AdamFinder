@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
-import { fetchAsirWhitelist, checkAsirPermission } from '../services/asirAuthService';
-import type { AsirWhitelistResult, AsirPermissionResult } from '../services/asirAuthService';
-import { OfflineError } from '../services/axiosInstance';
+import { fetchAsirWhitelist, checkPersonPermission } from '../services/asirAuthService';
+import type { AsirWhitelistResult, PersonPermissionResult } from '../services/asirAuthService';
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
 import { enrichPersonsWithPhotoUrls } from '../services/photoService';
@@ -17,16 +16,6 @@ import type {
 } from '../types';
 import { useDebounce } from './useDebounce';
 import { usePaging } from './usePaging';
-
-function isOfflineErrorLike(error: unknown): boolean {
-  if (error == null) return true;
-  if (error instanceof OfflineError) return true;
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    (error as { name?: unknown }).name === 'OfflineError'
-  );
-}
 
 function isAbortErrorLike(error: unknown): boolean {
   if (error == null) return false;
@@ -80,7 +69,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     onSelect,
     filters = [],
     additionalSearchFields = [],
-    enableOfflineSearch = false,
     fallbackToOfflineIfNoAuth = false,
     singleSearch,
     state,
@@ -123,9 +111,9 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   /** Cached whitelist result (מידור) — specific prisoner IDs this user may see. Injected as ES filter. */
   const asirWhitelistRef = useRef<AsirWhitelistResult | null>(null);
   /** Cached permission result (הרשאת איתור) — array of per-type authorized IDs, [] = no access, null = unknown/fail-open. */
-  const asirPermissionRef = useRef<AsirPermissionResult[] | null>(null);
+  const personPermissionRef = useRef<PersonPermissionResult[] | null>(null);
   /** Promise that resolves when the permission check completes. */
-  const asirPermissionPromiseRef = useRef<Promise<void> | null>(null);
+  const personPermissionPromiseRef = useRef<Promise<void> | null>(null);
   const debouncedInput = useDebounce(inputValue, 300);
 
   // Controlled state prop
@@ -168,11 +156,10 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   // Permission check (הרשאת איתור): fetch once on mount when fallbackToOfflineIfNoAuth is enabled
   useEffect(() => {
-    const searchesAsirs = !typeArr || typeArr.includes('asir');
-    if (!fallbackToOfflineIfNoAuth || !searchesAsirs || !config.asirPermission) return;
+    if (!fallbackToOfflineIfNoAuth || !config.asirPermission) return;
     const controller = new AbortController();
-    asirPermissionPromiseRef.current = checkAsirPermission({ config, signal: controller.signal })
-      .then((result) => { asirPermissionRef.current = result; })
+    personPermissionPromiseRef.current = checkPersonPermission({ config, signal: controller.signal })
+      .then((result) => { personPermissionRef.current = result; })
       .catch(() => { /* fail-open */ });
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,16 +199,19 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const types: PersonType[] = typeArr ?? ['asir', 'soher', 'ezrach'];
 
       // If fallbackToOfflineIfNoAuth is on, wait for the permission check to complete
-      if (fallbackToOfflineIfNoAuth && types.includes('asir') && asirPermissionPromiseRef.current) {
-        await asirPermissionPromiseRef.current;
-        asirPermissionPromiseRef.current = null; // only await once
+      if (fallbackToOfflineIfNoAuth && personPermissionPromiseRef.current) {
+        await personPermissionPromiseRef.current;
+        personPermissionPromiseRef.current = null; // only await once
       }
 
-      // No permission at all → use offline for asirs (הרשאת איתור נדחתה)
-      const asirNoAccess =
-        fallbackToOfflineIfNoAuth &&
-        Array.isArray(asirPermissionRef.current) &&
-        !asirPermissionRef.current.some(r => r.type === 'asir' && r.authorizedIds.length > 0);
+      // No permission at all for a given type → use offline for that type (הרשאת איתור נדחתה)
+      const noAccessTypes = new Set<PersonType>();
+      if (fallbackToOfflineIfNoAuth && Array.isArray(personPermissionRef.current)) {
+        for (const pt of types) {
+          const hasAccess = personPermissionRef.current.some(r => r.type === pt && r.authorizedIds.length > 0);
+          if (!hasAccess) noAccessTypes.add(pt);
+        }
+      }
 
       const baseOffset = isLoadMore && loadMoreTab
         ? pagingStateRef.current[loadMoreTab === 'asir' ? 'asirs' : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs'].offset
@@ -231,8 +221,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const esPromises = (['asir', 'soher', 'ezrach'] as PersonType[]).map((pt, i) => {
         if (!types.includes(pt)) return Promise.resolve(null);
         if (isLoadMore && loadMoreTab !== pt) return Promise.resolve(null);
-        // Skip ES for asir when user has no access → will use offline instead
-        if (pt === 'asir' && asirNoAccess) return Promise.resolve(null);
+        // Skip ES for types the user has no access to → will use offline instead
+        if (noAccessTypes.has(pt)) return Promise.resolve(null);
         return searchPersons({
           query,
           personType: pt,
@@ -273,60 +263,47 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const onlineGuards: PersonResult[] =
         onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [];
 
-      // If asir has no auth access → fetch from offline service instead
-      let offlineAsirs: PersonResult[] = [];
-      if (asirNoAccess && types.includes('asir') && !isLoadMore) {
-        try {
-          const offlineController = new AbortController();
-          abortControllers.current.push(offlineController);
-          offlineAsirs = await searchOffline({
-            query,
-            personType: 'asir',
-            config,
-            signal: offlineController.signal,
-          });
-        } catch { /* fail-open */ }
-      }
+      const esByType: Record<PersonType, PromiseSettledResult<unknown>> = {
+        asir: asirSettled, soher: soherSettled, ezrach: ezrachSettled,
+      };
 
-      // Check if all ES calls failed with OfflineError
-      const esSettled = [asirSettled, soherSettled, ezrachSettled];
-      const relevantEsSettled = esSettled
-        .filter((_, i) => types.includes((['asir', 'soher', 'ezrach'] as PersonType[])[i]));
-      const allRejected = relevantEsSettled.every((s) => s.status === 'rejected');
-      const allOffline = relevantEsSettled.every(
-        (s) => s.status === 'rejected' && isOfflineErrorLike(s.reason)
-      );
-
-      if ((allOffline || allRejected) && (enableOfflineSearch || fallbackToOfflineIfNoAuth)) {
-        setIsOffline(true);
-        try {
-          const offlineController = new AbortController();
-          abortControllers.current.push(offlineController);
-          const offlineResults = await searchOffline({
-            query,
-            personType: singleType,
-            config: config,
-            signal: offlineController.signal,
-          });
-
-          const grouped = groupByType(offlineResults);
-          const totalsByType = {
-            asir: grouped.asirs.length,
-            soher: grouped.sohers.length,
-            ezrach: grouped.ezrachs.length,
-          };
-          setResults({
-            ...grouped,
-            totalsByType,
-            totalCount: totalsByType.asir + totalsByType.soher + totalsByType.ezrach,
-          });
-        } catch {
-          setError('חיפוש לא מקוון נכשל');
+      // Each type independently needs offline data for its own reason:
+      // no permission (noAccessTypes), or its own ES call failed (esFailedTypes).
+      const esFailedTypes = new Set<PersonType>();
+      for (const pt of types) {
+        const settled = esByType[pt];
+        if (settled.status === 'rejected' && !isAbortErrorLike(settled.reason)) {
+          esFailedTypes.add(pt);
         }
-        setIsLoading(false);
-        setIsLoadingMore(false);
-        return;
       }
+      const offlineNeededTypes = new Set<PersonType>([...noAccessTypes, ...esFailedTypes]);
+
+      const offlineByType: Partial<Record<PersonType, PersonResult[]>> = {};
+      if (offlineNeededTypes.size > 0 && !isLoadMore) {
+        const offlineSettled = await Promise.allSettled(
+          types
+            .filter((pt) => offlineNeededTypes.has(pt))
+            .map(async (pt) => {
+              const offlineController = new AbortController();
+              abortControllers.current.push(offlineController);
+              const offlineResults = await searchOffline({
+                query,
+                personType: pt,
+                config,
+                signal: offlineController.signal,
+              });
+              return { pt, offlineResults };
+            })
+        );
+        for (const settled of offlineSettled) {
+          if (settled.status === 'fulfilled') {
+            offlineByType[settled.value.pt] = settled.value.offlineResults;
+          }
+        }
+      }
+
+      // Banner only for a genuine ES outage — permission-based fallback is expected behaviour, not an outage.
+      if (esFailedTypes.size > 0) setIsOffline(true);
 
       // Extract ES results per type
       const getESResult = (
@@ -342,10 +319,10 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const soherES = getESResult(soherSettled);
       const ezrachES = getESResult(ezrachSettled);
 
-      // Merge ES + online per type (ezrachs: ES only)
-      const asirMerged = mergeResults(mergeResults(asirES?.results ?? [], onlinePrisoners), offlineAsirs);
-      const soherMerged = mergeResults(soherES?.results ?? [], onlineGuards);
-      const ezrachMerged = ezrachES?.results ?? [];
+      // Merge ES + online + offline per type (ezrachs: no online service)
+      const asirMerged = mergeResults(mergeResults(asirES?.results ?? [], onlinePrisoners), offlineByType.asir ?? []);
+      const soherMerged = mergeResults(mergeResults(soherES?.results ?? [], onlineGuards), offlineByType.soher ?? []);
+      const ezrachMerged = mergeResults(ezrachES?.results ?? [], offlineByType.ezrach ?? []);
       const allMerged = [...asirMerged, ...soherMerged, ...ezrachMerged];
       const enrichedAll = await enrichPersonsWithPhotoUrls({
         persons: allMerged,
@@ -402,19 +379,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
         // Set active tab to first category with results
         setActiveTabState(firstTabWithResults(newResults));
-
-        // Handle general errors if any ES call failed with non-OfflineError
-        const anyError = esSettled.find(
-          (s) =>
-            s.status === 'rejected' &&
-            !isOfflineErrorLike(s.reason) &&
-            !isAbortErrorLike(s.reason)
-        );
-        if (anyError && anyError.status === 'rejected') {
-          if (newResults.totalCount === 0) {
-            setError('לא הצלחנו להשלים את החיפוש כרגע. אפשר לנסות שוב.');
-          }
-        }
       }
 
       setIsLoading(false);
@@ -422,7 +386,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      cancelPendingRequests, enableOfflineSearch, fallbackToOfflineIfNoAuth, filters,
+      cancelPendingRequests, fallbackToOfflineIfNoAuth, filters,
       pageSize, config, typeArr, effectiveActiveOnly,
     ]
   );
@@ -523,13 +487,5 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     showActiveOnly,
     setShowActiveOnly,
     displayFields: (config.querySettings?.[activeTab] ?? DEFAULT_QUERY_SETTINGS[activeTab]).sourceFields,
-  };
-}
-
-function groupByType(persons: PersonResult[]): Omit<SearchResults, 'totalCount' | 'totalsByType'> {
-  return {
-    asirs: persons.filter((p) => p.personType === 'asir'),
-    sohers: persons.filter((p) => p.personType === 'soher'),
-    ezrachs: persons.filter((p) => p.personType === 'ezrach'),
   };
 }

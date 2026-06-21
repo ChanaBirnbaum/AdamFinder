@@ -39,7 +39,7 @@ export async function fetchAsirWhitelist(params: {
 
 // ─── Permission check (הרשאת איתור) ──────────────────────────────────────────
 
-export interface AsirPermissionResult {
+export interface PersonPermissionResult {
   type: PersonType;
   authorizedIds: (string | number)[];
 }
@@ -53,11 +53,11 @@ export interface AsirPermissionResult {
  * Returns an array (one entry per type) — may be empty when the server denies all access (403).
  * Returns `null` when the endpoint is not configured or the request fails → fail-open (search ES).
  */
-export async function checkAsirPermission(params: {
+export async function checkPersonPermission(params: {
   config: ServiceConfig;
   signal: AbortSignal;
   personTypes?: PersonType[];
-}): Promise<AsirPermissionResult[] | null> {
+}): Promise<PersonPermissionResult[] | null> {
   const { config, signal, personTypes } = params;
 
   if (!config.asirPermission) return null;
@@ -69,7 +69,7 @@ export async function checkAsirPermission(params: {
     : baseUrl;
 
   try {
-    const { data } = await get<AsirPermissionResult[]>(url, { signal });
+    const { data } = await get<PersonPermissionResult[]>(url, { signal });
     if (!Array.isArray(data)) return null;
     return data;
   } catch (err: unknown) {

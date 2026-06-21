@@ -108,7 +108,6 @@ function App() {
 |------|-------|------------|-------|
 | `state` | `PersonResult \| null` | — | ערך נשלט (controlled) — האדם הנבחר כרגע. העבר `null` לניקוי |
 | `singleSearch` | `SingleSearch` | — | מילוי מראש: מביא אדם לפי שדה וערך ב-ES בעת טעינה |
-| `enableOfflineSearch` | `boolean` | `false` | אפשר גיבוי לבסיס נתונים מקומי כשה-ES לא זמין |
 
 ### Callbacks נוספים
 
@@ -243,12 +242,14 @@ const [selected, setSelected] = useState<PersonResult | null>(null);
 ### תמיכה באופליין
 
 ```tsx
-<PersonLocator enableOfflineSearch={true} />
+<PersonLocator />
 ```
 
-כשכל בקשות ה-ES נכשלות עם שגיאת timeout/5xx, הפקד:
-1. מציג באנר צהוב "מצב אופליין"
-2. מחפש בבסיס הנתונים המקומי (`offlineServiceUrl`)
+כשבקשת ה-ES נכשלת מכל סיבה שהיא (שגיאת רשת, timeout, 5xx, 4xx וכו'), הפקד:
+1. מציג באנר צהוב "מצב לא מקוון – ניתן לחפש לפי מספר מזהה מדויק בלבד"
+2. מחפש בבסיס הנתונים המקומי (`offlineServiceUrl`) — אך ורק כאשר הטקסט שהוקלד הוא מזהה מספרי מדויק (ספרות בלבד, באורך כלשהו — האורך משתנה בין סוגי האדם). חיפוש טקסט חופשי לא יחזיר תוצאות במצב אופליין.
+
+ההתנהגות אינה תלויה ב-prop כלשהו — כל כשל בפנייה ל-ES מפעיל אוטומטית את הגיבוי האופליין.
 
 ### פתיחת תיק וניווט
 
@@ -305,8 +306,8 @@ debounce 300ms
   ├── ES — חיפוש אזרחים
   └── שירות מקוון — כל הסוגים
   ↓
-האם כל בקשות ES נכשלו עם OfflineError?
-  ├── כן + enableOfflineSearch=true → חיפוש מקומי + הצגת באנר
+עבור כל סוג: האם בקשת ה-ES נכשלה (כל שגיאה חוץ מביטול)?
+  ├── כן → חיפוש מקומי לאותו סוג + הצגת באנר אופליין
   └── לא → מיזוג תוצאות (מקוון מנצח בכפילויות) + קיבוץ לפי סוג
   ↓
 הצגת תוצאות בטאבים
@@ -369,8 +370,6 @@ function PersonSearch() {
       // ניווט ופתיחת תיק
       navigate={navigate}
       openTikAsir={(person) => window.open(`/asir/${person.prisonerNumber}`)}
-      // אופליין
-      enableOfflineSearch={true}
     />
   );
 }
