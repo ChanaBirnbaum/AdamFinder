@@ -8,15 +8,20 @@ import type { PersonResult, PersonType, ServiceConfig } from '../types';
 export async function fetchOnlinePersons(params: {
   query: string;
   personType?: PersonType;
+  /** Prisoner whitelist (מידור) — restricts the online asir search to these IDs. */
+  allowedAsirIds?: (string | number)[];
   config: ServiceConfig;
   signal: AbortSignal;
 }): Promise<PersonResult[]> {
-  const { query, personType, config, signal } = params;
+  const { query, personType, allowedAsirIds, config, signal } = params;
 
   try {
     const url = new URL(`${config.online.baseUrl}${config.online.methods.search}`);
     url.searchParams.set('q', query);
     if (personType) url.searchParams.set('type', personType);
+    if (personType === 'asir' && allowedAsirIds?.length) {
+      url.searchParams.set('allowedasirim', JSON.stringify(allowedAsirIds));
+    }
 
     const response = await get<{ results?: Record<string, unknown>[] }>(
       url.toString(),

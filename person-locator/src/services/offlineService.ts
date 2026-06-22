@@ -28,11 +28,15 @@ export async function searchOffline(params: {
     { signal },
   );
 
-  return (response.data.results ?? []).map((p) => ({
-    id: String(p['id'] ?? ''),
-    personType: (p['personType'] as PersonType) ?? 'ezrach',
-    isActive: Boolean(p['isActive'] ?? true),
-    source: 'offline' as const,
-    data: { ...p },
-  }));
+  return (response.data.results ?? []).map((p) => {
+    // Offline results never show a photo, regardless of what the backend returns.
+    const { photoUrl: _photoUrl, ...data } = p;
+    return {
+      id: String(p['id'] ?? ''),
+      personType: personType ?? (p['personType'] as PersonType) ?? 'ezrach',
+      isActive: Boolean(p['isActive'] ?? true),
+      source: 'offline' as const,
+      data,
+    };
+  });
 }

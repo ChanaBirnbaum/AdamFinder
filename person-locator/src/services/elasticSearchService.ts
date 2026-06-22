@@ -2,12 +2,10 @@
 import { post, OfflineError } from './axiosInstance';
 import type {
   ElasticQuerySettings,
-  Filter,
   PersonResult,
   PersonType,
   ServiceConfig,
 } from '../types';
-import { buildFilters } from '../utils/buildFilters';
 import { enrichPersonsWithPhotoUrls } from './photoService';
 
 export { OfflineError };
@@ -167,7 +165,8 @@ function mapHitToPersonResult(
 export async function searchPersons(params: {
   query: string;
   personType: PersonType;
-  filters: Filter[];
+  /** Compiled Elasticsearch clause for the active Filter tree — see `compileToElasticQuery`. */
+  filterClause?: Record<string, unknown>;
   offset: number;
   pageSize: number;
   activeOnly?: boolean;
@@ -177,7 +176,7 @@ export async function searchPersons(params: {
   const {
     query,
     personType,
-    filters,
+    filterClause,
     offset,
     pageSize,
     activeOnly,
@@ -190,7 +189,7 @@ export async function searchPersons(params: {
 
   const conditions: Record<string, unknown>[] = [
     ...(base.conditions ?? []),
-    ...buildFilters(filters),
+    ...(filterClause ? [filterClause] : []),
     ...(activeOnly ? [{ term: { [base.activeField ?? 'isActive']: true } }] : []),
     ...(base.personTypeField && base.personTypeValue
       ? [{ term: { [base.personTypeField]: base.personTypeValue } }]

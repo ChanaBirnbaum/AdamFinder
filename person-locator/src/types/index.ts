@@ -1,17 +1,10 @@
+import type { FilterInput } from '../filters';
+
 // Person categories
 export type PersonType = 'asir' | 'soher' | 'ezrach';
 
 // Deployment environment
 export type Environment = 'dev' | 'test' | 'lrn' | 'prod';
-
-// Filter operators
-export type FilterOperator = 'equals' | 'exists' | 'gt' | 'lt' | 'contains';
-
-export interface Filter {
-  fieldName: string;
-  value: string | number | null;
-  operator: FilterOperator;
-}
 
 // A single search result person
 export interface PersonResult {
@@ -179,8 +172,17 @@ export interface PersonLocatorProps {
   /** Extra ES index fields to include in the search query. */
   additionalSearchFields?: string[];
 
-  /** Dynamic filters applied to every ES query. */
-  filters?: Filter[];
+  /**
+   * User-facing filter, applied identically against Elasticsearch and the online/offline
+   * results. A single Filter, or an array (combined with an implicit AND). See `src/filters`.
+   */
+  filters?: FilterInput<PersonResult>;
+
+  /**
+   * Mandatory system-level filter (permission scoping, forced exclusions) — always ANDed
+   * with `filters` so it cannot be widened or bypassed by the user filter. See `src/filters`.
+   */
+  baseFilter?: FilterInput<PersonResult>;
 
   /**
    * When `true`, the library calls the `asirPermission` endpoint before each search.

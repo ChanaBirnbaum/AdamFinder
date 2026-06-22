@@ -5,16 +5,14 @@ export { default as PersonLocator } from './components/PersonLocator';
 export { usePersonSearch } from './hooks/usePersonSearch';
 export type { UsePersonSearchReturn } from './hooks/usePersonSearch';
 export { mergeResults } from './utils/mergeResults';
-export { buildFilters } from './utils/buildFilters';
 export { highlightMatch } from './utils/highlightMatch';
 export { OfflineError, initHttpClient } from './services/axiosInstance';
 export type { HttpClientConfig } from './services/axiosInstance';
 export { buildElasticQuery } from './services/elasticSearchService';
+export * from './filters';
 
 export type {
   PersonType,
-  FilterOperator,
-  Filter,
   PersonResult,
   SearchResults,
   PagingState,

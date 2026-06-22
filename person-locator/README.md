@@ -43,6 +43,85 @@ function App() {
 }
 ```
 
+## Filtering
+
+`PersonLocator` accepts one filter that applies identically across all three sources —
+it's compiled to an Elasticsearch query for the primary search, and to a client-side
+predicate for the online/offline results, so all three sources agree on who matches.
+
+### Basic usage
+
+```tsx
+import { PersonLocator, eq, oneOf, noneOf } from '@ips/searchAdam';
+
+<PersonLocator
+  env="prod"
+  filters={[
+    oneOf('data.unit', ['A', 'B']),
+    noneOf('data.idNumber', ['123456', '789012']),
+  ]}
+/>
+```
+
+`filters` accepts a single filter or an array — an array is combined with an implicit
+AND, so the example above means "unit is A or B, AND id is not one of these two".
+
+### Builder functions
+
+| Function | Elasticsearch | Meaning |
+|---|---|---|
+| `eq(field, value)` | `term` | Field equals value |
+| `oneOf(field, values)` | `terms` | Field matches any of the values |
+| `noneOf(field, values)` | `must_not` + `terms` | Field matches none of the values |
+| `range(field, { gte, lte, gt, lt })` | `range` | Field falls within bounds |
+| `exists(field)` | `exists` | Field is present (non-null) |
+| `and(...filters)` | `bool.filter` | All sub-filters must match |
+| `or(...filters)` | `bool.should` | At least one sub-filter must match |
+| `not(filter)` | `bool.must_not` | Negates a filter |
+
+`field` autocompletes known `PersonResult` paths (`id`, `isActive`, `data.fullName`,
+`data.rank`, …) but also accepts any string — the set of Elasticsearch fields you can
+filter on isn't limited to what's typed, since each deployment's index can carry extra
+fields. You can never pass a raw Elasticsearch query — only these typed building blocks,
+which is what keeps the online/offline filtering in sync with Elasticsearch.
+
+### Combining filters
+
+```tsx
+import { and, or, eq } from '@ips/searchAdam';
+
+const filters = and(
+  eq('isActive', true),
+  or(eq('data.unit', 'A'), eq('data.unit', 'B')),
+);
+```
+
+### System-level (mandatory) filtering
+
+Use `baseFilter` for scoping that must always apply regardless of what the user passes
+in `filters` — e.g. a permission boundary. `baseFilter` is ANDed with `filters`
+internally, so it narrows but can never be widened or bypassed:
+
+```tsx
+<PersonLocator
+  env="prod"
+  baseFilter={eq('data.region', currentUser.region)}
+  filters={userChosenFilters}
+/>
+```
+
+### Notes
+
+- If a field is missing on the online/offline object but exists in Elasticsearch (e.g. it
+  hasn't synced yet), `eq`/`oneOf`/`range`/`exists` exclude that record and `noneOf`
+  includes it — matching how Elasticsearch itself treats a missing field in `filter`
+  context.
+- `eq`/`oneOf`/`noneOf` automatically target `<field>.keyword` for string values, so exact
+  matches don't get mangled by text analysis.
+- Passing more than ~1000 values to `oneOf`/`noneOf` throws, with a suggestion to use an
+  Elasticsearch terms lookup instead of inlining a huge list.
+- See `src/filters/index.ts` for the full API and a runnable example.
+
 ## Props
 
 See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented with JSDoc.
@@ -56,7 +135,8 @@ See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented wi
 | `resultDirection` | `'up' \| 'down'` | `'down'` | Dropdown direction |
 | `additionalSearchFields` | `string[]` | `[]` | Extra ES fields for search |
 | `additionalResultFields` | `string[]` | `[]` | Extra fields to display |
-| `filters` | `Filter[]` | `[]` | Dynamic ES filter clauses |
+| `filters` | `Filter \| Filter[]` | — | User filter, applied to ES + online + offline — see [Filtering](#filtering) |
+| `baseFilter` | `Filter \| Filter[]` | — | Mandatory system-level filter, always ANDed with `filters` |
 | `singleSearch` | `SingleSearch` | — | Pre-fill by key/value |
 | `state` | `PersonResult \| null` | — | Controlled selected person |
 | `openTikAsir` | `(person) => void` | — | Open prisoner file system |

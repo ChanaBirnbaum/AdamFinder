@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
 import { fetchAsirWhitelist, checkPersonPermission } from '../services/asirAuthService';
 import type { AsirWhitelistResult, PersonPermissionResult } from '../services/asirAuthService';
@@ -7,6 +7,7 @@ import { searchOffline } from '../services/offlineService';
 import { enrichPersonsWithPhotoUrls } from '../services/photoService';
 import { mergeResults } from '../utils/mergeResults';
 import { getConfig } from '../serviceConfig';
+import { normalize, composeWithBase, compileToElasticQuery, compileToPredicate } from '../filters';
 import type {
   PersonLocatorProps,
   PersonResult,
@@ -67,7 +68,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     type,
     minChars = 3,
     onSelect,
-    filters = [],
+    filters,
+    baseFilter,
     additionalSearchFields = [],
     fallbackToOfflineIfNoAuth = false,
     singleSearch,
@@ -88,6 +90,15 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     : undefined;
   // Single locked type (for singleSearch, offline, tab locking)
   const singleType: PersonType | undefined = typeArr?.length === 1 ? typeArr[0] : undefined;
+
+  // One filter tree, two compilers — base filter is always ANDed in and cannot be bypassed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const filterTree = useMemo(
+    () => normalize(composeWithBase(baseFilter, filters)),
+    [JSON.stringify(baseFilter), JSON.stringify(filters)],
+  );
+  const filterClause = useMemo(() => compileToElasticQuery(filterTree), [filterTree]);
+  const filterPredicate = useMemo(() => compileToPredicate(filterTree), [filterTree]);
 
   const [inputValue, setInputValueState] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
@@ -226,7 +237,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         return searchPersons({
           query,
           personType: pt,
-          filters,
+          filterClause,
           offset: isLoadMore ? baseOffset : 0,
           pageSize,
           activeOnly: effectiveActiveOnly,
@@ -248,7 +259,13 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       // Online service promises — asirs and sohers only (no ezrachs)
       const onlinePrisonerPromise = !isLoadMore && types.includes('asir')
-        ? fetchOnlinePersons({ query, personType: 'asir', config: config, signal: controllers[3].signal })
+        ? fetchOnlinePersons({
+            query,
+            personType: 'asir',
+            allowedAsirIds: asirWhitelistRef.current?.values,
+            config: config,
+            signal: controllers[3].signal,
+          })
         : Promise.resolve([] as PersonResult[]);
 
       const onlineGuardPromise = !isLoadMore && types.includes('soher')
@@ -258,10 +275,13 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const [asirSettled, soherSettled, ezrachSettled, onlinePrisonerSettled, onlineGuardSettled] =
         await Promise.allSettled([...esPromises, onlinePrisonerPromise, onlineGuardPromise]);
 
+      // Client-side filtering — mirrors the ES filter clause so all three sources agree.
       const onlinePrisoners: PersonResult[] =
-        onlinePrisonerSettled.status === 'fulfilled' ? (onlinePrisonerSettled.value as PersonResult[]) : [];
+        (onlinePrisonerSettled.status === 'fulfilled' ? (onlinePrisonerSettled.value as PersonResult[]) : [])
+          .filter(filterPredicate);
       const onlineGuards: PersonResult[] =
-        onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [];
+        (onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [])
+          .filter(filterPredicate);
 
       const esByType: Record<PersonType, PromiseSettledResult<unknown>> = {
         asir: asirSettled, soher: soherSettled, ezrach: ezrachSettled,
@@ -292,7 +312,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
                 config,
                 signal: offlineController.signal,
               });
-              return { pt, offlineResults };
+              return { pt, offlineResults: offlineResults.filter(filterPredicate) };
             })
         );
         for (const settled of offlineSettled) {
@@ -324,11 +344,15 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const soherMerged = mergeResults(mergeResults(soherES?.results ?? [], onlineGuards), offlineByType.soher ?? []);
       const ezrachMerged = mergeResults(ezrachES?.results ?? [], offlineByType.ezrach ?? []);
       const allMerged = [...asirMerged, ...soherMerged, ...ezrachMerged];
-      const enrichedAll = await enrichPersonsWithPhotoUrls({
-        persons: allMerged,
+      // Offline results never get photos enriched/displayed — the offline DB has no photo data.
+      const onlinePersons = allMerged.filter((p) => p.source !== 'offline');
+      const offlinePersons = allMerged.filter((p) => p.source === 'offline');
+      const enrichedOnline = await enrichPersonsWithPhotoUrls({
+        persons: onlinePersons,
         config,
         signal: controllers[5].signal,
       });
+      const enrichedAll = [...enrichedOnline, ...offlinePersons];
 
       const asirEnriched = enrichedAll.filter((p) => p.personType === 'asir');
       const soherEnriched = enrichedAll.filter((p) => p.personType === 'soher');
@@ -386,7 +410,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      cancelPendingRequests, fallbackToOfflineIfNoAuth, filters,
+      cancelPendingRequests, fallbackToOfflineIfNoAuth, filterClause, filterPredicate,
       pageSize, config, typeArr, effectiveActiveOnly,
     ]
   );
@@ -411,6 +435,14 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(typeArr)]);
+
+  // Re-run search when the filter changes (while query is active)
+  useEffect(() => {
+    if (debouncedInput.length >= minChars) {
+      runSearch(debouncedInput);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterClause, filterPredicate]);
 
   // Re-run search when active toggle changes (while query is active)
   useEffect(() => {
