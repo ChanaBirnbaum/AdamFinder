@@ -15,8 +15,23 @@ function resolveObjectPath(field: string, exceptions: FieldExceptionsMap): strin
   return mapped.endsWith('.keyword') ? mapped.slice(0, -'.keyword'.length) : mapped;
 }
 
+/** The only keys that ever sit at the top level of a `PersonResult` — everything else lives under `.data`. */
+const TOP_LEVEL_PERSON_RESULT_KEYS = new Set(['id', 'personType', 'isActive', 'source']);
+
+/**
+ * Resolves a field against a `PersonResult`. Filter fields are written against the real
+ * Elasticsearch mapping (e.g. `idnt_asir`, flat — no `data.` prefix, matching `sourceFields`
+ * / `allowedList.field` elsewhere). On the client object those same fields are nested under
+ * `.data` (every source spreads its raw record into `PersonResult.data`), so when a direct
+ * lookup misses and the field isn't already `data.`-prefixed or one of the few real top-level
+ * keys, fall back to `data.<field>`.
+ */
 function resolveValue(person: unknown, field: string, exceptions: FieldExceptionsMap): unknown {
-  return getByPath(person, resolveObjectPath(field, exceptions));
+  const path = resolveObjectPath(field, exceptions);
+  const direct = getByPath(person, path);
+  if (direct !== undefined) return direct;
+  if (path.startsWith('data.') || TOP_LEVEL_PERSON_RESULT_KEYS.has(path)) return direct;
+  return getByPath(person, `data.${path}`);
 }
 
 /** Loose equality so e.g. a numeric id `7` on Elasticsearch matches a string id `"7"` on the synced object. */

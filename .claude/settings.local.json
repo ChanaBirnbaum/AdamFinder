@@ -7,7 +7,8 @@
       "Bash(npx tsc *)",
       "Bash(npx vitest *)",
       "Bash(cd \"/c/Users/user1/AdamFinder/person-locator\" && cat package.json | grep -A3 '\"test\"')",
-      "Read(//c/c/Users/user1/AdamFinder/person-locator/**)"
+      "Read(//c/c/Users/user1/AdamFinder/person-locator/**)",
+      "Bash(grep -rn \"'data\\\\.'\\\\|\\\\\"data\\\\.\\\\\"\\\\|startsWith\\('data\\\\|replace\\(/^data\\\\\\\\.\\\\|stripDataPrefix\\\\|data\\\\\\\\.\\\\b\" \"c:\\\\Users\\\\user1\\\\AdamFinder\\\\person-locator\\\\src\")"
     ]
   }
 }

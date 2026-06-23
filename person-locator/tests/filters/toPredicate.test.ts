@@ -66,4 +66,15 @@ describe('compileToPredicate', () => {
     expect(pred(makePerson({ id: '1', isActive: false }))).toBe(true);
     expect(pred(makePerson({ id: '2', isActive: true }))).toBe(false);
   });
+
+  it('falls back to data.<field> for a flat field name matching the real ES mapping', () => {
+    const pred = compileToPredicate(eq<TestPerson>('unit', 'A'));
+    expect(pred(makePerson({ id: '1', data: { unit: 'A' } }))).toBe(true);
+    expect(pred(makePerson({ id: '2', data: { unit: 'B' } }))).toBe(false);
+  });
+
+  it('does not fall back when the real top-level key already resolves', () => {
+    const pred = compileToPredicate(eq<TestPerson>('isActive', true));
+    expect(pred(makePerson({ id: '1', isActive: true }))).toBe(true);
+  });
 });

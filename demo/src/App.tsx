@@ -1,4 +1,4 @@
-import { PersonLocator } from '@ips/searchAdam';
+import { PersonLocator, eq, noneOf, and } from '@ips/searchAdam';
 import type { PersonResult } from '@ips/searchAdam';
 import './index.css';
 
@@ -98,6 +98,23 @@ export default function App() {
             serviceConfig={mockServiceConfig}
             singleSearch={{ key: 'prisonerNumber', value: 'P5' }}
             onSelect={(p: PersonResult) => console.log('single נבחר:', p)}
+          />
+        </div>
+
+        {/* ── Filters example: unit = 7 AND tz not in [111111, 777777] ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+          <p className="text-xs text-gray-400 mb-3 text-right">
+            דוגמת פילטרים · יחידה = 7 וגם ת.ז. לא ב-[111111, 777777]
+          </p>
+          <PersonLocator
+            env="dev"
+            minChars={2}
+            serviceConfig={mockServiceConfig}
+            filters={and(
+              eq('idnt_yechida', 7),
+              noneOf('tz', [111111, 777777]),
+            )}
+            onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
           />
         </div>
 
