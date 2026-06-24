@@ -1,0 +1,1398 @@
+diff --git a/person-locator/README.md b/person-locator/README.md
+index 165742d..e42657c 100644
+--- a/person-locator/README.md
++++ b/person-locator/README.md
+@@ -43,6 +43,85 @@ function App() {
+ }
+ ```
+ 
++## Filtering
++
++`PersonLocator` accepts one filter that applies identically across all three sources —
++it's compiled to an Elasticsearch query for the primary search, and to a client-side
++predicate for the online/offline results, so all three sources agree on who matches.
++
++### Basic usage
++
++```tsx
++import { PersonLocator, eq, oneOf, noneOf } from '@ips/searchAdam';
++
++<PersonLocator
++  env="prod"
++  filters={[
++    oneOf('data.unit', ['A', 'B']),
++    noneOf('data.idNumber', ['123456', '789012']),
++  ]}
++/>
++```
++
++`filters` accepts a single filter or an array — an array is combined with an implicit
++AND, so the example above means "unit is A or B, AND id is not one of these two".
++
++### Builder functions
++
++| Function | Elasticsearch | Meaning |
++|---|---|---|
++| `eq(field, value)` | `term` | Field equals value |
++| `oneOf(field, values)` | `terms` | Field matches any of the values |
++| `noneOf(field, values)` | `must_not` + `terms` | Field matches none of the values |
++| `range(field, { gte, lte, gt, lt })` | `range` | Field falls within bounds |
++| `exists(field)` | `exists` | Field is present (non-null) |
++| `and(...filters)` | `bool.filter` | All sub-filters must match |
++| `or(...filters)` | `bool.should` | At least one sub-filter must match |
++| `not(filter)` | `bool.must_not` | Negates a filter |
++
++`field` autocompletes known `PersonResult` paths (`id`, `isActive`, `data.fullName`,
++`data.rank`, …) but also accepts any string — the set of Elasticsearch fields you can
++filter on isn't limited to what's typed, since each deployment's index can carry extra
++fields. You can never pass a raw Elasticsearch query — only these typed building blocks,
++which is what keeps the online/offline filtering in sync with Elasticsearch.
++
++### Combining filters
++
++```tsx
++import { and, or, eq } from '@ips/searchAdam';
++
++const filters = and(
++  eq('isActive', true),
++  or(eq('data.unit', 'A'), eq('data.unit', 'B')),
++);
++```
++
++### System-level (mandatory) filtering
++
++Use `baseFilter` for scoping that must always apply regardless of what the user passes
++in `filters` — e.g. a permission boundary. `baseFilter` is ANDed with `filters`
++internally, so it narrows but can never be widened or bypassed:
++
++```tsx
++<PersonLocator
++  env="prod"
++  baseFilter={eq('data.region', currentUser.region)}
++  filters={userChosenFilters}
++/>
++```
++
++### Notes
++
++- If a field is missing on the online/offline object but exists in Elasticsearch (e.g. it
++  hasn't synced yet), `eq`/`oneOf`/`range`/`exists` exclude that record and `noneOf`
++  includes it — matching how Elasticsearch itself treats a missing field in `filter`
++  context.
++- `eq`/`oneOf`/`noneOf` automatically target `<field>.keyword` for string values, so exact
++  matches don't get mangled by text analysis.
++- Passing more than ~1000 values to `oneOf`/`noneOf` throws, with a suggestion to use an
++  Elasticsearch terms lookup instead of inlining a huge list.
++- See `src/filters/index.ts` for the full API and a runnable example.
++
+ ## Props
+ 
+ See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented with JSDoc.
+@@ -56,7 +135,8 @@ See `PersonLocatorProps` in `src/types/index.ts` — every prop is documented wi
+ | `resultDirection` | `'up' \| 'down'` | `'down'` | Dropdown direction |
+ | `additionalSearchFields` | `string[]` | `[]` | Extra ES fields for search |
+ | `additionalResultFields` | `string[]` | `[]` | Extra fields to display |
+-| `filters` | `Filter[]` | `[]` | Dynamic ES filter clauses |
++| `filters` | `Filter \| Filter[]` | — | User filter, applied to ES + online + offline — see [Filtering](#filtering) |
++| `baseFilter` | `Filter \| Filter[]` | — | Mandatory system-level filter, always ANDed with `filters` |
+ | `singleSearch` | `SingleSearch` | — | Pre-fill by key/value |
+ | `state` | `PersonResult \| null` | — | Controlled selected person |
+ | `openTikAsir` | `(person) => void` | — | Open prisoner file system |
+diff --git a/person-locator/src/filters/builder.ts b/person-locator/src/filters/builder.ts
+new file mode 100644
+index 0000000..9caa4b6
+--- /dev/null
++++ b/person-locator/src/filters/builder.ts
+@@ -0,0 +1,56 @@
++import type { FieldRef, Path, ValueAtPath } from './path';
++import type { Filter } from './model';
++
++type ValueFor<T, P extends FieldRef<T>> = P extends Path<T> ? ValueAtPath<T, P> : unknown;
++
++/** Field equals value (Elasticsearch `term`). */
++export function eq<T = unknown, P extends FieldRef<T> = FieldRef<T>>(
++  field: P,
++  value: ValueFor<T, P>,
++): Filter<T> {
++  return { op: 'eq', field, value };
++}
++
++/** Field matches any of the given values (Elasticsearch `terms`). */
++export function oneOf<T = unknown, P extends FieldRef<T> = FieldRef<T>>(
++  field: P,
++  values: ReadonlyArray<ValueFor<T, P>>,
++): Filter<T> {
++  return { op: 'in', field, values: [...values] };
++}
++
++/** Field matches none of the given values (Elasticsearch `must_not` over `terms`). */
++export function noneOf<T = unknown, P extends FieldRef<T> = FieldRef<T>>(
++  field: P,
++  values: ReadonlyArray<ValueFor<T, P>>,
++): Filter<T> {
++  return { op: 'nin', field, values: [...values] };
++}
++
++/** Field falls within the given bounds (Elasticsearch `range`). At least one bound should be set. */
++export function range<T = unknown, P extends FieldRef<T> = FieldRef<T>>(
++  field: P,
++  bounds: { gte?: ValueFor<T, P>; lte?: ValueFor<T, P>; gt?: ValueFor<T, P>; lt?: ValueFor<T, P> },
++): Filter<T> {
++  return { op: 'range', field, ...bounds };
++}
++
++/** Field must be present (non-null) on the document. */
++export function exists<T = unknown>(field: FieldRef<T>): Filter<T> {
++  return { op: 'exists', field };
++}
++
++/** Combine filters — a document must match ALL of them. */
++export function and<T = unknown>(...filters: Filter<T>[]): Filter<T> {
++  return { op: 'and', filters };
++}
++
++/** Combine filters — a document must match AT LEAST ONE of them. */
++export function or<T = unknown>(...filters: Filter<T>[]): Filter<T> {
++  return { op: 'or', filters };
++}
++
++/** Negate a filter. */
++export function not<T = unknown>(filter: Filter<T>): Filter<T> {
++  return { op: 'not', filter };
++}
+diff --git a/person-locator/src/filters/fieldExceptions.ts b/person-locator/src/filters/fieldExceptions.ts
+new file mode 100644
+index 0000000..ccdb253
+--- /dev/null
++++ b/person-locator/src/filters/fieldExceptions.ts
+@@ -0,0 +1,11 @@
++/** Maps an Elasticsearch field path to the differently-shaped path on the synced object (online/offline/PersonResult.data). */
++export type FieldExceptionsMap = Record<string, string>;
++
++/**
++ * Known mismatches between an Elasticsearch field path and the client-side object path.
++ * Empty by default — for most fields the path is identical on both sides (modulo a
++ * trailing `.keyword`, which `compileToPredicate` strips automatically). Add an entry
++ * here only when a real mismatch is found, e.g. `unitId: 'unit.id'` if Elasticsearch
++ * stores `unitId` but the synced object nests it under `unit.id`.
++ */
++export const defaultFieldExceptions: FieldExceptionsMap = {};
+diff --git a/person-locator/src/filters/index.ts b/person-locator/src/filters/index.ts
+new file mode 100644
+index 0000000..e6a0b62
+--- /dev/null
++++ b/person-locator/src/filters/index.ts
+@@ -0,0 +1,41 @@
++/**
++ * Generic, source-agnostic filtering for PersonLocator.
++ *
++ * One filter model, two compilers: `compileToElasticQuery` turns it into an Elasticsearch
++ * query clause, `compileToPredicate` turns it into a client-side `(person) => boolean` for
++ * the online/offline sources — so the same filter selects the same people everywhere.
++ *
++ * @example
++ * ```ts
++ * import { eq, oneOf, noneOf, and, normalize, composeWithBase } from './filters';
++ * import type { PersonResult } from '../types';
++ *
++ * // A single filter: prisoners in unit "A" or "B", excluding two specific id numbers.
++ * const userFilter = and<PersonResult>(
++ *   oneOf<PersonResult>('data.unit', ['A', 'B']),
++ *   noneOf<PersonResult>('data.idNumber', ['123', '456']),
++ * );
++ *
++ * // Equivalent — pass an array instead; entries are combined with an implicit AND.
++ * const sameFilter = [
++ *   oneOf<PersonResult>('data.unit', ['A', 'B']),
++ *   noneOf<PersonResult>('data.idNumber', ['123', '456']),
++ * ];
++ *
++ * // Mandatory, system-level scoping (e.g. a permission boundary) — always ANDed with the
++ * // user's filter via composeWithBase, so the user filter can never widen past it.
++ * const baseFilter = eq<PersonResult>('isActive', true);
++ * const tree = normalize(composeWithBase(baseFilter, userFilter));
++ *
++ * const esClause = compileToElasticQuery(tree); // → bool.filter, alongside the free-text query in must
++ * const predicate = compileToPredicate(tree);    // → applied to the online/offline results
++ * ```
++ */
++export type { Path, FieldRef, ValueAtPath } from './path';
++export type { Filter, FilterInput } from './model';
++export { eq, oneOf, noneOf, range, and, or, not, exists } from './builder';
++export { normalize, composeWithBase } from './normalize';
++export type { FieldExceptionsMap } from './fieldExceptions';
++export { defaultFieldExceptions } from './fieldExceptions';
++export { compileToElasticQuery, MAX_INLINE_TERMS } from './toElasticQuery';
++export { compileToPredicate } from './toPredicate';
+diff --git a/person-locator/src/filters/model.ts b/person-locator/src/filters/model.ts
+new file mode 100644
+index 0000000..63ff930
+--- /dev/null
++++ b/person-locator/src/filters/model.ts
+@@ -0,0 +1,18 @@
++import type { FieldRef } from './path';
++
++/**
++ * Declarative filter tree. One source of truth, compiled two ways:
++ * `compileToElasticQuery` (Elasticsearch) and `compileToPredicate` (online/offline, client-side).
++ */
++export type Filter<T> =
++  | { op: 'and'; filters: Filter<T>[] }
++  | { op: 'or'; filters: Filter<T>[] }
++  | { op: 'not'; filter: Filter<T> }
++  | { op: 'eq'; field: FieldRef<T>; value: unknown }
++  | { op: 'in'; field: FieldRef<T>; values: unknown[] }
++  | { op: 'nin'; field: FieldRef<T>; values: unknown[] }
++  | { op: 'range'; field: FieldRef<T>; gte?: unknown; lte?: unknown; gt?: unknown; lt?: unknown }
++  | { op: 'exists'; field: FieldRef<T> };
++
++/** What a consumer may pass in: a single filter, or a list treated as an implicit AND. Never a raw Elasticsearch query. */
++export type FilterInput<T> = Filter<T> | Filter<T>[];
+diff --git a/person-locator/src/filters/normalize.ts b/person-locator/src/filters/normalize.ts
+new file mode 100644
+index 0000000..d39b86a
+--- /dev/null
++++ b/person-locator/src/filters/normalize.ts
+@@ -0,0 +1,40 @@
++import { and } from './builder';
++import type { Filter, FilterInput } from './model';
++
++/**
++ * Collapses a single filter or an array of filters into one tree, so the rest of the
++ * pipeline (both compilers) only ever has to deal with one shape.
++ *   normalize(undefined)    → and()        (match all)
++ *   normalize([f1, f2, f3]) → and(f1,f2,f3) (implicit AND across the array)
++ *   normalize(f)            → f
++ */
++export function normalize<T>(input: FilterInput<T> | undefined): Filter<T> {
++  if (input === undefined) return and<T>();
++  if (Array.isArray(input)) return and<T>(...input);
++  return input;
++}
++
++function isEmptyInput<T>(input: FilterInput<T> | undefined): boolean {
++  return input === undefined || (Array.isArray(input) && input.length === 0);
++}
++
++/**
++ * ANDs a mandatory system-level base filter (permission scoping, forced exclusions) with
++ * the user's filter. AND only narrows, so the base is always enforced and cannot be
++ * bypassed by the user filter — and because it flows through the same tree, it applies
++ * to the Elasticsearch query and to the online/offline predicates alike.
++ *
++ * When only one side is actually present, that side is returned as-is rather than
++ * wrapped in an `and()` alongside an empty (match-all) branch.
++ */
++export function composeWithBase<T>(
++  base: FilterInput<T> | undefined,
++  user: FilterInput<T> | undefined,
++): Filter<T> {
++  const baseEmpty = isEmptyInput(base);
++  const userEmpty = isEmptyInput(user);
++  if (baseEmpty && userEmpty) return and<T>();
++  if (baseEmpty) return normalize(user);
++  if (userEmpty) return normalize(base);
++  return and<T>(normalize(base), normalize(user));
++}
+diff --git a/person-locator/src/filters/path.ts b/person-locator/src/filters/path.ts
+new file mode 100644
+index 0000000..d8b1655
+--- /dev/null
++++ b/person-locator/src/filters/path.ts
+@@ -0,0 +1,43 @@
++/** Primitive types that terminate path recursion. */
++type Primitive = string | number | boolean | bigint | symbol | undefined | null;
++
++type IsPlainObject<T> = T extends Primitive
++  ? false
++  : T extends readonly unknown[]
++  ? false
++  : T extends (...args: never[]) => unknown
++  ? false
++  : true;
++
++/** Decrements a bounded depth counter so the recursion below always terminates. */
++type Prev<D extends number> = D extends 4 ? 3 : D extends 3 ? 2 : D extends 2 ? 1 : D extends 1 ? 0 : 0;
++
++/**
++ * All dot-separated key paths into `T`, up to 4 levels deep.
++ * Known object shapes get real autocomplete; an open index signature (e.g. `Record<string, unknown>`)
++ * collapses to a `${prefix}.${string}` pattern, which still accepts any field name under it.
++ */
++export type Path<T, Depth extends number = 4> = Depth extends 0
++  ? never
++  : T extends Primitive
++  ? never
++  : {
++      [K in keyof T & string]: IsPlainObject<T[K]> extends true
++        ? `${K}` | `${K}.${Path<T[K], Prev<Depth>>}`
++        : `${K}`;
++    }[keyof T & string];
++
++/**
++ * A field reference: autocompletes known paths on `T` via `Path<T>`, but still accepts
++ * any string — the set of filterable Elasticsearch fields is not closed to `T`'s shape.
++ */
++export type FieldRef<T> = Path<T> | (string & {});
++
++/** Resolves the value type at a known path `P` on `T`. Falls back to `unknown` once the path leaves typed territory. */
++export type ValueAtPath<T, P extends string> = P extends `${infer Head}.${infer Rest}`
++  ? Head extends keyof T
++    ? ValueAtPath<T[Head], Rest>
++    : unknown
++  : P extends keyof T
++  ? T[P]
++  : unknown;
+diff --git a/person-locator/src/filters/toElasticQuery.ts b/person-locator/src/filters/toElasticQuery.ts
+new file mode 100644
+index 0000000..eccf3a6
+--- /dev/null
++++ b/person-locator/src/filters/toElasticQuery.ts
+@@ -0,0 +1,77 @@
++import type { Filter } from './model';
++
++type ESClause = Record<string, unknown>;
++
++/**
++ * Above this many values, Elasticsearch's own `terms` query gets slow/risky to inline
++ * (and can hit `index.max_terms_count`). Prefer a terms lookup (a `terms` query whose
++ * values come from another document's field, via `terms.index`/`terms.id`/`terms.path`)
++ * instead of inlining the list.
++ */
++export const MAX_INLINE_TERMS = 1024;
++
++function keywordField(field: string, value: unknown): string {
++  if (field.endsWith('.keyword')) return field;
++  return typeof value === 'string' ? `${field}.keyword` : field;
++}
++
++function keywordFieldForValues(field: string, values: unknown[]): string {
++  if (field.endsWith('.keyword')) return field;
++  return values.some((v) => typeof v === 'string') ? `${field}.keyword` : field;
++}
++
++function assertInlineable(field: string, values: unknown[]): void {
++  if (values.length > MAX_INLINE_TERMS) {
++    throw new Error(
++      `Filter on "${field}" has ${values.length} values, over the inline limit of ${MAX_INLINE_TERMS}. ` +
++        'Use an Elasticsearch terms lookup (a "terms" query referencing another document\'s id list) instead of inlining this many values.',
++    );
++  }
++}
++
++function buildRangeBounds(filter: { gte?: unknown; lte?: unknown; gt?: unknown; lt?: unknown }): Record<string, unknown> {
++  const bounds: Record<string, unknown> = {};
++  if (filter.gte !== undefined) bounds.gte = filter.gte;
++  if (filter.lte !== undefined) bounds.lte = filter.lte;
++  if (filter.gt !== undefined) bounds.gt = filter.gt;
++  if (filter.lt !== undefined) bounds.lt = filter.lt;
++  return bounds;
++}
++
++/**
++ * Compiler A — turns a Filter tree into an Elasticsearch query clause.
++ * Lives entirely in filter context (no scoring, cacheable) — the free-text search
++ * stays in `must` alongside this, in `must`'s sibling `filter`/`must_not`/`should`.
++ */
++export function compileToElasticQuery<T>(filter: Filter<T>): ESClause {
++  switch (filter.op) {
++    case 'and':
++      return { bool: { filter: filter.filters.map((f) => compileToElasticQuery(f)) } };
++    case 'or':
++      return {
++        bool: { should: filter.filters.map((f) => compileToElasticQuery(f)), minimum_should_match: 1 },
++      };
++    case 'not':
++      return { bool: { must_not: [compileToElasticQuery(filter.filter)] } };
++    case 'eq': {
++      const field = filter.field as string;
++      return { term: { [keywordField(field, filter.value)]: filter.value } };
++    }
++    case 'in': {
++      const field = filter.field as string;
++      assertInlineable(field, filter.values);
++      return { terms: { [keywordFieldForValues(field, filter.values)]: filter.values } };
++    }
++    case 'nin': {
++      const field = filter.field as string;
++      assertInlineable(field, filter.values);
++      return { bool: { must_not: [{ terms: { [keywordFieldForValues(field, filter.values)]: filter.values } }] } };
++    }
++    case 'range': {
++      const field = filter.field as string;
++      return { range: { [field]: buildRangeBounds(filter) } };
++    }
++    case 'exists':
++      return { exists: { field: filter.field as string } };
++  }
++}
+diff --git a/person-locator/src/filters/toPredicate.ts b/person-locator/src/filters/toPredicate.ts
+new file mode 100644
+index 0000000..55d087d
+--- /dev/null
++++ b/person-locator/src/filters/toPredicate.ts
+@@ -0,0 +1,142 @@
++import type { Filter } from './model';
++import type { FieldExceptionsMap } from './fieldExceptions';
++import { defaultFieldExceptions } from './fieldExceptions';
++
++/** Deep-gets a dot-separated path off an object. Returns `undefined` on any missing intermediate key — never throws. */
++function getByPath(obj: unknown, path: string): unknown {
++  return path.split('.').reduce<unknown>((acc, key) => {
++    if (acc === null || typeof acc !== 'object') return undefined;
++    return (acc as Record<string, unknown>)[key];
++  }, obj);
++}
++
++function resolveObjectPath(field: string, exceptions: FieldExceptionsMap): string {
++  const mapped = exceptions[field] ?? field;
++  return mapped.endsWith('.keyword') ? mapped.slice(0, -'.keyword'.length) : mapped;
++}
++
++/** The only keys that ever sit at the top level of a `PersonResult` — everything else lives under `.data`. */
++const TOP_LEVEL_PERSON_RESULT_KEYS = new Set(['id', 'personType', 'isActive', 'source']);
++
++/**
++ * Resolves a field against a `PersonResult`. Filter fields are written against the real
++ * Elasticsearch mapping (e.g. `idnt_asir`, flat — no `data.` prefix, matching `sourceFields`
++ * / `allowedList.field` elsewhere). On the client object those same fields are nested under
++ * `.data` (every source spreads its raw record into `PersonResult.data`), so when a direct
++ * lookup misses and the field isn't already `data.`-prefixed or one of the few real top-level
++ * keys, fall back to `data.<field>`.
++ */
++function resolveValue(person: unknown, field: string, exceptions: FieldExceptionsMap): unknown {
++  const path = resolveObjectPath(field, exceptions);
++  const direct = getByPath(person, path);
++  if (direct !== undefined) return direct;
++  if (path.startsWith('data.') || TOP_LEVEL_PERSON_RESULT_KEYS.has(path)) return direct;
++  return getByPath(person, `data.${path}`);
++}
++
++/** Loose equality so e.g. a numeric id `7` on Elasticsearch matches a string id `"7"` on the synced object. */
++function looseEquals(a: unknown, b: unknown): boolean {
++  if (a === b) return true;
++  if (a === null || a === undefined || b === null || b === undefined) return false;
++  const aComparable = typeof a === 'number' || typeof a === 'string' || typeof a === 'boolean';
++  const bComparable = typeof b === 'number' || typeof b === 'string' || typeof b === 'boolean';
++  return aComparable && bComparable && String(a) === String(b);
++}
++
++/** Coerces to a comparable number — the raw numeric value, or a timestamp for date-like strings. NaN if not comparable. */
++function toComparable(value: unknown): number {
++  if (value instanceof Date) return value.getTime();
++  if (typeof value === 'number') return value;
++  if (typeof value === 'string') {
++    const asNumber = Number(value);
++    if (!Number.isNaN(asNumber)) return asNumber;
++    const asDate = Date.parse(value);
++    if (!Number.isNaN(asDate)) return asDate;
++  }
++  return NaN;
++}
++
++/** Array-valued fields match if ANY element matches; scalar fields are tested directly. */
++function matchesAny(resolved: unknown, test: (value: unknown) => boolean): boolean {
++  return Array.isArray(resolved) ? resolved.some(test) : test(resolved);
++}
++
++/**
++ * Compiler B — turns a Filter tree into a client-side predicate `(person) => boolean`,
++ * used to filter the online/offline results the same way the Elasticsearch query does.
++ *
++ * Missing-field semantics mirror Elasticsearch exactly so all three sources agree:
++ *   eq / in / range / exists → exclude (false) when the field is missing on the object
++ *   nin                      → include (true)  when the field is missing on the object
++ */
++export function compileToPredicate<T>(
++  filter: Filter<T>,
++  exceptions: FieldExceptionsMap = defaultFieldExceptions,
++): (person: T) => boolean {
++  switch (filter.op) {
++    case 'and': {
++      const preds = filter.filters.map((f) => compileToPredicate(f, exceptions));
++      return (person) => preds.every((p) => p(person));
++    }
++    case 'or': {
++      const preds = filter.filters.map((f) => compileToPredicate(f, exceptions));
++      return (person) => preds.some((p) => p(person));
++    }
++    case 'not': {
++      const pred = compileToPredicate(filter.filter, exceptions);
++      return (person) => !pred(person);
++    }
++    case 'eq': {
++      const field = filter.field as string;
++      const { value } = filter;
++      return (person) => {
++        const resolved = resolveValue(person, field, exceptions);
++        if (resolved === undefined) return false;
++        return matchesAny(resolved, (v) => looseEquals(v, value));
++      };
++    }
++    case 'in': {
++      const field = filter.field as string;
++      const { values } = filter;
++      return (person) => {
++        const resolved = resolveValue(person, field, exceptions);
++        if (resolved === undefined) return false;
++        return matchesAny(resolved, (v) => values.some((target) => looseEquals(v, target)));
++      };
++    }
++    case 'nin': {
++      const field = filter.field as string;
++      const { values } = filter;
++      return (person) => {
++        const resolved = resolveValue(person, field, exceptions);
++        if (resolved === undefined) return true;
++        return !matchesAny(resolved, (v) => values.some((target) => looseEquals(v, target)));
++      };
++    }
++    case 'range': {
++      const field = filter.field as string;
++      const { gte, lte, gt, lt } = filter;
++      return (person) => {
++        const resolved = resolveValue(person, field, exceptions);
++        if (resolved === undefined) return false;
++        return matchesAny(resolved, (v) => {
++          const n = toComparable(v);
++          if (Number.isNaN(n)) return false;
++          if (gte !== undefined && !(n >= toComparable(gte))) return false;
++          if (lte !== undefined && !(n <= toComparable(lte))) return false;
++          if (gt !== undefined && !(n > toComparable(gt))) return false;
++          if (lt !== undefined && !(n < toComparable(lt))) return false;
++          return true;
++        });
++      };
++    }
++    case 'exists': {
++      const field = filter.field as string;
++      return (person) => {
++        const resolved = resolveValue(person, field, exceptions);
++        if (Array.isArray(resolved)) return resolved.length > 0;
++        return resolved !== undefined && resolved !== null;
++      };
++    }
++  }
++}
+diff --git a/person-locator/src/hooks/usePersonSearch.ts b/person-locator/src/hooks/usePersonSearch.ts
+index 34843d2..a1c81d2 100644
+--- a/person-locator/src/hooks/usePersonSearch.ts
++++ b/person-locator/src/hooks/usePersonSearch.ts
+@@ -1,4 +1,4 @@
+-import { useCallback, useEffect, useRef, useState } from 'react';
++import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+ import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
+ import { fetchAsirWhitelist, checkPersonPermission } from '../services/asirAuthService';
+ import type { AsirWhitelistResult, PersonPermissionResult } from '../services/asirAuthService';
+@@ -7,6 +7,7 @@ import { searchOffline } from '../services/offlineService';
+ import { enrichPersonsWithPhotoUrls } from '../services/photoService';
+ import { mergeResults } from '../utils/mergeResults';
+ import { getConfig } from '../serviceConfig';
++import { normalize, composeWithBase, compileToElasticQuery, compileToPredicate } from '../filters';
+ import type {
+   PersonLocatorProps,
+   PersonResult,
+@@ -67,7 +68,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+     type,
+     minChars = 3,
+     onSelect,
+-    filters = [],
++    filters,
++    baseFilter,
+     additionalSearchFields = [],
+     fallbackToOfflineIfNoAuth = false,
+     singleSearch,
+@@ -89,6 +91,25 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+   // Single locked type (for singleSearch, offline, tab locking)
+   const singleType: PersonType | undefined = typeArr?.length === 1 ? typeArr[0] : undefined;
+ 
++  // One filter tree, two compilers — base filter is always ANDed in and cannot be bypassed.
++  // eslint-disable-next-line react-hooks/exhaustive-deps
++  const filterTree = useMemo(
++    () => normalize(composeWithBase(baseFilter, filters)),
++    [JSON.stringify(baseFilter), JSON.stringify(filters)],
++  );
++  const filterClause = useMemo(() => compileToElasticQuery(filterTree), [filterTree]);
++  const filterPredicate = useMemo(() => {
++    const predicate = compileToPredicate(filterTree);
++    if (env !== 'dev') return predicate;
++    // Dev-only: log every evaluation so it's visible which filter ran and whether it matched.
++    return (person: PersonResult) => {
++      const result = predicate(person);
++      // eslint-disable-next-line no-console
++      console.log('[usePersonSearch] filterPredicate', { filter: filterTree, personId: person.id, result });
++      return result;
++    };
++  }, [filterTree, env]);
++
+   const [inputValue, setInputValueState] = useState('');
+   const [results, setResults] = useState<SearchResults>(emptyResults);
+   const [isLoading, setIsLoading] = useState(false);
+@@ -226,7 +247,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+         return searchPersons({
+           query,
+           personType: pt,
+-          filters,
++          filterClause,
+           offset: isLoadMore ? baseOffset : 0,
+           pageSize,
+           activeOnly: effectiveActiveOnly,
+@@ -248,7 +269,13 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+ 
+       // Online service promises — asirs and sohers only (no ezrachs)
+       const onlinePrisonerPromise = !isLoadMore && types.includes('asir')
+-        ? fetchOnlinePersons({ query, personType: 'asir', config: config, signal: controllers[3].signal })
++        ? fetchOnlinePersons({
++            query,
++            personType: 'asir',
++            allowedAsirIds: asirWhitelistRef.current?.values,
++            config: config,
++            signal: controllers[3].signal,
++          })
+         : Promise.resolve([] as PersonResult[]);
+ 
+       const onlineGuardPromise = !isLoadMore && types.includes('soher')
+@@ -258,10 +285,13 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+       const [asirSettled, soherSettled, ezrachSettled, onlinePrisonerSettled, onlineGuardSettled] =
+         await Promise.allSettled([...esPromises, onlinePrisonerPromise, onlineGuardPromise]);
+ 
++      // Client-side filtering — mirrors the ES filter clause so all three sources agree.
+       const onlinePrisoners: PersonResult[] =
+-        onlinePrisonerSettled.status === 'fulfilled' ? (onlinePrisonerSettled.value as PersonResult[]) : [];
++        (onlinePrisonerSettled.status === 'fulfilled' ? (onlinePrisonerSettled.value as PersonResult[]) : [])
++          .filter(filterPredicate);
+       const onlineGuards: PersonResult[] =
+-        onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [];
++        (onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [])
++          .filter(filterPredicate);
+ 
+       const esByType: Record<PersonType, PromiseSettledResult<unknown>> = {
+         asir: asirSettled, soher: soherSettled, ezrach: ezrachSettled,
+@@ -292,7 +322,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+                 config,
+                 signal: offlineController.signal,
+               });
+-              return { pt, offlineResults };
++              return { pt, offlineResults: offlineResults.filter(filterPredicate) };
+             })
+         );
+         for (const settled of offlineSettled) {
+@@ -324,11 +354,15 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+       const soherMerged = mergeResults(mergeResults(soherES?.results ?? [], onlineGuards), offlineByType.soher ?? []);
+       const ezrachMerged = mergeResults(ezrachES?.results ?? [], offlineByType.ezrach ?? []);
+       const allMerged = [...asirMerged, ...soherMerged, ...ezrachMerged];
+-      const enrichedAll = await enrichPersonsWithPhotoUrls({
+-        persons: allMerged,
++      // Offline results never get photos enriched/displayed — the offline DB has no photo data.
++      const onlinePersons = allMerged.filter((p) => p.source !== 'offline');
++      const offlinePersons = allMerged.filter((p) => p.source === 'offline');
++      const enrichedOnline = await enrichPersonsWithPhotoUrls({
++        persons: onlinePersons,
+         config,
+         signal: controllers[5].signal,
+       });
++      const enrichedAll = [...enrichedOnline, ...offlinePersons];
+ 
+       const asirEnriched = enrichedAll.filter((p) => p.personType === 'asir');
+       const soherEnriched = enrichedAll.filter((p) => p.personType === 'soher');
+@@ -386,7 +420,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+     },
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+     [
+-      cancelPendingRequests, fallbackToOfflineIfNoAuth, filters,
++      cancelPendingRequests, fallbackToOfflineIfNoAuth, filterClause, filterPredicate,
+       pageSize, config, typeArr, effectiveActiveOnly,
+     ]
+   );
+@@ -412,6 +446,14 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [JSON.stringify(typeArr)]);
+ 
++  // Re-run search when the filter changes (while query is active)
++  useEffect(() => {
++    if (debouncedInput.length >= minChars) {
++      runSearch(debouncedInput);
++    }
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [filterClause, filterPredicate]);
++
+   // Re-run search when active toggle changes (while query is active)
+   useEffect(() => {
+     if (debouncedInput.length >= minChars) {
+diff --git a/person-locator/src/index.ts b/person-locator/src/index.ts
+index f025534..596fb6e 100644
+--- a/person-locator/src/index.ts
++++ b/person-locator/src/index.ts
+@@ -5,16 +5,14 @@ export { default as PersonLocator } from './components/PersonLocator';
+ export { usePersonSearch } from './hooks/usePersonSearch';
+ export type { UsePersonSearchReturn } from './hooks/usePersonSearch';
+ export { mergeResults } from './utils/mergeResults';
+-export { buildFilters } from './utils/buildFilters';
+ export { highlightMatch } from './utils/highlightMatch';
+ export { OfflineError, initHttpClient } from './services/axiosInstance';
+ export type { HttpClientConfig } from './services/axiosInstance';
+ export { buildElasticQuery } from './services/elasticSearchService';
++export * from './filters';
+ 
+ export type {
+   PersonType,
+-  FilterOperator,
+-  Filter,
+   PersonResult,
+   SearchResults,
+   PagingState,
+diff --git a/person-locator/src/services/elasticSearchService.ts b/person-locator/src/services/elasticSearchService.ts
+index 6932c54..a9e85c6 100644
+--- a/person-locator/src/services/elasticSearchService.ts
++++ b/person-locator/src/services/elasticSearchService.ts
+@@ -2,12 +2,10 @@
+ import { post, OfflineError } from './axiosInstance';
+ import type {
+   ElasticQuerySettings,
+-  Filter,
+   PersonResult,
+   PersonType,
+   ServiceConfig,
+ } from '../types';
+-import { buildFilters } from '../utils/buildFilters';
+ import { enrichPersonsWithPhotoUrls } from './photoService';
+ 
+ export { OfflineError };
+@@ -167,7 +165,8 @@ function mapHitToPersonResult(
+ export async function searchPersons(params: {
+   query: string;
+   personType: PersonType;
+-  filters: Filter[];
++  /** Compiled Elasticsearch clause for the active Filter tree — see `compileToElasticQuery`. */
++  filterClause?: Record<string, unknown>;
+   offset: number;
+   pageSize: number;
+   activeOnly?: boolean;
+@@ -177,7 +176,7 @@ export async function searchPersons(params: {
+   const {
+     query,
+     personType,
+-    filters,
++    filterClause,
+     offset,
+     pageSize,
+     activeOnly,
+@@ -190,7 +189,7 @@ export async function searchPersons(params: {
+ 
+   const conditions: Record<string, unknown>[] = [
+     ...(base.conditions ?? []),
+-    ...buildFilters(filters),
++    ...(filterClause ? [filterClause] : []),
+     ...(activeOnly ? [{ term: { [base.activeField ?? 'isActive']: true } }] : []),
+     ...(base.personTypeField && base.personTypeValue
+       ? [{ term: { [base.personTypeField]: base.personTypeValue } }]
+diff --git a/person-locator/src/services/offlineService.ts b/person-locator/src/services/offlineService.ts
+index 4ef983b..1283e40 100644
+--- a/person-locator/src/services/offlineService.ts
++++ b/person-locator/src/services/offlineService.ts
+@@ -28,11 +28,15 @@ export async function searchOffline(params: {
+     { signal },
+   );
+ 
+-  return (response.data.results ?? []).map((p) => ({
+-    id: String(p['id'] ?? ''),
+-    personType: (p['personType'] as PersonType) ?? 'ezrach',
+-    isActive: Boolean(p['isActive'] ?? true),
+-    source: 'offline' as const,
+-    data: { ...p },
+-  }));
++  return (response.data.results ?? []).map((p) => {
++    // Offline results never show a photo, regardless of what the backend returns.
++    const { photoUrl: _photoUrl, ...data } = p;
++    return {
++      id: String(p['id'] ?? ''),
++      personType: personType ?? (p['personType'] as PersonType) ?? 'ezrach',
++      isActive: Boolean(p['isActive'] ?? true),
++      source: 'offline' as const,
++      data,
++    };
++  });
+ }
+diff --git a/person-locator/src/services/onlineService.ts b/person-locator/src/services/onlineService.ts
+index b0dca5a..ecd1f3e 100644
+--- a/person-locator/src/services/onlineService.ts
++++ b/person-locator/src/services/onlineService.ts
+@@ -8,15 +8,20 @@ import type { PersonResult, PersonType, ServiceConfig } from '../types';
+ export async function fetchOnlinePersons(params: {
+   query: string;
+   personType?: PersonType;
++  /** Prisoner whitelist (מידור) — restricts the online asir search to these IDs. */
++  allowedAsirIds?: (string | number)[];
+   config: ServiceConfig;
+   signal: AbortSignal;
+ }): Promise<PersonResult[]> {
+-  const { query, personType, config, signal } = params;
++  const { query, personType, allowedAsirIds, config, signal } = params;
+ 
+   try {
+     const url = new URL(`${config.online.baseUrl}${config.online.methods.search}`);
+     url.searchParams.set('q', query);
+     if (personType) url.searchParams.set('type', personType);
++    if (personType === 'asir' && allowedAsirIds?.length) {
++      url.searchParams.set('allowedasirim', JSON.stringify(allowedAsirIds));
++    }
+ 
+     const response = await get<{ results?: Record<string, unknown>[] }>(
+       url.toString(),
+diff --git a/person-locator/src/types/index.ts b/person-locator/src/types/index.ts
+index 1f6c15f..0e17cdc 100644
+--- a/person-locator/src/types/index.ts
++++ b/person-locator/src/types/index.ts
+@@ -1,18 +1,11 @@
++import type { FilterInput } from '../filters';
++
+ // Person categories
+ export type PersonType = 'asir' | 'soher' | 'ezrach';
+ 
+ // Deployment environment
+ export type Environment = 'dev' | 'test' | 'lrn' | 'prod';
+ 
+-// Filter operators
+-export type FilterOperator = 'equals' | 'exists' | 'gt' | 'lt' | 'contains';
+-
+-export interface Filter {
+-  fieldName: string;
+-  value: string | number | null;
+-  operator: FilterOperator;
+-}
+-
+ // A single search result person
+ export interface PersonResult {
+   id: string;           // Unique person ID (used for dedup)
+@@ -179,8 +172,17 @@ export interface PersonLocatorProps {
+   /** Extra ES index fields to include in the search query. */
+   additionalSearchFields?: string[];
+ 
+-  /** Dynamic filters applied to every ES query. */
+-  filters?: Filter[];
++  /**
++   * User-facing filter, applied identically against Elasticsearch and the online/offline
++   * results. A single Filter, or an array (combined with an implicit AND). See `src/filters`.
++   */
++  filters?: FilterInput<PersonResult>;
++
++  /**
++   * Mandatory system-level filter (permission scoping, forced exclusions) — always ANDed
++   * with `filters` so it cannot be widened or bypassed by the user filter. See `src/filters`.
++   */
++  baseFilter?: FilterInput<PersonResult>;
+ 
+   /**
+    * When `true`, the library calls the `asirPermission` endpoint before each search.
+diff --git a/person-locator/src/utils/buildFilters.ts b/person-locator/src/utils/buildFilters.ts
+deleted file mode 100644
+index eac0835..0000000
+--- a/person-locator/src/utils/buildFilters.ts
++++ /dev/null
+@@ -1,28 +0,0 @@
+-import type { Filter, FilterOperator } from '../types';
+-
+-type ESClause = Record<string, unknown>;
+-
+-function buildClause(filter: Filter): ESClause {
+-  const { fieldName, value, operator } = filter;
+-  switch (operator as FilterOperator) {
+-    case 'equals':
+-      return { term: { [fieldName]: value } };
+-    case 'exists':
+-      return { exists: { field: fieldName } };
+-    case 'gt':
+-      return { range: { [fieldName]: { gt: value } } };
+-    case 'lt':
+-      return { range: { [fieldName]: { lt: value } } };
+-    case 'contains':
+-      return { match: { [fieldName]: value } };
+-    default:
+-      throw new Error(`Unknown filter operator: ${operator}`);
+-  }
+-}
+-
+-/**
+- * Convert Filter[] to Elasticsearch bool query filter clauses.
+- */
+-export function buildFilters(filters: Filter[]): ESClause[] {
+-  return filters.map(buildClause);
+-}
+diff --git a/person-locator/tests/buildFilters.test.ts b/person-locator/tests/buildFilters.test.ts
+deleted file mode 100644
+index 9348021..0000000
+--- a/person-locator/tests/buildFilters.test.ts
++++ /dev/null
+@@ -1,57 +0,0 @@
+-import { describe, it, expect } from 'vitest';
+-import { buildFilters } from '../src/utils/buildFilters';
+-import type { Filter } from '../src/types';
+-
+-describe('buildFilters', () => {
+-  it('equals operator generates term clause', () => {
+-    const filters: Filter[] = [{ fieldName: 'status', value: 'active', operator: 'equals' }];
+-    const result = buildFilters(filters);
+-    expect(result).toEqual([{ term: { status: 'active' } }]);
+-  });
+-
+-  it('exists operator generates exists clause', () => {
+-    const filters: Filter[] = [{ fieldName: 'photoUrl', value: null, operator: 'exists' }];
+-    const result = buildFilters(filters);
+-    expect(result).toEqual([{ exists: { field: 'photoUrl' } }]);
+-  });
+-
+-  it('exists with null value is valid', () => {
+-    const filters: Filter[] = [{ fieldName: 'rank', value: null, operator: 'exists' }];
+-    expect(() => buildFilters(filters)).not.toThrow();
+-    const result = buildFilters(filters);
+-    expect(result[0]).toEqual({ exists: { field: 'rank' } });
+-  });
+-
+-  it('gt operator generates range clause', () => {
+-    const filters: Filter[] = [{ fieldName: 'age', value: 18, operator: 'gt' }];
+-    const result = buildFilters(filters);
+-    expect(result).toEqual([{ range: { age: { gt: 18 } } }]);
+-  });
+-
+-  it('lt operator generates range clause', () => {
+-    const filters: Filter[] = [{ fieldName: 'score', value: 100, operator: 'lt' }];
+-    const result = buildFilters(filters);
+-    expect(result).toEqual([{ range: { score: { lt: 100 } } }]);
+-  });
+-
+-  it('contains operator generates match clause', () => {
+-    const filters: Filter[] = [{ fieldName: 'fullName', value: 'John', operator: 'contains' }];
+-    const result = buildFilters(filters);
+-    expect(result).toEqual([{ match: { fullName: 'John' } }]);
+-  });
+-
+-  it('returns multiple clauses for multiple filters', () => {
+-    const filters: Filter[] = [
+-      { fieldName: 'isActive', value: 1, operator: 'equals' },
+-      { fieldName: 'idNumber', value: null, operator: 'exists' },
+-    ];
+-    const result = buildFilters(filters);
+-    expect(result).toHaveLength(2);
+-    expect(result[0]).toEqual({ term: { isActive: 1 } });
+-    expect(result[1]).toEqual({ exists: { field: 'idNumber' } });
+-  });
+-
+-  it('returns empty array for empty filters', () => {
+-    expect(buildFilters([])).toEqual([]);
+-  });
+-});
+diff --git a/person-locator/tests/filters/composition.test.ts b/person-locator/tests/filters/composition.test.ts
+new file mode 100644
+index 0000000..a4451d1
+--- /dev/null
++++ b/person-locator/tests/filters/composition.test.ts
+@@ -0,0 +1,59 @@
++import { describe, it, expect } from 'vitest';
++import { eq, and } from '../../src/filters/builder';
++import { normalize, composeWithBase } from '../../src/filters/normalize';
++import { compileToPredicate } from '../../src/filters/toPredicate';
++import { makePerson } from './testFixtures';
++import type { TestPerson } from './testFixtures';
++
++describe('normalize', () => {
++  it('undefined → and() — matches everything', () => {
++    const pred = compileToPredicate(normalize<TestPerson>(undefined));
++    expect(pred(makePerson({ id: '1' }))).toBe(true);
++  });
++
++  it('an array is treated as an implicit AND across entries', () => {
++    const tree = normalize<TestPerson>([eq('isActive', true), eq('data.unit', 'A')]);
++    expect(tree).toEqual(and<TestPerson>(eq('isActive', true), eq('data.unit', 'A')));
++
++    const pred = compileToPredicate(tree);
++    expect(pred(makePerson({ id: '1', isActive: true, data: { unit: 'A' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', isActive: true, data: { unit: 'B' } }))).toBe(false);
++  });
++
++  it('a single filter passes through unchanged', () => {
++    const f = eq<TestPerson>('isActive', true);
++    expect(normalize(f)).toBe(f);
++  });
++});
++
++describe('composeWithBase', () => {
++  it('the base filter is always ANDed in and cannot be widened past by the user filter', () => {
++    // Base restricts to inactive only; user (deliberately, or maliciously) asks for active only.
++    const base = eq<TestPerson>('isActive', false);
++    const user = eq<TestPerson>('isActive', true);
++    const tree = normalize(composeWithBase(base, user));
++    const pred = compileToPredicate(tree);
++
++    // No document can satisfy both isActive:false (base) and isActive:true (user).
++    expect(pred(makePerson({ id: '1', isActive: true }))).toBe(false);
++    expect(pred(makePerson({ id: '2', isActive: false }))).toBe(false);
++  });
++
++  it('an undefined user filter still enforces the base filter', () => {
++    const base = eq<TestPerson>('isActive', true);
++    const tree = normalize(composeWithBase(base, undefined));
++    const pred = compileToPredicate(tree);
++
++    expect(pred(makePerson({ id: '1', isActive: true }))).toBe(true);
++    expect(pred(makePerson({ id: '2', isActive: false }))).toBe(false);
++  });
++
++  it('an undefined base filter leaves the user filter as the sole constraint', () => {
++    const user = eq<TestPerson>('data.unit', 'A');
++    const tree = normalize(composeWithBase(undefined, user));
++    const pred = compileToPredicate(tree);
++
++    expect(pred(makePerson({ id: '1', data: { unit: 'A' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: { unit: 'B' } }))).toBe(false);
++  });
++});
+diff --git a/person-locator/tests/filters/consistency.test.ts b/person-locator/tests/filters/consistency.test.ts
+new file mode 100644
+index 0000000..f144d30
+--- /dev/null
++++ b/person-locator/tests/filters/consistency.test.ts
+@@ -0,0 +1,39 @@
++import { describe, it, expect } from 'vitest';
++import { eq, oneOf, noneOf, and } from '../../src/filters/builder';
++import { compileToElasticQuery } from '../../src/filters/toElasticQuery';
++import { compileToPredicate } from '../../src/filters/toPredicate';
++import { evalEsClause, makePerson } from './testFixtures';
++import type { TestPerson } from './testFixtures';
++
++/**
++ * The same filter tree must select the same people whether it's run as an Elasticsearch
++ * query (via a mock ES evaluator, independent of compileToPredicate) or as a client-side
++ * predicate — this is what guarantees the three sources stay in sync.
++ */
++describe('Filter consistency: mock Elasticsearch vs. predicate', () => {
++  const tree = and<TestPerson>(
++    eq('isActive', true),
++    oneOf('data.unit', ['A', 'B']),
++    noneOf('data.idNumber', ['999']),
++  );
++
++  const docs: TestPerson[] = [
++    makePerson({ id: '1', isActive: true, data: { unit: 'A', idNumber: '111' } }), // matches
++    makePerson({ id: '2', isActive: true, data: { unit: 'B', idNumber: '222' } }), // matches
++    makePerson({ id: '3', isActive: false, data: { unit: 'A', idNumber: '333' } }), // inactive
++    makePerson({ id: '4', isActive: true, data: { unit: 'C', idNumber: '444' } }), // wrong unit
++    makePerson({ id: '5', isActive: true, data: { unit: 'A', idNumber: '999' } }), // excluded id
++    makePerson({ id: '6', isActive: true, data: { idNumber: '555' } }), // missing unit
++  ];
++
++  it('selects the same person ids through the ES clause and through the predicate', () => {
++    const esClause = compileToElasticQuery(tree);
++    const predicate = compileToPredicate(tree);
++
++    const esSelected = docs.filter((d) => evalEsClause(esClause, d)).map((d) => d.id);
++    const predicateSelected = docs.filter(predicate).map((d) => d.id);
++
++    expect(predicateSelected).toEqual(esSelected);
++    expect(esSelected).toEqual(['1', '2']);
++  });
++});
+diff --git a/person-locator/tests/filters/missingField.test.ts b/person-locator/tests/filters/missingField.test.ts
+new file mode 100644
+index 0000000..c214244
+--- /dev/null
++++ b/person-locator/tests/filters/missingField.test.ts
+@@ -0,0 +1,35 @@
++import { describe, it, expect } from 'vitest';
++import { eq, oneOf, noneOf, range, exists } from '../../src/filters/builder';
++import { compileToPredicate } from '../../src/filters/toPredicate';
++import { makePerson } from './testFixtures';
++import type { TestPerson } from './testFixtures';
++
++/**
++ * The field exists in Elasticsearch but is absent on the synced object (online/offline).
++ * The predicate must mirror Elasticsearch's `filter`-context behavior exactly:
++ *   eq / in / range / exists → exclude (false)
++ *   nin                      → include (true)
++ */
++describe('compileToPredicate — missing-field semantics', () => {
++  const personWithoutField = makePerson({ id: '1', data: {} });
++
++  it('eq on a missing field excludes the document', () => {
++    expect(compileToPredicate(eq<TestPerson>('data.unit', 'A'))(personWithoutField)).toBe(false);
++  });
++
++  it('in (oneOf) on a missing field excludes the document', () => {
++    expect(compileToPredicate(oneOf<TestPerson>('data.unit', ['A', 'B']))(personWithoutField)).toBe(false);
++  });
++
++  it('range on a missing field excludes the document', () => {
++    expect(compileToPredicate(range<TestPerson>('data.rank', { gte: 1 }))(personWithoutField)).toBe(false);
++  });
++
++  it('exists on a missing field excludes the document', () => {
++    expect(compileToPredicate(exists<TestPerson>('data.phone'))(personWithoutField)).toBe(false);
++  });
++
++  it('nin (noneOf) on a missing field includes the document', () => {
++    expect(compileToPredicate(noneOf<TestPerson>('data.idNumber', ['1', '2']))(personWithoutField)).toBe(true);
++  });
++});
+diff --git a/person-locator/tests/filters/testFixtures.ts b/person-locator/tests/filters/testFixtures.ts
+new file mode 100644
+index 0000000..ed9a23c
+--- /dev/null
++++ b/person-locator/tests/filters/testFixtures.ts
+@@ -0,0 +1,87 @@
++/** Shared fixtures for the filters test suite. */
++export interface TestPerson {
++  id: string;
++  isActive: boolean;
++  data: {
++    fullName?: string;
++    unit?: string;
++    idNumber?: string;
++    rank?: number;
++    tags?: string[];
++    phone?: string;
++  };
++}
++
++export function makePerson(overrides: Partial<TestPerson> & { id: string }): TestPerson {
++  return {
++    isActive: true,
++    data: {},
++    ...overrides,
++  };
++}
++
++/**
++ * A tiny, independent mock Elasticsearch query evaluator — walks the same clause shapes
++ * `compileToElasticQuery` produces (bool/term/terms/range/exists) and applies them to a
++ * plain document, the way a real ES `filter` context would. Used to cross-check the
++ * predicate compiler against the ES compiler without sharing any implementation.
++ */
++export function evalEsClause(clause: Record<string, unknown>, doc: unknown): boolean {
++  if ('bool' in clause) {
++    const bool = clause.bool as { filter?: unknown[]; should?: unknown[]; must_not?: unknown[] };
++    let result = true;
++    if (bool.filter) result = result && bool.filter.every((c) => evalEsClause(c as Record<string, unknown>, doc));
++    if (bool.should) result = result && bool.should.some((c) => evalEsClause(c as Record<string, unknown>, doc));
++    if (bool.must_not) result = result && !bool.must_not.some((c) => evalEsClause(c as Record<string, unknown>, doc));
++    return result;
++  }
++  if ('term' in clause) {
++    const [field, value] = Object.entries(clause.term as Record<string, unknown>)[0];
++    return matchesTerm(getPath(doc, stripKeyword(field)), value);
++  }
++  if ('terms' in clause) {
++    const [field, values] = Object.entries(clause.terms as Record<string, unknown>)[0];
++    const resolved = getPath(doc, stripKeyword(field));
++    return (values as unknown[]).some((v) => matchesTerm(resolved, v));
++  }
++  if ('range' in clause) {
++    const [field, bounds] = Object.entries(clause.range as Record<string, Record<string, unknown>>)[0];
++    return matchesRange(getPath(doc, field), bounds);
++  }
++  if ('exists' in clause) {
++    const resolved = getPath(doc, (clause.exists as { field: string }).field);
++    return Array.isArray(resolved) ? resolved.length > 0 : resolved !== undefined && resolved !== null;
++  }
++  throw new Error(`evalEsClause: unrecognized clause ${JSON.stringify(clause)}`);
++}
++
++function stripKeyword(field: string): string {
++  return field.endsWith('.keyword') ? field.slice(0, -'.keyword'.length) : field;
++}
++
++function getPath(obj: unknown, path: string): unknown {
++  return path.split('.').reduce<unknown>((acc, key) => {
++    if (acc === null || typeof acc !== 'object') return undefined;
++    return (acc as Record<string, unknown>)[key];
++  }, obj);
++}
++
++function matchesTerm(resolved: unknown, target: unknown): boolean {
++  if (resolved === undefined) return false;
++  const test = (v: unknown) => String(v) === String(target);
++  return Array.isArray(resolved) ? resolved.some(test) : test(resolved);
++}
++
++function matchesRange(resolved: unknown, bounds: Record<string, unknown>): boolean {
++  if (resolved === undefined) return false;
++  const test = (v: unknown) => {
++    const n = typeof v === 'number' ? v : Number(v);
++    if (Number.isNaN(n)) return false;
++    if (bounds.gte !== undefined && !(n >= (bounds.gte as number))) return false;
++    if (bounds.lte !== undefined && !(n <= (bounds.lte as number))) return false;
++    if (bounds.gt !== undefined && !(n > (bounds.gt as number))) return false;
++    if (bounds.lt !== undefined && !(n < (bounds.lt as number))) return false;
++    return true;
++  };
++  return Array.isArray(resolved) ? resolved.some(test) : test(resolved);
++}
+diff --git a/person-locator/tests/filters/toElasticQuery.test.ts b/person-locator/tests/filters/toElasticQuery.test.ts
+new file mode 100644
+index 0000000..664b639
+--- /dev/null
++++ b/person-locator/tests/filters/toElasticQuery.test.ts
+@@ -0,0 +1,79 @@
++import { describe, it, expect } from 'vitest';
++import { eq, oneOf, noneOf, range, and, or, not, exists } from '../../src/filters/builder';
++import { compileToElasticQuery, MAX_INLINE_TERMS } from '../../src/filters/toElasticQuery';
++import type { TestPerson } from './testFixtures';
++
++describe('compileToElasticQuery', () => {
++  it('eq → term, appends .keyword for string values', () => {
++    const clause = compileToElasticQuery(eq<TestPerson>('data.unit', 'A'));
++    expect(clause).toEqual({ term: { 'data.unit.keyword': 'A' } });
++  });
++
++  it('eq → term, does NOT append .keyword for non-string values', () => {
++    const clause = compileToElasticQuery(eq<TestPerson>('isActive', true));
++    expect(clause).toEqual({ term: { isActive: true } });
++  });
++
++  it('eq → term, does not double-suffix an already-keyword field', () => {
++    const clause = compileToElasticQuery(eq<TestPerson>('data.unit.keyword', 'A'));
++    expect(clause).toEqual({ term: { 'data.unit.keyword': 'A' } });
++  });
++
++  it('in (oneOf) → terms', () => {
++    const clause = compileToElasticQuery(oneOf<TestPerson>('data.unit', ['A', 'B']));
++    expect(clause).toEqual({ terms: { 'data.unit.keyword': ['A', 'B'] } });
++  });
++
++  it('nin (noneOf) → must_not over terms', () => {
++    const clause = compileToElasticQuery(noneOf<TestPerson>('data.idNumber', ['1', '2']));
++    expect(clause).toEqual({
++      bool: { must_not: [{ terms: { 'data.idNumber.keyword': ['1', '2'] } }] },
++    });
++  });
++
++  it('range → range', () => {
++    const clause = compileToElasticQuery(range<TestPerson>('data.rank', { gte: 2, lte: 5 }));
++    expect(clause).toEqual({ range: { 'data.rank': { gte: 2, lte: 5 } } });
++  });
++
++  it('exists → exists', () => {
++    const clause = compileToElasticQuery(exists<TestPerson>('data.phone'));
++    expect(clause).toEqual({ exists: { field: 'data.phone' } });
++  });
++
++  it('and → bool.filter', () => {
++    const clause = compileToElasticQuery(
++      and<TestPerson>(eq('isActive', true), exists('data.phone')),
++    );
++    expect(clause).toEqual({
++      bool: { filter: [{ term: { isActive: true } }, { exists: { field: 'data.phone' } }] },
++    });
++  });
++
++  it('or → bool.should + minimum_should_match:1', () => {
++    const clause = compileToElasticQuery(
++      or<TestPerson>(eq('data.unit', 'A'), eq('data.unit', 'B')),
++    );
++    expect(clause).toEqual({
++      bool: {
++        should: [{ term: { 'data.unit.keyword': 'A' } }, { term: { 'data.unit.keyword': 'B' } }],
++        minimum_should_match: 1,
++      },
++    });
++  });
++
++  it('not → bool.must_not', () => {
++    const clause = compileToElasticQuery(not<TestPerson>(eq('isActive', true)));
++    expect(clause).toEqual({ bool: { must_not: [{ term: { isActive: true } }] } });
++  });
++
++  it('throws (does not fail silently) when an in/nin list exceeds the inline terms limit', () => {
++    const tooMany = Array.from({ length: MAX_INLINE_TERMS + 1 }, (_, i) => String(i));
++    expect(() => compileToElasticQuery(oneOf<TestPerson>('data.idNumber', tooMany))).toThrow(
++      /terms lookup/i,
++    );
++    expect(() => compileToElasticQuery(noneOf<TestPerson>('data.idNumber', tooMany))).toThrow(
++      /terms lookup/i,
++    );
++  });
++});
+diff --git a/person-locator/tests/filters/toPredicate.test.ts b/person-locator/tests/filters/toPredicate.test.ts
+new file mode 100644
+index 0000000..3472957
+--- /dev/null
++++ b/person-locator/tests/filters/toPredicate.test.ts
+@@ -0,0 +1,80 @@
++import { describe, it, expect } from 'vitest';
++import { eq, oneOf, noneOf, range, and, or, not, exists } from '../../src/filters/builder';
++import { compileToPredicate } from '../../src/filters/toPredicate';
++import { makePerson } from './testFixtures';
++import type { TestPerson } from './testFixtures';
++
++describe('compileToPredicate', () => {
++  it('eq matches an exact field value', () => {
++    const pred = compileToPredicate(eq<TestPerson>('data.unit', 'A'));
++    expect(pred(makePerson({ id: '1', data: { unit: 'A' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: { unit: 'B' } }))).toBe(false);
++  });
++
++  it('eq loosely coerces number vs string (id-type mismatch)', () => {
++    const pred = compileToPredicate(eq<TestPerson>('data.idNumber', 123 as unknown as string));
++    expect(pred(makePerson({ id: '1', data: { idNumber: '123' } }))).toBe(true);
++  });
++
++  it('in (oneOf) matches any of the given values', () => {
++    const pred = compileToPredicate(oneOf<TestPerson>('data.unit', ['A', 'B']));
++    expect(pred(makePerson({ id: '1', data: { unit: 'B' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: { unit: 'C' } }))).toBe(false);
++  });
++
++  it('nin (noneOf) excludes any of the given values', () => {
++    const pred = compileToPredicate(noneOf<TestPerson>('data.idNumber', ['1', '2']));
++    expect(pred(makePerson({ id: '1', data: { idNumber: '3' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: { idNumber: '1' } }))).toBe(false);
++  });
++
++  it('range matches values within bounds', () => {
++    const pred = compileToPredicate(range<TestPerson>('data.rank', { gte: 2, lte: 5 }));
++    expect(pred(makePerson({ id: '1', data: { rank: 3 } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: { rank: 10 } }))).toBe(false);
++  });
++
++  it('exists checks presence, treats empty arrays as absent', () => {
++    const pred = compileToPredicate(exists<TestPerson>('data.phone'));
++    expect(pred(makePerson({ id: '1', data: { phone: '050' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: {} }))).toBe(false);
++  });
++
++  it('array-valued fields match if ANY element matches', () => {
++    const person = makePerson({ id: '1', data: { tags: ['x', 'y'] } });
++    expect(compileToPredicate(eq<TestPerson>('data.tags', 'y' as unknown as never))(person)).toBe(true);
++    expect(compileToPredicate(oneOf<TestPerson>('data.tags', ['z', 'y'] as unknown as never[]))(person)).toBe(true);
++    expect(compileToPredicate(eq<TestPerson>('data.tags', 'z' as unknown as never))(person)).toBe(false);
++  });
++
++  it('and requires every sub-filter to match', () => {
++    const pred = compileToPredicate(
++      and<TestPerson>(eq('isActive', true), eq('data.unit', 'A')),
++    );
++    expect(pred(makePerson({ id: '1', isActive: true, data: { unit: 'A' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', isActive: false, data: { unit: 'A' } }))).toBe(false);
++  });
++
++  it('or requires at least one sub-filter to match', () => {
++    const pred = compileToPredicate(or<TestPerson>(eq('data.unit', 'A'), eq('data.unit', 'B')));
++    expect(pred(makePerson({ id: '1', data: { unit: 'B' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: { unit: 'C' } }))).toBe(false);
++  });
++
++  it('not negates the inner filter', () => {
++    const pred = compileToPredicate(not<TestPerson>(eq('isActive', true)));
++    expect(pred(makePerson({ id: '1', isActive: false }))).toBe(true);
++    expect(pred(makePerson({ id: '2', isActive: true }))).toBe(false);
++  });
++
++  it('falls back to data.<field> for a flat field name matching the real ES mapping', () => {
++    const pred = compileToPredicate(eq<TestPerson>('unit', 'A'));
++    expect(pred(makePerson({ id: '1', data: { unit: 'A' } }))).toBe(true);
++    expect(pred(makePerson({ id: '2', data: { unit: 'B' } }))).toBe(false);
++  });
++
++  it('does not fall back when the real top-level key already resolves', () => {
++    const pred = compileToPredicate(eq<TestPerson>('isActive', true));
++    expect(pred(makePerson({ id: '1', isActive: true }))).toBe(true);
++  });
++});

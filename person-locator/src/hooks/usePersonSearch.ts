@@ -98,7 +98,17 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     [JSON.stringify(baseFilter), JSON.stringify(filters)],
   );
   const filterClause = useMemo(() => compileToElasticQuery(filterTree), [filterTree]);
-  const filterPredicate = useMemo(() => compileToPredicate(filterTree), [filterTree]);
+  const filterPredicate = useMemo(() => {
+    const predicate = compileToPredicate(filterTree);
+    if (env !== 'dev') return predicate;
+    // Dev-only: log every evaluation so it's visible which filter ran and whether it matched.
+    return (person: PersonResult) => {
+      const result = predicate(person);
+      // eslint-disable-next-line no-console
+      console.log('[usePersonSearch] filterPredicate', { filter: filterTree, personId: person.id, result });
+      return result;
+    };
+  }, [filterTree, env]);
 
   const [inputValue, setInputValueState] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
@@ -276,12 +286,23 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         await Promise.allSettled([...esPromises, onlinePrisonerPromise, onlineGuardPromise]);
 
       // Client-side filtering — mirrors the ES filter clause so all three sources agree.
-      const onlinePrisoners: PersonResult[] =
-        (onlinePrisonerSettled.status === 'fulfilled' ? (onlinePrisonerSettled.value as PersonResult[]) : [])
-          .filter(filterPredicate);
-      const onlineGuards: PersonResult[] =
-        (onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [])
-          .filter(filterPredicate);
+      const rawOnlinePrisoners: PersonResult[] =
+        onlinePrisonerSettled.status === 'fulfilled' ? (onlinePrisonerSettled.value as PersonResult[]) : [];
+      const rawOnlineGuards: PersonResult[] =
+        onlineGuardSettled.status === 'fulfilled' ? (onlineGuardSettled.value as PersonResult[]) : [];
+      if (env === 'dev') {
+        // TEMP DEBUG — remove once the online filtering issue is confirmed/fixed.
+        console.log('[usePersonSearch] TEMP DEBUG raw online arrays before filterPredicate', {
+          onlinePrisonerStatus: onlinePrisonerSettled.status,
+          rawOnlinePrisonersCount: rawOnlinePrisoners.length,
+          rawOnlinePrisoners,
+          onlineGuardStatus: onlineGuardSettled.status,
+          rawOnlineGuardsCount: rawOnlineGuards.length,
+          rawOnlineGuards,
+        });
+      }
+      const onlinePrisoners: PersonResult[] = rawOnlinePrisoners.filter(filterPredicate);
+      const onlineGuards: PersonResult[] = rawOnlineGuards.filter(filterPredicate);
 
       const esByType: Record<PersonType, PromiseSettledResult<unknown>> = {
         asir: asirSettled, soher: soherSettled, ezrach: ezrachSettled,
@@ -312,6 +333,14 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
                 config,
                 signal: offlineController.signal,
               });
+              if (env === 'dev') {
+                // TEMP DEBUG — remove once the offline filtering issue is confirmed/fixed.
+                console.log('[usePersonSearch] TEMP DEBUG raw offline results before filterPredicate', {
+                  personType: pt,
+                  rawOfflineResultsCount: offlineResults.length,
+                  offlineResults,
+                });
+              }
               return { pt, offlineResults: offlineResults.filter(filterPredicate) };
             })
         );
