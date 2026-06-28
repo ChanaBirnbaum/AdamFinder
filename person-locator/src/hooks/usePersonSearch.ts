@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchSinglePerson, searchPersons, DEFAULT_QUERY_SETTINGS } from '../services/elasticSearchService';
 import { fetchAsirWhitelist, checkPersonPermission } from '../services/asirAuthService';
 import type { AsirWhitelistResult, PersonPermissionResult } from '../services/asirAuthService';
+import { fetchFieldConfig } from '../services/fieldConfigService';
+import type { FieldConfigResponse } from '../services/fieldConfigService';
 import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
 import { enrichPersonsWithPhotoUrls } from '../services/photoService';
 import { mergeResults } from '../utils/mergeResults';
+import { normalizeQuery } from '../utils/normalizeQuery';
 import { getConfig } from '../serviceConfig';
 import { normalize, composeWithBase, compileToElasticQuery, compileToPredicate } from '../filters';
 import type {
@@ -14,6 +17,7 @@ import type {
   PersonType,
   PagingState,
   SearchResults,
+  ServiceConfig,
 } from '../types';
 import { useDebounce } from './useDebounce';
 import { usePaging } from './usePaging';
@@ -25,6 +29,57 @@ function isAbortErrorLike(error: unknown): boolean {
     typeof error === 'object' &&
     error !== null &&
     (error as { name?: unknown }).name === 'AbortError'
+  );
+}
+
+/** Injects the prisoner whitelist (מידור) as `querySettings.asir.allowedList` so it's picked up by both `searchPersons` and `fetchSinglePerson`. No-op when there's no whitelist to apply. */
+function withAsirWhitelist(config: ServiceConfig, whitelist: AsirWhitelistResult | null): ServiceConfig {
+  if (!whitelist) return config;
+  return {
+    ...config,
+    querySettings: {
+      ...config.querySettings,
+      asir: {
+        ...(config.querySettings?.asir ?? DEFAULT_QUERY_SETTINGS.asir),
+        allowedList: whitelist,
+      },
+    },
+  };
+}
+
+/**
+ * Overrides `querySettings[type].searchFields/sourceFields` per type with whatever the remote
+ * field config endpoint returned, so data owners can add/remove indexed fields server-side
+ * without a client change. Other settings (wrapMode, activeField, conditions, allowedList, etc.)
+ * are preserved. No-op when there's no remote config to apply.
+ */
+function withRemoteFieldConfig(config: ServiceConfig, remoteFields: FieldConfigResponse | null): ServiceConfig {
+  if (!remoteFields) return config;
+  const querySettings = { ...config.querySettings };
+  for (const pt of Object.keys(remoteFields) as PersonType[]) {
+    const fields = remoteFields[pt];
+    if (!fields) continue;
+    querySettings[pt] = {
+      ...(querySettings[pt] ?? DEFAULT_QUERY_SETTINGS[pt]),
+      searchFields: fields.searchFields,
+      sourceFields: fields.sourceFields,
+    };
+  }
+  return { ...config, querySettings };
+}
+
+/**
+ * Whether the user has permission (הרשאת איתור) to search the given type.
+ * `personType` omitted (singleSearch across all types) → lenient: access if ANY type is authorized.
+ * `permissions` not an array (not configured / check failed) → fail-open: true.
+ */
+function hasPersonTypeAccess(
+  permissions: PersonPermissionResult[] | null,
+  personType?: PersonType,
+): boolean {
+  if (!Array.isArray(permissions)) return true;
+  return permissions.some(
+    (r) => (!personType || r.type === personType) && r.authorizedIds.length > 0,
   );
 }
 
@@ -119,6 +174,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null);
   const [activeTab, setActiveTabState] = useState<PersonType>(singleType ?? 'asir');
   const [showActiveOnly, setShowActiveOnly] = useState(isDefaultActive ?? true);
+  /** Mirrors remoteFieldConfigRef as state — displayFields is computed at render time and needs to react once the fetch resolves. */
+  const [remoteFieldConfig, setRemoteFieldConfig] = useState<FieldConfigResponse | null>(null);
 
   const { pagingState, advance, reset: resetPaging } = usePaging();
 
@@ -129,12 +186,20 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   const abortControllers = useRef<AbortController[]>([]);
   const justSelectedRef = useRef(false);
+  /** Online-only additions (people merged in from the online service but absent from the ES page) per type — online is only fetched on a fresh search, so load-more must reuse this. */
+  const onlineExtraByTypeRef = useRef<Record<PersonType, number>>({ asir: 0, soher: 0, ezrach: 0 });
   /** Cached whitelist result (מידור) — specific prisoner IDs this user may see. Injected as ES filter. */
   const asirWhitelistRef = useRef<AsirWhitelistResult | null>(null);
+  /** Promise that resolves when the whitelist fetch completes — awaited by singleSearch so it never races the mount-time fetch. */
+  const asirWhitelistPromiseRef = useRef<Promise<void> | null>(null);
   /** Cached permission result (הרשאת איתור) — array of per-type authorized IDs, [] = no access, null = unknown/fail-open. */
   const personPermissionRef = useRef<PersonPermissionResult[] | null>(null);
   /** Promise that resolves when the permission check completes. */
   const personPermissionPromiseRef = useRef<Promise<void> | null>(null);
+  /** Cached remote field config — per-type searchFields/sourceFields from the server, overriding DEFAULT_QUERY_SETTINGS. */
+  const remoteFieldConfigRef = useRef<FieldConfigResponse | null>(null);
+  /** Promise that resolves when the remote field config fetch completes — awaited before every ES call so fields are never stale on the very first search. */
+  const remoteFieldConfigPromiseRef = useRef<Promise<void> | null>(null);
   const debouncedInput = useDebounce(inputValue, 300);
 
   // Controlled state prop
@@ -144,32 +209,28 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     }
   }, [state]);
 
-  // singleSearch: fetch on mount
-  useEffect(() => {
-    if (!singleSearch) return;
-    const controller = new AbortController();
-    fetchSinglePerson({
-      key: singleSearch.key,
-      value: singleSearch.value,
-      personType: singleType,
-      config: config,
-      signal: controller.signal,
-    })
-      .then((person) => {
-        if (person) setSelectedPerson(person);
-      })
-      .catch(() => {/* silently ignore */});
-    return () => controller.abort();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Prisoner whitelist (מידור): fetch once on mount when asir is included and endpoint is configured
   useEffect(() => {
     const searchesAsirs = !typeArr || typeArr.includes('asir');
     if (!searchesAsirs || !config.asirWhitelist) return;
     const controller = new AbortController();
-    fetchAsirWhitelist({ config, signal: controller.signal })
+    asirWhitelistPromiseRef.current = fetchAsirWhitelist({ config, signal: controller.signal })
       .then((result) => { asirWhitelistRef.current = result; })
+      .catch(() => { /* fail-open */ });
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Remote field config: fetch once on mount when configured — per-type searchFields/sourceFields
+  // from the server, overriding DEFAULT_QUERY_SETTINGS so data owners can change them without a client deploy.
+  useEffect(() => {
+    if (!config.fieldConfig) return;
+    const controller = new AbortController();
+    remoteFieldConfigPromiseRef.current = fetchFieldConfig({ config, signal: controller.signal })
+      .then((result) => {
+        remoteFieldConfigRef.current = result;
+        setRemoteFieldConfig(result);
+      })
       .catch(() => { /* fail-open */ });
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,6 +247,88 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // singleSearch: fetch on mount — tries ES + online in parallel; if neither finds a match
+  // (including when the user has no ES permission for this type) and fallbackToOfflineIfNoAuth
+  // is set, also tries the offline service. Must run after the whitelist/permission-check effects
+  // above so their promise refs are already populated by the time this awaits them.
+  useEffect(() => {
+    if (!singleSearch) return;
+    const esController = new AbortController();
+    const onlineController = new AbortController();
+    const offlineController = new AbortController();
+
+    (async () => {
+      if (asirWhitelistPromiseRef.current) {
+        await asirWhitelistPromiseRef.current;
+      }
+
+      if (remoteFieldConfigPromiseRef.current) {
+        await remoteFieldConfigPromiseRef.current;
+      }
+
+      if (fallbackToOfflineIfNoAuth && personPermissionPromiseRef.current) {
+        await personPermissionPromiseRef.current;
+        personPermissionPromiseRef.current = null;
+      }
+
+      const hasAccess = !fallbackToOfflineIfNoAuth || hasPersonTypeAccess(personPermissionRef.current, singleType);
+
+      const esConfig = withRemoteFieldConfig(
+        withAsirWhitelist(config, asirWhitelistRef.current),
+        remoteFieldConfigRef.current,
+      );
+
+      const esPromise = hasAccess
+        ? fetchSinglePerson({
+            key: singleSearch.key,
+            value: singleSearch.value,
+            personType: singleType,
+            config: esConfig,
+            signal: esController.signal,
+          }).catch(() => null)
+        : Promise.resolve(null);
+
+      const onlinePromise = singleType !== 'ezrach'
+        ? fetchOnlinePersons({
+            query: singleSearch.value,
+            personType: singleType,
+            allowedAsirIds: asirWhitelistRef.current?.values,
+            config: config,
+            signal: onlineController.signal,
+          }).catch(() => [] as PersonResult[])
+        : Promise.resolve([] as PersonResult[]);
+
+      const [esPerson, onlinePersons] = await Promise.all([esPromise, onlinePromise]);
+      // filterPredicate mirrors baseFilter/filters — must apply here too, same as it does for
+      // runSearch's online/offline results, so a single-search lookup can't bypass them.
+      const esPersonFiltered = esPerson && filterPredicate(esPerson) ? esPerson : null;
+      const onlinePersonsFiltered = onlinePersons.filter(filterPredicate);
+      const found = onlinePersonsFiltered[0] ?? esPersonFiltered ?? null;
+      if (found) {
+        setSelectedPerson(found);
+        return;
+      }
+
+      if (fallbackToOfflineIfNoAuth) {
+        const offlinePersons = await searchOffline({
+          query: singleSearch.value,
+          personType: singleType,
+          config: config,
+          signal: offlineController.signal,
+        }).catch(() => [] as PersonResult[]);
+        const offlinePersonsFiltered = offlinePersons.filter(filterPredicate);
+        if (offlinePersonsFiltered[0]) setSelectedPerson(offlinePersonsFiltered[0]);
+      }
+    })().catch(() => {/* silently ignore */});
+
+    return () => {
+      esController.abort();
+      onlineController.abort();
+      offlineController.abort();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const cancelPendingRequests = useCallback(() => {
     abortControllers.current.forEach((c) => c.abort());
     abortControllers.current = [];
@@ -195,7 +338,11 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     activeOnly !== undefined ? activeOnly : showActiveOnly;
 
   const runSearch = useCallback(
-    async (query: string, isLoadMore = false, loadMoreTab?: PersonType) => {
+    async (rawQuery: string, isLoadMore = false, loadMoreTab?: PersonType) => {
+      // Normalize once, here, before the query fans out to ES/online/offline — every source
+      // must agree on what was searched for, and the conversion logic must not be duplicated
+      // per source (e.g. inside the ES query builder).
+      const query = normalizeQuery(rawQuery);
       cancelPendingRequests();
 
       const controllers = [
@@ -219,6 +366,12 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       const types: PersonType[] = typeArr ?? ['asir', 'soher', 'ezrach'];
 
+      // Wait for the remote field config fetch so the very first search already uses it, not the
+      // hardcoded DEFAULT_QUERY_SETTINGS fields.
+      if (remoteFieldConfigPromiseRef.current) {
+        await remoteFieldConfigPromiseRef.current;
+      }
+
       // If fallbackToOfflineIfNoAuth is on, wait for the permission check to complete
       if (fallbackToOfflineIfNoAuth && personPermissionPromiseRef.current) {
         await personPermissionPromiseRef.current;
@@ -227,16 +380,22 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       // No permission at all for a given type → use offline for that type (הרשאת איתור נדחתה)
       const noAccessTypes = new Set<PersonType>();
-      if (fallbackToOfflineIfNoAuth && Array.isArray(personPermissionRef.current)) {
+      if (fallbackToOfflineIfNoAuth) {
         for (const pt of types) {
-          const hasAccess = personPermissionRef.current.some(r => r.type === pt && r.authorizedIds.length > 0);
-          if (!hasAccess) noAccessTypes.add(pt);
+          if (!hasPersonTypeAccess(personPermissionRef.current, pt)) noAccessTypes.add(pt);
         }
       }
 
       const baseOffset = isLoadMore && loadMoreTab
         ? pagingStateRef.current[loadMoreTab === 'asir' ? 'asirs' : loadMoreTab === 'soher' ? 'sohers' : 'ezrachs'].offset
         : 0;
+
+      // Whitelist only ever touches querySettings.asir, and remote fields are merged per type —
+      // safe to compute once and reuse for every type's ES call.
+      const esConfig = withRemoteFieldConfig(
+        withAsirWhitelist(config, asirWhitelistRef.current),
+        remoteFieldConfigRef.current,
+      );
 
       // Build ES promises per category
       const esPromises = (['asir', 'soher', 'ezrach'] as PersonType[]).map((pt, i) => {
@@ -251,18 +410,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           offset: isLoadMore ? baseOffset : 0,
           pageSize,
           activeOnly: effectiveActiveOnly,
-          config: pt === 'asir' && asirWhitelistRef.current
-            ? {
-                ...config,
-                querySettings: {
-                  ...config.querySettings,
-                  asir: {
-                    ...(config.querySettings?.asir ?? DEFAULT_QUERY_SETTINGS.asir),
-                    allowedList: asirWhitelistRef.current,
-                  },
-                },
-              }
-            : config,
+          config: esConfig,
           signal: controllers[i].signal,
         });
       });
@@ -394,8 +542,9 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           const newArr = loadMoreTab === 'asir' ? asirEnriched
             : loadMoreTab === 'soher' ? soherEnriched : ezrachEnriched;
           const merged = [...prev[key], ...newArr];
-          const tabTotal = loadMoreTab === 'asir' ? (asirES?.total ?? prev.totalsByType.asir)
-            : loadMoreTab === 'soher' ? (soherES?.total ?? prev.totalsByType.soher)
+          // Online results are only fetched on a fresh search, so reuse the extra count from then.
+          const tabTotal = loadMoreTab === 'asir' ? (asirES ? asirES.total + onlineExtraByTypeRef.current.asir : prev.totalsByType.asir)
+            : loadMoreTab === 'soher' ? (soherES ? soherES.total + onlineExtraByTypeRef.current.soher : prev.totalsByType.soher)
             : (ezrachES?.total ?? prev.totalsByType.ezrach);
           const totalsByType = {
             ...prev.totalsByType,
@@ -410,9 +559,15 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           : (ezrachES?.hasMore ?? false);
         advance(loadMoreTab, pageSize, hasMore);
       } else {
+        // asirES.total/soherES.total only count ES hits — online results can add people not in
+        // that ES page, so the extra must be added on top to get the true overall total.
+        const asirOnlineExtra = asirES ? asirMerged.length - asirES.results.length : 0;
+        const soherOnlineExtra = soherES ? soherMerged.length - soherES.results.length : 0;
+        onlineExtraByTypeRef.current = { asir: asirOnlineExtra, soher: soherOnlineExtra, ezrach: 0 };
+
         const totalsByType = {
-          asir: asirES?.total ?? asirEnriched.length,
-          soher: soherES?.total ?? soherEnriched.length,
+          asir: asirES ? asirES.total + asirOnlineExtra : asirEnriched.length,
+          soher: soherES ? soherES.total + soherOnlineExtra : soherEnriched.length,
           ezrach: ezrachES?.total ?? ezrachEnriched.length,
         };
         const newResults: SearchResults = {
@@ -547,6 +702,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
-    displayFields: (config.querySettings?.[activeTab] ?? DEFAULT_QUERY_SETTINGS[activeTab]).sourceFields,
+    displayFields: withRemoteFieldConfig(config, remoteFieldConfig).querySettings?.[activeTab]?.sourceFields
+      ?? DEFAULT_QUERY_SETTINGS[activeTab].sourceFields,
   };
 }

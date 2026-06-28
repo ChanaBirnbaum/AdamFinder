@@ -145,6 +145,15 @@ export interface ServiceConfig {
    * If omitted or request fails → fail-open (search ES normally).
    */
   asirPermission?: ServiceEndpoints;
+  /**
+   * Remote field config endpoint — when set, called once on mount to fetch `searchFields`/
+   * `sourceFields` per `PersonType` from the server, instead of the library's hardcoded
+   * `DEFAULT_QUERY_SETTINGS`. Lets data owners add/remove indexed fields without a client change.
+   * Other `ElasticQuerySettings` (wrapMode, activeField, conditions, etc.) are untouched — only
+   * `searchFields`/`sourceFields` are overridden, per type, for whichever types the server returns.
+   * If omitted or the request fails → fail-open (use `querySettings`/`DEFAULT_QUERY_SETTINGS`).
+   */
+  fieldConfig?: ServiceEndpoints;
   authToken?: string;   // Bearer token for all calls
   pageSize?: number;    // Default: 3
   timeoutMs?: number;   // Default: 5000

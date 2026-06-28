@@ -248,11 +248,17 @@ export async function fetchSinglePerson(params: {
         ),
       )];
 
+  // allowedList (מידור) only applies cleanly to a single-type query — across the combined
+  // multi-index query (personType undefined) its terms filter would also exclude every
+  // soher/ezrach hit, since they lack the allowed-list field entirely.
+  const allowedList = personType ? config.querySettings?.[personType]?.allowedList : undefined;
+
   const settings: ElasticQuerySettings = {
     wrapMode:     'exact',
     splitTerms:   false,
     searchFields: [key],
     sourceFields,
+    ...(allowedList ? { allowedList } : {}),
   };
 
   const body = buildElasticQuery(settings, { query: value, size: 1, from: 0 });
