@@ -374,10 +374,10 @@ describe('usePersonSearch', () => {
     expect(mockFetchSinglePerson).not.toHaveBeenCalled();
   });
 
-  it('clearSelection resets state and calls clearData', async () => {
-    const clearData = vi.fn();
+  it('clearSelection resets state and calls onClear', async () => {
+    const onClear = vi.fn();
     const { result } = renderHook(() =>
-      usePersonSearch({ ...baseConfig, clearData })
+      usePersonSearch({ ...baseConfig, onClear })
     );
 
     // Let the mount-time fetches (e.g. remote field config) settle inside act() before asserting.
@@ -393,6 +393,6 @@ describe('usePersonSearch', () => {
 
     expect(result.current.inputValue).toBe('');
     expect(result.current.selectedPerson).toBeNull();
-    expect(clearData).toHaveBeenCalledTimes(1);
+    expect(onClear).toHaveBeenCalledTimes(1);
   });
 });

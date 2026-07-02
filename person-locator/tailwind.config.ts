@@ -7,6 +7,12 @@ const config: Config = {
   },
   theme: {
     extend: {
+      fontFamily: {
+        rubik: ['Rubik', 'sans-serif'],
+      },
+      boxShadow: {
+        search: '0px 4px 12px 0px rgba(6,77,173,0.15)',
+      },
       animation: {
         fadeIn: 'fadeIn 150ms ease-out',
       },

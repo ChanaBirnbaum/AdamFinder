@@ -212,7 +212,7 @@ export interface PersonLocatorProps {
   openTikAsir?: (person: PersonResult) => void;
 
   /** Callback fired when the search input is cleared (manual or programmatic). */
-  clearData?: () => void;
+  onClear?: () => void;
 
   /** react-router navigate function for icon-button navigation. */
   navigate?: (path: string) => void;
@@ -220,11 +220,21 @@ export interface PersonLocatorProps {
   /** Person types whose photos should be hidden. */
   HidePhotosSugAdam?: PersonType[];
 
+  /** Person types for which the ID number (ת"ז) should be shown in the result card. Hidden by default. */
+  displayIdNumber?: PersonType[];
+
   /** Hide shift/mishmoret data in result cards. */
   HideMishmorot?: boolean;
 
   /** Hide all navigation link buttons in result cards. */
   hideNavigationLinks?: boolean;
+
+  /**
+   * Extra ES `_source` fields to fetch and display in the expanded card, per person type.
+   * Merged on top of the type's default `sourceFields` — standard fields are preserved.
+   * @example `additionalSourceFields={{ soher: ['badge', 'station'] }}`
+   */
+  additionalSourceFields?: Partial<Record<PersonType, string[]>>;
 
   /** Search only active persons. Hides the active toggle entirely. */
   activeOnly?: boolean;

@@ -23,6 +23,7 @@ interface ResultsPanelProps {
   openTikAsir?: PersonLocatorProps['openTikAsir'];
   navigate?: PersonLocatorProps['navigate'];
   HidePhotosSugAdam?: PersonLocatorProps['HidePhotosSugAdam'];
+  displayIdNumber?: PersonLocatorProps['displayIdNumber'];
   HideMishmorot?: PersonLocatorProps['HideMishmorot'];
   hideNavigationLinks?: PersonLocatorProps['hideNavigationLinks'];
   additionalResultFields?: string[];
@@ -50,6 +51,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   openTikAsir,
   navigate,
   HidePhotosSugAdam,
+  displayIdNumber,
   HideMishmorot,
   hideNavigationLinks,
   additionalResultFields = [],
@@ -110,6 +112,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                 openTikAsir={openTikAsir}
                 navigate={navigate}
                 HidePhotosSugAdam={HidePhotosSugAdam}
+                displayIdNumber={displayIdNumber}
                 HideMishmorot={HideMishmorot}
                 hideNavigationLinks={hideNavigationLinks}
                 additionalResultFields={additionalResultFields}

@@ -17,6 +17,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     openTikAsir,
     navigate,
     HidePhotosSugAdam,
+    displayIdNumber,
     HideMishmorot,
     hideNavigationLinks,
     activeOnly,
@@ -182,6 +183,7 @@ onBlurCapture={() => {
           openTikAsir={openTikAsir}
           navigate={navigate}
           HidePhotosSugAdam={HidePhotosSugAdam}
+          displayIdNumber={displayIdNumber}
           HideMishmorot={HideMishmorot}
           hideNavigationLinks={hideNavigationLinks}
           additionalResultFields={displayFields}

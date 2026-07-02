@@ -69,6 +69,7 @@ export default function App() {
             type="soher"
             minChars={2}
             serviceConfig={mockServiceConfig}
+            additionalSourceFields={{ soher: ['badge', 'station'] }}
             onSelect={(p: PersonResult) => console.log('נבחר:', p)}
           />
         </div>

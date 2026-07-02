@@ -32,40 +32,55 @@ function isAbortErrorLike(error: unknown): boolean {
   );
 }
 
-/** Injects the prisoner whitelist (מידור) as `querySettings.asir.allowedList` so it's picked up by both `searchPersons` and `fetchSinglePerson`. No-op when there's no whitelist to apply. */
-function withAsirWhitelist(config: ServiceConfig, whitelist: AsirWhitelistResult | null): ServiceConfig {
-  if (!whitelist) return config;
-  return {
-    ...config,
-    querySettings: {
-      ...config.querySettings,
-      asir: {
-        ...(config.querySettings?.asir ?? DEFAULT_QUERY_SETTINGS.asir),
-        allowedList: whitelist,
-      },
-    },
-  };
-}
-
 /**
- * Overrides `querySettings[type].searchFields/sourceFields` per type with whatever the remote
- * field config endpoint returned, so data owners can add/remove indexed fields server-side
- * without a client change. Other settings (wrapMode, activeField, conditions, allowedList, etc.)
- * are preserved. No-op when there's no remote config to apply.
+ * Builds the effective ES config by applying three layers in order:
+ * 1. whitelist  → injects `allowedList` into asir settings (מידור)
+ * 2. remoteFields → overrides searchFields/sourceFields per type from the server
+ * 3. extra      → merges caller's additionalSourceFields on top
  */
-function withRemoteFieldConfig(config: ServiceConfig, remoteFields: FieldConfigResponse | null): ServiceConfig {
-  if (!remoteFields) return config;
-  const querySettings = { ...config.querySettings };
-  for (const pt of Object.keys(remoteFields) as PersonType[]) {
-    const fields = remoteFields[pt];
-    if (!fields) continue;
-    querySettings[pt] = {
-      ...(querySettings[pt] ?? DEFAULT_QUERY_SETTINGS[pt]),
-      searchFields: fields.searchFields,
-      sourceFields: fields.sourceFields,
+function buildEsConfig(
+  base: ServiceConfig,
+  whitelist: AsirWhitelistResult | null,
+  remoteFields: FieldConfigResponse | null,
+  extra: Partial<Record<PersonType, string[]>> | undefined,
+): ServiceConfig {
+  let config = base;
+
+  if (whitelist) {
+    config = {
+      ...config,
+      querySettings: {
+        ...config.querySettings,
+        asir: {
+          ...(config.querySettings?.asir ?? DEFAULT_QUERY_SETTINGS.asir),
+          allowedList: whitelist,
+        },
+      },
     };
   }
-  return { ...config, querySettings };
+
+  if (remoteFields) {
+    const qs = { ...config.querySettings };
+    for (const pt of Object.keys(remoteFields) as PersonType[]) {
+      const fields = remoteFields[pt];
+      if (!fields) continue;
+      qs[pt] = { ...(qs[pt] ?? DEFAULT_QUERY_SETTINGS[pt]), searchFields: fields.searchFields, sourceFields: fields.sourceFields };
+    }
+    config = { ...config, querySettings: qs };
+  }
+
+  if (extra) {
+    const qs = { ...config.querySettings };
+    for (const pt of Object.keys(extra) as PersonType[]) {
+      const extraFields = extra[pt];
+      if (!extraFields?.length) continue;
+      const curr = qs[pt] ?? DEFAULT_QUERY_SETTINGS[pt];
+      qs[pt] = { ...curr, sourceFields: [...new Set([...curr.sourceFields, ...extraFields])] };
+    }
+    config = { ...config, querySettings: qs };
+  }
+
+  return config;
 }
 
 /**
@@ -126,10 +141,11 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     filters,
     baseFilter,
     additionalSearchFields = [],
+    additionalSourceFields,
     fallbackToOfflineIfNoAuth = false,
     singleSearch,
     state,
-    clearData,
+    onClear,
     activeOnly,
     isDefaultActive,
     env,
@@ -273,10 +289,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       const hasAccess = !fallbackToOfflineIfNoAuth || hasPersonTypeAccess(personPermissionRef.current, singleType);
 
-      const esConfig = withRemoteFieldConfig(
-        withAsirWhitelist(config, asirWhitelistRef.current),
-        remoteFieldConfigRef.current,
-      );
+      const esConfig = buildEsConfig(config, asirWhitelistRef.current, remoteFieldConfigRef.current, additionalSourceFields);
 
       const esPromise = hasAccess
         ? fetchSinglePerson({
@@ -392,10 +405,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       // Whitelist only ever touches querySettings.asir, and remote fields are merged per type —
       // safe to compute once and reuse for every type's ES call.
-      const esConfig = withRemoteFieldConfig(
-        withAsirWhitelist(config, asirWhitelistRef.current),
-        remoteFieldConfigRef.current,
-      );
+      const esConfig = buildEsConfig(config, asirWhitelistRef.current, remoteFieldConfigRef.current, additionalSourceFields);
 
       // Build ES promises per category
       const esPromises = (['asir', 'soher', 'ezrach'] as PersonType[]).map((pt, i) => {
@@ -672,8 +682,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     setError(null);
     setIsOffline(false);
     resetPaging();
-    clearData?.();
-  }, [clearData, resetPaging]);
+    onClear?.();
+  }, [onClear, resetPaging]);
 
   const loadMore = useCallback(
     (tab: PersonType) => {
@@ -702,7 +712,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
-    displayFields: withRemoteFieldConfig(config, remoteFieldConfig).querySettings?.[activeTab]?.sourceFields
+    displayFields: buildEsConfig(config, null, remoteFieldConfig, additionalSourceFields)
+      .querySettings?.[activeTab]?.sourceFields
       ?? DEFAULT_QUERY_SETTINGS[activeTab].sourceFields,
   };
 }

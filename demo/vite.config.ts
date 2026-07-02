@@ -19,6 +19,8 @@ function makeFakeHits(query: string, from: number, size: number) {
         isActive: true,
         rank: t === 'soher' ? 'סוהר' : undefined,
         prisonerNumber: t === 'asir' ? `P${idx}` : undefined,
+        badge: t === 'soher' ? `תג-${idx + 100}` : undefined,
+        station: t === 'soher' ? `עמדה ${(idx % 5) + 1}` : undefined,
       },
     };
   });

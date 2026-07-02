@@ -11,6 +11,7 @@ interface ResultCardProps {
   openTikAsir?: PersonLocatorProps['openTikAsir'];
   navigate?: PersonLocatorProps['navigate'];
   HidePhotosSugAdam?: PersonLocatorProps['HidePhotosSugAdam'];
+  displayIdNumber?: PersonLocatorProps['displayIdNumber'];
   HideMishmorot?: PersonLocatorProps['HideMishmorot'];
   hideNavigationLinks?: PersonLocatorProps['hideNavigationLinks'];
   additionalResultFields?: string[];
@@ -78,6 +79,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
   openTikAsir,
   navigate,
   HidePhotosSugAdam,
+  displayIdNumber,
   HideMishmorot,
   hideNavigationLinks,
   additionalResultFields = [],
@@ -174,11 +176,15 @@ const ResultCard: React.FC<ResultCardProps> = ({
           </div>
 
           {/* Row 2 – id / prisoner number / rank */}
-          {[person.data['idNumber'], person.data['prisonerNumber'], person.data['rank']].some(Boolean) && (
-            <p className="text-gray-400 text-xs text-right mt-0.5">
-              {[person.data['idNumber'], person.data['prisonerNumber'], person.data['rank']].filter(Boolean).join(' · ')}
-            </p>
-          )}
+          {(() => {
+            const idVal = (displayIdNumber ?? []).includes(person.personType) ? person.data['idNumber'] : undefined;
+            const row2 = [idVal, person.data['prisonerNumber'], person.data['rank']];
+            return row2.some(Boolean) && (
+              <p className="text-gray-400 text-xs text-right mt-0.5">
+                {row2.filter(Boolean).join(' · ')}
+              </p>
+            );
+          })()}
 
           {/* Row 3 – unit / shibutz / phone */}
           {[person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].some(Boolean) && (
