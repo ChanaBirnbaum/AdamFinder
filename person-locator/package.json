@@ -67,6 +67,7 @@
     "vitest": "^2.0.0"
   },
   "dependencies": {
+    "@fontsource/rubik": "^5.2.8",
     "axios": "^1.15.0"
   }
 }
