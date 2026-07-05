@@ -8,7 +8,32 @@
       "Bash(npx vitest *)",
       "Bash(cd \"/c/Users/user1/AdamFinder/person-locator\" && cat package.json | grep -A3 '\"test\"')",
       "Read(//c/c/Users/user1/AdamFinder/person-locator/**)",
-      "Bash(grep -rn \"'data\\\\.'\\\\|\\\\\"data\\\\.\\\\\"\\\\|startsWith\\('data\\\\|replace\\(/^data\\\\\\\\.\\\\|stripDataPrefix\\\\|data\\\\\\\\.\\\\b\" \"c:\\\\Users\\\\user1\\\\AdamFinder\\\\person-locator\\\\src\")"
+      "Bash(grep -rn \"'data\\\\.'\\\\|\\\\\"data\\\\.\\\\\"\\\\|startsWith\\('data\\\\|replace\\(/^data\\\\\\\\.\\\\|stripDataPrefix\\\\|data\\\\\\\\.\\\\b\" \"c:\\\\Users\\\\user1\\\\AdamFinder\\\\person-locator\\\\src\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k: d[k] for k in ['name','scripts','dependencies','devDependencies'] if k in d}, indent=2, ensure_ascii=False\\)\\)\")",
+      "Bash(node -e \"const d=require\\('./demo/package.json'\\); console.log\\(JSON.stringify\\({scripts:d.scripts,dependencies:d.dependencies,devDependencies:d.devDependencies},null,2\\)\\)\")",
+      "Bash(npm run *)",
+      "Bash(node -e ' *)",
+      "Bash(npm install *)",
+      "Bash(grep -E \"^\\\\-.*\\\\.css$\")",
+      "Bash(grep -E \"^-.*\\(400|500|600|700\\)\\\\.css$|hebrew-\\(400|500|600|700\\)\\\\.css$|latin-\\(400|500|600|700\\)\\\\.css$\")",
+      "Bash(grep -E \"^\\(400|500|600|700\\)\\\\.css$|^hebrew-\\(400|500|600|700\\)\\\\.css$\")",
+      "Bash(grep -o \"fonts.googleapis\\\\|fonts.gstatic\\\\|url\\(\\\\.\\\\./\\\\|url\\(\\\\./files\" dist/index.esm.js)",
+      "Bash(grep -o \"url\\(data:[^\\)]\\\\{0,60\\\\}\" dist/index.esm.js)",
+      "Bash(node -e \"console.log\\(require\\('rollup-plugin-postcss/package.json'\\).version\\)\")",
+      "Bash(jobs)",
+      "Bash(curl -s http://localhost:5174/AdamFinder/)",
+      "Bash(curl -s \"http://localhost:5174/AdamFinder/src/main.tsx\")",
+      "Bash(curl -s \"http://localhost:5174/AdamFinder/src/App.tsx\")",
+      "Bash(curl -s \"http://localhost:5174/AdamFinder/@fs/C:/Users/user1/AdamFinder/person-locator/src/styles.css\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"http://localhost:5174/AdamFinder/@fs/C:/Users/user1/AdamFinder/person-locator/src/styles.css\")",
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq vite*\")",
+      "Bash(curl -s -X POST http://localhost:5174/AdamFinder/asirs/_search -H 'Content-Type: application/json' -d '{\"query\":{\"bool\":{\"must\":[{\"bool\":{\"must\":[{\"bool\":{\"minimum_should_match\":1}},{\"query_string\":{\"query\":\"עלי*\",\"fields\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\"]}}]}}]}},\"sort\":[{\"_score\":\"desc\"}],\"_source\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\",\"isActive\",\"photoUrl\"],\"size\":10,\"from\":0}' -w '\\\\nHTTP_CODE:%{http_code}\\\\n')",
+      "Bash(curl -s -X POST \"http://localhost:5174/asirs/_search\" -H \"Content-Type: application/json\" -d '{\"query\":{}}' -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\")",
+      "Bash(curl -s -X POST \"http://localhost:5174/AdamFinder/asirs/_search?x=1\" -H \"Content-Type: application/json\" -d '{\"query\":{}}' -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\")",
+      "Bash(curl -s -X POST \"http://localhost:5174/AdamFinder/asirs/_search\" -H \"Content-Type: application/json\" -d '{\"query\":{}}' -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:5174/AdamFinder/\" -o /dev/null -w \"GET / -> %{http_code}\\\\n\")",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -X POST http://localhost:5173/AdamFinder/asirs/_search -H 'Content-Type: application/json' -d '{\"query\":{\"bool\":{\"must\":[{\"bool\":{\"must\":[{\"bool\":{\"minimum_should_match\":1}},{\"query_string\":{\"query\":\"עלי*\",\"fields\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\"]}}]}}]}},\"sort\":[{\"_score\":\"desc\"}],\"_source\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\",\"isActive\",\"photoUrl\"],\"size\":10,\"from\":0}' -w '\\\\nHTTP_CODE:%{http_code}\\\\n')"
     ]
   }
 }

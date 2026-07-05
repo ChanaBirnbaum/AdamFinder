@@ -1,6 +1,8 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import type { PersonType } from '../types';
 import type { RecentPerson } from '../hooks/useRecentSearches';
+import { useAnchoredPosition } from '../hooks/useAnchoredPosition';
 
 const TYPE_META: Record<PersonType, { label: string; dotClass: string; textClass: string }> = {
   asir: { label: 'אסיר',  dotClass: 'bg-rose-400',    textClass: 'text-rose-500' },
@@ -21,24 +23,31 @@ interface RecentSearchesPanelProps {
   onRemove: (id: string) => void;
   onClearAll: () => void;
   resultDirection?: 'up' | 'down';
+  /** Element the panel should be positioned under/over. Required to portal the panel out of clipping ancestors. */
+  anchorRef: React.RefObject<HTMLElement | null>;
 }
 
-const RecentSearchesPanel: React.FC<RecentSearchesPanelProps> = ({
+const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanelProps>(({
   recents,
   onSelect,
   onRemove,
   onClearAll,
   resultDirection = 'down',
-}) => {
-  if (recents.length === 0) return null;
-
+  anchorRef,
+}, forwardedRef) => {
   const panelClass =
     resultDirection === 'up'
-      ? 'absolute bottom-full w-full z-50 bg-white rounded-t-xl shadow-lg border border-b-0 border-gray-200'
-      : 'absolute top-full w-full z-50 bg-white rounded-b-xl shadow-lg border border-t-0 border-gray-200';
+      ? 'z-50 bg-white rounded-t-xl shadow-lg border border-b-0 border-gray-200'
+      : 'z-50 bg-white rounded-b-xl shadow-lg border border-t-0 border-gray-200';
 
-  return (
-    <div className={panelClass} role="listbox" aria-label="חיפושים אחרונים" dir="rtl">
+  // Panel is portaled to <body>, so it needs its own fixed-position coordinates
+  // pinned to the anchor element instead of relying on a relative-positioned parent.
+  const panelStyle = useAnchoredPosition(anchorRef, resultDirection);
+
+  if (recents.length === 0) return null;
+
+  return createPortal(
+    <div ref={forwardedRef} className={panelClass} style={panelStyle} role="listbox" aria-label="חיפושים אחרונים" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
         <span className="text-[11px] text-gray-400 font-medium">חיפושים אחרונים</span>
@@ -88,8 +97,11 @@ const RecentSearchesPanel: React.FC<RecentSearchesPanelProps> = ({
           </div>
         );
       })}
-    </div>
+    </div>,
+    document.body,
   );
-};
+});
+
+RecentSearchesPanel.displayName = 'RecentSearchesPanel';
 
 export default RecentSearchesPanel;

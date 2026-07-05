@@ -3,24 +3,45 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import type { Connect } from 'vite'
 
-/** Generate fake ES hits for pagination testing */
+const NAMES = [
+  'עלי מזרחי', 'יוסף כהן', 'כמאל אבו-ראס', 'אדם לוי',
+  'מוחמד עיסא', 'דוד ביטון', 'אחמד חסן', 'שמעון פרץ',
+  'נאסר עואד', 'אברהם גולדברג', 'ח\'אלד נסאר', 'רון אביב',
+];
+const UNITS = ['יחידה א׳', 'יחידה ב׳', 'כלא מגידו', 'כלא הדרים', 'מחוז צפון'];
+const RANKS = ['סוהר', 'סוהר בכיר', 'קצין', 'ממונה'];
+const MISHMOROT: Array<Array<{ title: string; status: string }>> = [
+  [],
+  [{ title: 'עונש סגר', status: 'active' }],
+  [{ title: 'הרחקה מחצר', status: 'past' }, { title: 'פיקוח יומי', status: 'future' }],
+  [{ title: 'הגבלת ביקורים', status: 'active' }, { title: 'עונש סגר', status: 'past' }],
+];
+
+/** Generate fake ES hits for design review */
 function makeFakeHits(query: string, from: number, size: number) {
   const types = ['asir', 'soher', 'ezrach'] as const;
   return Array.from({ length: size }, (_, i) => {
     const idx = from + i;
     const t = types[idx % 3];
+    const isActive = idx % 4 !== 0; // every 4th is inactive → shows grayscale + gray dot
+    const name = `${NAMES[idx % NAMES.length]} ${idx + 1}`;
+    const mishmorot = t === 'asir' ? MISHMOROT[idx % MISHMOROT.length] : undefined;
     return {
       _index: 'persons',
       _id: `fake-${idx}`,
       _source: {
-        fullName: `${query} בן-דוד ${idx + 1}`,
+        fullName: name,
         idNumber: `${300000000 + idx}`,
         personType: t,
-        isActive: true,
-        rank: t === 'soher' ? 'סוהר' : undefined,
-        prisonerNumber: t === 'asir' ? `P${idx}` : undefined,
+        isActive,
+        rank: t === 'soher' ? RANKS[idx % RANKS.length] : undefined,
+        prisonerNumber: t === 'asir' ? `P${idx + 100}` : undefined,
+        unit: t !== 'asir' ? UNITS[idx % UNITS.length] : undefined,
+        shibutz: t === 'asir' ? UNITS[idx % UNITS.length] : undefined,
+        phone: t === 'ezrach' ? `052-${String(7000000 + idx).slice(-7)}` : undefined,
         badge: t === 'soher' ? `תג-${idx + 100}` : undefined,
         station: t === 'soher' ? `עמדה ${(idx % 5) + 1}` : undefined,
+        mishmorot: mishmorot?.length ? mishmorot : undefined,
       },
     };
   });

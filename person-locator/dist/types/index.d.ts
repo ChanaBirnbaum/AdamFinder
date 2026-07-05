@@ -1,30 +1,20 @@
+import type { FilterInput } from '../filters';
 export type PersonType = 'asir' | 'soher' | 'ezrach';
 export type Environment = 'dev' | 'test' | 'lrn' | 'prod';
-export type FilterOperator = 'equals' | 'exists' | 'gt' | 'lt' | 'contains';
-export interface Filter {
-    fieldName: string;
-    value: string | number | null;
-    operator: FilterOperator;
-}
 export interface PersonResult {
     id: string;
     personType: PersonType;
-    fullName: string;
-    photoUrl?: string;
-    idNumber?: string;
-    unit?: string;
-    rank?: string;
-    phone?: string;
-    shibutz?: string;
-    prisonerNumber?: string;
     isActive: boolean;
     source: 'elasticsearch' | 'online' | 'offline';
-    additionalFields?: Record<string, unknown>;
+    /** All fields returned from the service, keyed by their original field name.
+     *  e.g. data['fullName'], data['idNumber'], data['rank'], data['prisonerNumber'] etc. */
+    data: Record<string, unknown>;
 }
 export interface SearchResults {
     asirs: PersonResult[];
     sohers: PersonResult[];
     ezrachs: PersonResult[];
+    totalsByType: Record<PersonType, number>;
     totalCount: number;
 }
 export interface PagingState {
@@ -45,17 +35,122 @@ export interface SingleSearch {
     key: string;
     value: string;
 }
+/** Controls how the search term is wrapped inside the query_string value.
+ *  - `'prefix'`   → `"term1 AND term2*"`   (good for IDs / prisoner numbers)
+ *  - `'wildcard'` → `"*term1 AND term2*"`  (broader, used for guard search)
+ *  - `'exact'`    → `"term1 AND term2"`    (no wildcards, used for citizens / single lookup) */
+export type QueryWrapMode = 'prefix' | 'wildcard' | 'exact';
+/** Restrict results to documents whose `field` value is in `values`. */
+export interface AllowedListFilter {
+    /** ES field name, e.g. `"idnt_asir"` */
+    field: string;
+    /** Allowed values — when empty the filter clause is omitted. */
+    values: (string | number)[];
+}
+/** Script-based primary sort (added before `_score`). */
+export interface ScriptSort {
+    script: string;
+    type?: 'number' | 'string';
+    order?: 'asc' | 'desc';
+}
+/**
+ * Full settings describing how to build an Elasticsearch query for one PersonType.
+ * Pass via `ServiceConfig.querySettings` to override library defaults.
+ *
+ * @example — Prisoners with allowed-list guard
+ * ```ts
+ * asir: {
+ *   wrapMode: 'prefix',
+ *   searchFields: ['text_name_prati', 'text_name_mishpacha^2', 'idnt_asir'],
+ *   sourceFields: ['idnt_adam', 'text_name_prati', 'text_name_mishpacha', 'idnt_asir'],
+ *   allowedList: { field: 'idnt_asir', values: allowedAsirimList },
+ *   conditions: [Condition_Active_Asirim],
+ * }
+ * ```
+ */
+export interface ElasticQuerySettings {
+    /** How the search term is wrapped in `query_string`. Default: `'prefix'`. */
+    wrapMode?: QueryWrapMode;
+    /** Split whitespace into terms and join with `AND`. Default: `true`. */
+    splitTerms?: boolean;
+    /** Fields to search in. Supports Lucene boost notation e.g. `"fieldName^25"`. */
+    searchFields: string[];
+    /** Fields to return in `_source`. */
+    sourceFields: string[];
+    /** Each field generates an `{ exists: { field } }` must clause. */
+    requiredFields?: string[];
+    /** At least one of these fields must exist in the document. */
+    atLeastOneField?: string[];
+    /** Raw ES bool clauses injected into the inner `bool.must`. */
+    conditions?: Record<string, unknown>[];
+    /** Restrict results to a set of document IDs on a given field. */
+    allowedList?: AllowedListFilter | null;
+    /** Computed fields added as ES `script_fields`. */
+    scriptFields?: Record<string, {
+        script: string;
+    }>;
+    /** Primary sort by script — appended before `_score` sort. */
+    scriptSort?: ScriptSort;
+    /**
+     * The document field that represents the active/inactive state.
+     * Used when `activeOnly` filtering is requested.
+     * Default: `'isActive'`.
+     */
+    activeField?: string;
+    /**
+     * The document field that holds the person type (e.g. `'sugAdam'`).
+     * When set together with `personTypeValue`, a `term` filter is injected
+     * so each query only returns documents of the correct type.
+     */
+    personTypeField?: string;
+    /** The value to match against `personTypeField` for this person type. */
+    personTypeValue?: string;
+}
+export interface ServiceEndpoints {
+    /** Base URL, no trailing slash */
+    baseUrl: string;
+    /** Named endpoint paths — add any key freely, no interface change needed.
+     *  Use `{index}` as a placeholder where relevant, e.g. `/{index}/_search` */
+    methods: Record<string, string>;
+}
 export interface ServiceConfig {
-    elasticsearchUrl: string;
-    onlineServiceUrl: string;
-    offlineServiceUrl: string;
+    elasticsearch: ServiceEndpoints;
+    online: ServiceEndpoints;
+    offline: ServiceEndpoints;
+    /** Optional photo service for resolving image URLs by person id. */
+    photos?: ServiceEndpoints;
+    /**
+     * Prisoner whitelist endpoint (מידור) — when set, called once on mount.
+     * The server returns an array of prisoner IDs the user may see.
+     * These are injected as a `terms` filter into every Elasticsearch asir query.
+     * If the server returns an empty array or omitted → no restriction applied.
+     */
+    asirWhitelist?: ServiceEndpoints;
+    /**
+     * Permission check endpoint (הרשאת איתור) — used together with `fallbackToOfflineIfNoAuth`.
+     * Called once on mount to determine if the user has any asir-search permission at all.
+     * HTTP 200 → has permission. HTTP 403 → no permission → offline fallback.
+     * If omitted or request fails → fail-open (search ES normally).
+     */
+    asirPermission?: ServiceEndpoints;
+    /**
+     * Remote field config endpoint — when set, called once on mount to fetch `searchFields`/
+     * `sourceFields` per `PersonType` from the server, instead of the library's hardcoded
+     * `DEFAULT_QUERY_SETTINGS`. Lets data owners add/remove indexed fields without a client change.
+     * Other `ElasticQuerySettings` (wrapMode, activeField, conditions, etc.) are untouched — only
+     * `searchFields`/`sourceFields` are overridden, per type, for whichever types the server returns.
+     * If omitted or the request fails → fail-open (use `querySettings`/`DEFAULT_QUERY_SETTINGS`).
+     */
+    fieldConfig?: ServiceEndpoints;
     authToken?: string;
     pageSize?: number;
     timeoutMs?: number;
+    /** Per-type query settings — override library defaults per PersonType. */
+    querySettings?: Partial<Record<PersonType, ElasticQuerySettings>>;
 }
 export interface PersonLocatorProps {
-    /** Restrict search to one category. Omit to search all three. */
-    type?: PersonType;
+    /** Restrict search to one or more categories. Omit to search all three. */
+    type?: PersonType | PersonType[];
     /** Minimum characters before triggering search. Default: 3 */
     minChars?: number;
     /** Fires when user selects a person from the list. */
@@ -66,12 +161,24 @@ export interface PersonLocatorProps {
     resultDirection?: 'up' | 'down';
     /** Extra ES index fields to include in the search query. */
     additionalSearchFields?: string[];
-    /** Extra ES fields to return and display in result cards. */
-    additionalResultFields?: string[];
-    /** Dynamic filters applied to every ES query. */
-    filters?: Filter[];
-    /** Enable offline DB fallback when ES is unreachable. Default: false */
-    enableOfflineSearch?: boolean;
+    /**
+     * User-facing filter, applied identically against Elasticsearch and the online/offline
+     * results. A single Filter, or an array (combined with an implicit AND). See `src/filters`.
+     */
+    filters?: FilterInput<PersonResult>;
+    /**
+     * Mandatory system-level filter (permission scoping, forced exclusions) — always ANDed
+     * with `filters` so it cannot be widened or bypassed by the user filter. See `src/filters`.
+     */
+    baseFilter?: FilterInput<PersonResult>;
+    /**
+     * When `true`, the library calls the `asirPermission` endpoint before each search.
+     * - HTTP 200 (has permission) → search ES normally.
+     * - HTTP 403 (no permission) → fall back to the offline service for asirs.
+     * Requires `serviceConfig.asirPermission` to be configured.
+     * Default: false
+     */
+    fallbackToOfflineIfNoAuth?: boolean;
     /** Pre-fill the component by fetching a person by this key/value from ES. Component stays editable. */
     singleSearch?: SingleSearch;
     /** Controlled selected person value. Pass null to clear. */
@@ -79,19 +186,29 @@ export interface PersonLocatorProps {
     /** Callback to open external "prisoner file" system. Available in all modes. */
     openTikAsir?: (person: PersonResult) => void;
     /** Callback fired when the search input is cleared (manual or programmatic). */
-    clearData?: () => void;
+    onClear?: () => void;
     /** react-router navigate function for icon-button navigation. */
     navigate?: (path: string) => void;
     /** Person types whose photos should be hidden. */
     HidePhotosSugAdam?: PersonType[];
+    /** Person types for which the ID number (ת"ז) should be shown in the result card. Hidden by default. */
+    displayIdNumber?: PersonType[];
     /** Hide shift/mishmoret data in result cards. */
     HideMishmorot?: boolean;
     /** Hide all navigation link buttons in result cards. */
     hideNavigationLinks?: boolean;
+    /**
+     * Extra ES `_source` fields to fetch and display in the expanded card, per person type.
+     * Merged on top of the type's default `sourceFields` — standard fields are preserved.
+     * @example `additionalSourceFields={{ soher: ['badge', 'station'] }}`
+     */
+    additionalSourceFields?: Partial<Record<PersonType, string[]>>;
     /** Search only active persons. Hides the active toggle entirely. */
     activeOnly?: boolean;
     /** Default value for the active toggle (only when activeOnly is undefined). */
     isDefaultActive?: boolean;
     /** Deployment environment — determines which backend URLs the library uses. */
     env: Environment;
+    /** Override the service config (URLs, page size, query settings). Useful for testing / mock mode. */
+    serviceConfig?: Partial<ServiceConfig>;
 }

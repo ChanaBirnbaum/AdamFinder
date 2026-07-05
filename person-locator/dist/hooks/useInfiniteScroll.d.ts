@@ -1,5 +1,2 @@
-/**
- * Attaches an IntersectionObserver to the returned ref.
- * Calls `onIntersect` when the element enters the viewport.
- */
-export declare function useInfiniteScroll(onIntersect: () => void, enabled: boolean): (node: HTMLElement | null) => void;
+import { RefObject } from 'react';
+export declare function useInfiniteScroll(onIntersect: () => void, enabled: boolean, rootRef?: RefObject<Element | null>): (node: HTMLElement | null) => void;

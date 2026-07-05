@@ -1,0 +1,7 @@
+/* Self-hosted Rubik (no external/CDN font requests — required for closed networks).
+   Each weight file bundles unicode-range-scoped @font-face rules covering
+   both Hebrew and Latin (digits/English) text. */
+@import '@fontsource/rubik/400.css';
+@import '@fontsource/rubik/500.css';
+@import '@fontsource/rubik/600.css';
+@import '@fontsource/rubik/700.css';

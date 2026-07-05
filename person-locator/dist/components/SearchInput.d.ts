@@ -7,6 +7,7 @@ interface SearchInputProps {
     onFocus?: () => void;
     disabled?: boolean;
     lockedType?: PersonType;
+    allowedTypes?: PersonType[];
     typeFilter?: PersonType;
     onTypeFilterChange?: (type: PersonType | undefined) => void;
     activeOnly?: PersonLocatorProps['activeOnly'];
@@ -15,6 +16,8 @@ interface SearchInputProps {
     onActiveToggle?: (active: boolean) => void;
     activeToggleValue?: boolean;
     isOpen?: boolean;
+    hasSelectedPerson?: boolean;
+    isSearchActive?: boolean;
 }
 declare const SearchInput: React.FC<SearchInputProps>;
 export default SearchInput;

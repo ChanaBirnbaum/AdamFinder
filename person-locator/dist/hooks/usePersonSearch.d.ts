@@ -16,5 +16,7 @@ export interface UsePersonSearchReturn {
     loadMore: (tab: PersonType) => void;
     showActiveOnly: boolean;
     setShowActiveOnly: (v: boolean) => void;
+    /** Fields to display in the expanded card section — sourced from config.querySettings[activeTab].sourceFields */
+    displayFields: string[];
 }
 export declare function usePersonSearch(props: PersonLocatorProps): UsePersonSearchReturn;

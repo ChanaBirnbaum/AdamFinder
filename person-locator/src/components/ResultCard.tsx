@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { PersonLocatorProps, PersonResult, PersonType } from '../types';
 import { highlightMatch } from '../utils/highlightMatch';
+import { CitizenIcon, GuardIcon, PrisonerIcon } from './icons';
+import Badge, { type BadgeStatus } from './Badge';
 
 interface ResultCardProps {
   person: PersonResult;
@@ -17,12 +19,11 @@ interface ResultCardProps {
   additionalResultFields?: string[];
 }
 
-// ── Type metadata ──────────────────────────────────────────────────────────────
-const TYPE_META: Record<PersonType, { label: string; textClass: string }> = {
-  asir: { label: 'אסיר',  textClass: 'text-rose-500' },
-  soher:    { label: 'סוהר',  textClass: 'text-blue-500' },
-  ezrach: { label: 'אזרח',  textClass: 'text-emerald-500' },
-};
+function TypeIcon({ type }: { type: PersonType }) {
+  if (type === 'ezrach') return <CitizenIcon className="text-[#006aff]" />;
+  if (type === 'soher')  return <GuardIcon className="text-[#006aff]" />;
+  return <PrisonerIcon className="text-[#006aff]" />;
+}
 
 // ── Inline tooltip ─────────────────────────────────────────────────────────────
 const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -94,8 +95,6 @@ const ResultCard: React.FC<ResultCardProps> = ({
     (f) => person.data[f] != null
   );
 
-  const typeMeta = TYPE_META[person.personType];
-
   const handleClick = () => onSelect(person);
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(person); }
@@ -104,11 +103,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
   return (
     <div
       ref={isLast ? lastRef : undefined}
-      className="px-3 py-1.5 hover:bg-gray-50 transition-colors duration-100 animate-fadeIn"
+      className="p-4 border-b border-[#f5f5f5] hover:bg-gray-50 transition-colors duration-100 animate-fadeIn"
     >
       {/* ── Main row ── */}
       <div
-        className="flex items-center gap-3 cursor-pointer"
+        className="flex items-start gap-4 cursor-pointer"
         role="option"
         aria-label={String(person.data['fullName'] ?? '')}
         aria-selected={false}
@@ -117,81 +116,95 @@ const ResultCard: React.FC<ResultCardProps> = ({
         onKeyDown={handleKeyDown}
       >
         {/* ── Avatar ── */}
-        {showPhoto ? (
-          <img src={person.data['photoUrl'] as string} alt={String(person.data['fullName'] ?? '')} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-            </svg>
-          </div>
-        )}
+        <div className="relative flex-shrink-0">
+          {showPhoto ? (
+            <img src={person.data['photoUrl'] as string} alt={String(person.data['fullName'] ?? '')} className={`w-[45.714px] h-[45.714px] rounded-[4px] object-cover border border-[#393b58] ${!person.isActive ? 'grayscale' : ''}`} />
+          ) : (
+            <div className="w-[45.714px] h-[45.714px] rounded-[4px] bg-[#f0f2f5] flex items-center justify-center border border-[#393b58]" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-[#a0aec0]">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+              </svg>
+            </div>
+          )}
+          <span className={`absolute top-[-5px] right-[-5px] w-[15px] h-[15px] rounded-full border-2 border-white ${person.isActive ? 'bg-[#22C55E]' : 'bg-[#a0aec0]'}`} aria-hidden="true" />
+        </div>
 
         {/* ── Info ── */}
         <div className="flex-1 min-w-0">
 
-          {/* Row 1 – name | type + active */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {highlightMatch(String(person.data['fullName'] ?? ''), query)}
-              </p>
-              {!hideNavigationLinks && person.personType === 'asir' && openTikAsir && (
-                <Tip label="תיק אסיר">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); openTikAsir(person); }}
-                    className="text-rose-400 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400 rounded transition-colors"
-                    aria-label={`תיק אסיר – ${String(person.data['fullName'] ?? '')}`}
-                  >
-                    <TikAsirIcon />
-                  </button>
-                </Tip>
-              )}
-              {!hideNavigationLinks && navigate && (
-                <Tip label="פרופיל">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/person/${person.id}`); }}
-                    className="text-gray-300 hover:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 rounded transition-colors"
-                    aria-label={`פרופיל – ${String(person.data['fullName'] ?? '')}`}
-                  >
-                    <ExternalIcon />
-                  </button>
-                </Tip>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className={`text-[10px] font-semibold ${typeMeta.textClass}`}>{typeMeta.label}</span>
-              <span className="flex items-center gap-0.5">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${person.isActive ? 'bg-green-400' : 'bg-gray-300'}`}
-                  aria-hidden="true"
-                />
-                <span className={`text-[10px] ${person.isActive ? 'text-green-500' : 'text-gray-400'}`}>
-                  {person.isActive ? 'פעיל' : 'לא פעיל'}
-                </span>
-              </span>
-            </div>
-          </div>
-
-          {/* Row 2 – id / prisoner number / rank */}
+          {/* Row 1 – name | id number */}
           {(() => {
             const idVal = (displayIdNumber ?? []).includes(person.personType) ? person.data['idNumber'] : undefined;
-            const row2 = [idVal, person.data['prisonerNumber'], person.data['rank']];
-            return row2.some(Boolean) && (
-              <p className="text-gray-400 text-xs text-right mt-0.5">
-                {row2.filter(Boolean).join(' · ')}
-              </p>
+            const [primaryId, ...restRow2] = [idVal, person.data['prisonerNumber'], person.data['rank']].filter(Boolean);
+            return (
+              <>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="font-rubik font-bold text-[#00033d] text-base truncate">
+                    {highlightMatch(String(person.data['fullName'] ?? ''), query)}
+                  </p>
+                  {primaryId != null && (
+                    <>
+                      <span className="w-px h-4 bg-[#e2e8f0] flex-shrink-0" aria-hidden="true" />
+                      <p className="font-rubik font-bold text-[#00033d] text-base flex-shrink-0">
+                        {String(primaryId)}
+                      </p>
+                    </>
+                  )}
+                  {!hideNavigationLinks && person.personType === 'asir' && openTikAsir && (
+                    <Tip label="תיק אסיר">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openTikAsir(person); }}
+                        className="text-rose-400 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400 rounded transition-colors"
+                        aria-label={`תיק אסיר – ${String(person.data['fullName'] ?? '')}`}
+                      >
+                        <TikAsirIcon />
+                      </button>
+                    </Tip>
+                  )}
+                  {!hideNavigationLinks && navigate && (
+                    <Tip label="פרופיל">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/person/${person.id}`); }}
+                        className="text-gray-300 hover:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 rounded transition-colors"
+                        aria-label={`פרופיל – ${String(person.data['fullName'] ?? '')}`}
+                      >
+                        <ExternalIcon />
+                      </button>
+                    </Tip>
+                  )}
+                </div>
+
+                {/* Row 2 – remaining prisoner number / rank */}
+                {restRow2.length > 0 && (
+                  <p className="font-rubik font-normal text-sm text-[#8e929f] text-right mt-0.5">
+                    {restRow2.join(' · ')}
+                  </p>
+                )}
+              </>
             );
           })()}
 
           {/* Row 3 – unit / shibutz / phone */}
           {[person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].some(Boolean) && (
-            <p className="text-gray-400 text-xs text-right mt-0.5">
+            <p className="font-rubik font-normal text-sm text-[#8e929f] text-right mt-0.5">
               {[person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].filter(Boolean).join(' · ')}
             </p>
           )}
+        </div>
+
+        {/* ── Type icon + custody badges — vertically centered on the card ── */}
+        <div className="flex items-center gap-2 flex-shrink-0 self-center">
+          {(() => {
+            const mishmorot = person.data['mishmorot'] as Array<{ title: string; status: BadgeStatus }> | undefined;
+            return mishmorot?.length ? (
+              <div className="flex flex-wrap gap-1 justify-end">
+                {mishmorot.map((m, i) => <Badge key={i} status={m.status} label={m.title} />)}
+              </div>
+            ) : null;
+          })()}
+          <TypeIcon type={person.personType} />
         </div>
 
         {/* ── Expand arrow (left side) ── */}

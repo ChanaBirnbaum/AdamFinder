@@ -4,6 +4,7 @@ interface TabBarProps {
     results: SearchResults;
     activeTab: PersonType;
     isLoading: boolean;
+    allowedTypes?: PersonType[];
     onTabChange: (tab: PersonType) => void;
 }
 declare const TabBar: React.FC<TabBarProps>;

@@ -1,6 +1,8 @@
 import React, { useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { PersonLocatorProps, PersonResult, PersonType, SearchResults } from '../types';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { useAnchoredPosition } from '../hooks/useAnchoredPosition';
 import TabBar from './TabBar';
 import ResultCard from './ResultCard';
 import SkeletonCard from './SkeletonCard';
@@ -27,6 +29,8 @@ interface ResultsPanelProps {
   HideMishmorot?: PersonLocatorProps['HideMishmorot'];
   hideNavigationLinks?: PersonLocatorProps['hideNavigationLinks'];
   additionalResultFields?: string[];
+  /** Element the panel should be positioned under/over. Required to portal the panel out of clipping ancestors. */
+  anchorRef: React.RefObject<HTMLElement | null>;
 }
 
 const RESULTS_MAP: Record<PersonType, keyof SearchResults> = {
@@ -35,7 +39,7 @@ const RESULTS_MAP: Record<PersonType, keyof SearchResults> = {
   ezrach: 'ezrachs',
 };
 
-const ResultsPanel: React.FC<ResultsPanelProps> = ({
+const ResultsPanel = React.forwardRef<HTMLDivElement, ResultsPanelProps>(({
   results,
   isLoading,
   isLoadingMore,
@@ -55,11 +59,12 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
   HideMishmorot,
   hideNavigationLinks,
   additionalResultFields = [],
-}) => {
+  anchorRef,
+}, forwardedRef) => {
   const panelClass =
     resultDirection === 'up'
-      ? 'absolute bottom-full w-full z-50 bg-white rounded-t-xl shadow-lg max-h-64 flex flex-col border border-b-0 border-gray-200'
-      : 'absolute top-full w-full z-50 bg-white rounded-b-xl shadow-lg max-h-64 flex flex-col border border-t-0 border-gray-200';
+      ? 'z-50 bg-white rounded-t-xl shadow-lg max-h-64 flex flex-col border border-b-0 border-gray-200'
+      : 'z-50 bg-white rounded-b-xl shadow-lg max-h-64 flex flex-col border border-t-0 border-gray-200';
 
   const scrollClass = 'flex-1 overflow-y-auto';
 
@@ -72,8 +77,14 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
     scrollRef,
   );
 
-  return (
-    <div className={panelClass} role="listbox" aria-label="תוצאות חיפוש">
+  // Panel is portaled to <body>, so it needs its own fixed-position coordinates
+  // pinned to the anchor element instead of relying on a relative-positioned parent.
+  const panelStyle = useAnchoredPosition(anchorRef, resultDirection);
+
+  return createPortal(
+    // Portaled straight to <body>, so it no longer inherits dir="rtl" from PersonLocator's
+    // root container — set it explicitly or the whole layout mirrors to LTR.
+    <div ref={forwardedRef} className={panelClass} style={panelStyle} role="listbox" aria-label="תוצאות חיפוש" dir="rtl">
       {isOffline && <OfflineBanner />}
 
       {showTabBar && (
@@ -122,8 +133,11 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
-};
+});
+
+ResultsPanel.displayName = 'ResultsPanel';
 
 export default ResultsPanel;

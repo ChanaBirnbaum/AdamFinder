@@ -1,42 +1,30 @@
-import { PersonLocator, eq, noneOf, and } from '@ips/searchAdam';
+import { PersonLocator } from '@ips/searchAdam';
 import type { PersonResult } from '@ips/searchAdam';
 import './index.css';
 
 declare const __VITE_MOCK__: boolean;
 
-// In mock mode, point ES at the Vite dev server (which intercepts /_search)
 const mockBase = typeof __VITE_MOCK__ !== 'undefined' && __VITE_MOCK__
   ? window.location.origin
   : undefined;
 
 const mockServiceConfig = mockBase
-  ? {
-      elasticsearch: {
-        baseUrl: mockBase,
-        methods: { search: '/{index}/_search' },
-      },
-    }
+  ? { elasticsearch: { baseUrl: mockBase, methods: { search: '/{index}/_search' } } }
   : undefined;
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4" dir="rtl">
-      <div className="max-w-lg mx-auto space-y-10">
+    <div className="min-h-screen bg-[#f5f7fa] py-10 px-6" dir="rtl">
+      <div className="max-w-xl mx-auto space-y-10">
 
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">מאתר אנשים – דמו</h1>
-          <p className="text-sm text-gray-500">
-            נסי לחפש: <span className="text-rose-500 font-medium">עלי</span> ·{' '}
-            <span className="text-blue-500 font-medium">יוסף</span> ·{' '}
-            <span className="text-emerald-500 font-medium">כמאל</span>
-          </p>
-          <p className="text-xs text-gray-400 mt-1">חיפוש אחד יחזיר תוצאות מכמה סוגים</p>
+        <div className="text-center space-y-1">
+          <h1 className="text-xl font-bold text-gray-800">מאתר אנשים – דמו עיצוב</h1>
+          <p className="text-sm text-gray-400">הקלד 2+ תווים לחיפוש (מצב mock)</p>
         </div>
 
-        {/* ── Main: all types ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 mb-3 text-right">כל הסוגים · לחצי על אייקון לסינון</p>
+        {/* ── כל הסוגים ── */}
+        <section className="space-y-2">
+          <p className="text-xs font-medium text-gray-400 text-right">כל הסוגים · לחץ על אייקון לסינון</p>
           <PersonLocator
             env="dev"
             minChars={2}
@@ -44,80 +32,54 @@ export default function App() {
             onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
           />
-        </div>
+        </section>
 
-        {/* ── Two types: asir + soher ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 mb-3 text-right">
-            אסירים + סוהרים בלבד · 2 לשוניות · 2 כפתורי סינון
+        <hr className="border-gray-200" />
+
+        {/* ── אסירים בלבד ── */}
+        <section className="space-y-2">
+          <p className="text-xs font-medium text-gray-400 text-right">אסירים בלבד · ללא כפתורי סינון</p>
+          <PersonLocator
+            env="dev"
+            type="asir"
+            minChars={2}
+            serviceConfig={mockServiceConfig}
+            onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'])}
+            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
+          />
+        </section>
+
+        <hr className="border-gray-200" />
+
+        {/* ── בתוך קונטיינר עם overflow:hidden — בודק שהתפריט לא נחתך ──
+            (מדמה אפליקציית host שעוטפת את הרכיב בקונטיינר חונק, למשל כרטיס/מודל) */}
+        <section className="space-y-2">
+          <p className="text-xs font-medium text-gray-400 text-right">
+            בתוך קונטיינר עם overflow:hidden · התפריט אמור להישאר גלוי (Portal)
           </p>
+          <div className="overflow-hidden border border-dashed border-rose-300 rounded-lg p-4 h-24">
+            <PersonLocator
+              env="dev"
+              minChars={2}
+              serviceConfig={mockServiceConfig}
+              onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'])}
+            />
+          </div>
+        </section>
+
+        <hr className="border-gray-200" />
+
+        {/* ── אסירים + סוהרים ── */}
+        <section className="space-y-2">
+          <p className="text-xs font-medium text-gray-400 text-right">אסירים + סוהרים · 2 לשוניות</p>
           <PersonLocator
             env="dev"
             type={['asir', 'soher']}
             minChars={2}
             serviceConfig={mockServiceConfig}
-            onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
-            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
+            onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'])}
           />
-        </div>
-
-        {/* ── Guard with expand example ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 mb-3 text-right">דוגמה לרשומה עם הרחבה · חפשי "אדם"</p>
-          <PersonLocator
-            env="dev"
-            type="soher"
-            minChars={2}
-            serviceConfig={mockServiceConfig}
-            additionalSourceFields={{ soher: ['badge', 'station'] }}
-            onSelect={(p: PersonResult) => console.log('נבחר:', p)}
-          />
-        </div>
-
-        {/* ── Prisoners only (locked) ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 mb-3 text-right">נעול לאסירים בלבד · ללא כפתורי סינון</p>
-          <PersonLocator
-            env="dev"
-            type="asir"
-            minChars={2}
-            serviceConfig={mockServiceConfig}
-            openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
-            onSelect={(p: PersonResult) => console.log(p)}
-          />
-        </div>
-
-        {/* ── Single search (pre-filled by field/value) ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 mb-3 text-right">
-            Single Search · טעינה אוטומטית לפי שדה + ערך
-          </p>
-          <PersonLocator
-            env="dev"
-            type="asir"
-            minChars={2}
-            serviceConfig={mockServiceConfig}
-            singleSearch={{ key: 'prisonerNumber', value: 'P5' }}
-            onSelect={(p: PersonResult) => console.log('single נבחר:', p)}
-          />
-        </div>
-
-        {/* ── Filters example: unit = 7 AND tz not in [111111, 777777] ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 mb-3 text-right">
-            דוגמת פילטרים · יחידה = 7 וגם ת.ז. לא ב-[111111, 777777]
-          </p>
-          <PersonLocator
-            env="dev"
-            minChars={2}
-            serviceConfig={mockServiceConfig}
-            filters={and(
-              eq('idnt_yechida', 7),
-              noneOf('tz', [111111, 777777]),
-            )}
-            onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
-          />
-        </div>
+        </section>
 
       </div>
     </div>

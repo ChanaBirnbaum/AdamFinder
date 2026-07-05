@@ -9,6 +9,7 @@ interface ResultCardProps {
     openTikAsir?: PersonLocatorProps['openTikAsir'];
     navigate?: PersonLocatorProps['navigate'];
     HidePhotosSugAdam?: PersonLocatorProps['HidePhotosSugAdam'];
+    displayIdNumber?: PersonLocatorProps['displayIdNumber'];
     HideMishmorot?: PersonLocatorProps['HideMishmorot'];
     hideNavigationLinks?: PersonLocatorProps['hideNavigationLinks'];
     additionalResultFields?: string[];

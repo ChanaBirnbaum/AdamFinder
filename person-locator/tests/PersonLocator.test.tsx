@@ -33,7 +33,7 @@ const minimalProps: PersonLocatorProps = { env: 'dev' };
 describe('PersonLocator', () => {
   it('renders without crashing with minimal props', () => {
     render(<PersonLocator {...minimalProps} />);
-    expect(screen.getByPlaceholderText('חיפוש אדם...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('חיפוש אדם')).toBeInTheDocument();
   });
 
   it('results panel is hidden when inputValue < minChars', () => {
@@ -50,7 +50,7 @@ describe('PersonLocator', () => {
 
   it('disabled prop disables the input', () => {
     render(<PersonLocator {...minimalProps} disabled />);
-    const input = screen.getByPlaceholderText('חיפוש אדם...');
+    const input = screen.getByPlaceholderText('חיפוש אדם');
     expect(input).toBeDisabled();
   });
 

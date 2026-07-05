@@ -27,16 +27,29 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
   const [internalTypeFilter, setInternalTypeFilter] = useState<PersonType | undefined>(undefined);
   const [isFocused, setIsFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // ResultsPanel/RecentSearchesPanel portal their DOM out to <body> (to escape
+  // overflow:hidden ancestors), so they're no longer DOM descendants of containerRef —
+  // track them separately for outside-click / focus checks below.
+  const resultsPanelRef = useRef<HTMLDivElement>(null);
+  const recentsPanelRef = useRef<HTMLDivElement>(null);
+
+  const isInsideLocator = useCallback((target: Node) => {
+    return Boolean(
+      containerRef.current?.contains(target) ||
+      resultsPanelRef.current?.contains(target) ||
+      recentsPanelRef.current?.contains(target),
+    );
+  }, []);
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (!isInsideLocator(e.target as Node)) {
         setIsFocused(false);
       }
     };
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
-  }, []);
+  }, [isInsideLocator]);
 
   // Normalize type to single value for UI locking (tab bar, filter icon)
   // When multiple types passed, treat as "no lock" for UI purposes
@@ -123,10 +136,8 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
 onBlurCapture={() => {
         // Ensure focus remains active during scrolling or internal interactions
         requestAnimationFrame(() => {
-          if (
-            containerRef.current &&
-            (!containerRef.current.contains(document.activeElement) || document.activeElement === document.body)
-          ) {
+          const active = document.activeElement;
+          if (!active || active === document.body || !isInsideLocator(active)) {
             setIsFocused(false);
           }
         });
@@ -168,6 +179,8 @@ onBlurCapture={() => {
 
       {showResults && (
         <ResultsPanel
+          ref={resultsPanelRef}
+          anchorRef={containerRef}
           results={selectedOnlyResults}
           isLoading={isLoading}
           isLoadingMore={isLoadingMore}
@@ -192,6 +205,8 @@ onBlurCapture={() => {
 
       {showRecents && !showResults && (
         <RecentSearchesPanel
+          ref={recentsPanelRef}
+          anchorRef={containerRef}
           recents={filteredRecents}
           onSelect={handleRecentSelect}
           onRemove={removePerson}

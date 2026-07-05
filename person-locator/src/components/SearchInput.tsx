@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import type { PersonLocatorProps, PersonType } from '../types';
+import Toggle from './Toggle';
+import { SearchIcon, CitizenIcon, GuardIcon, PrisonerIcon } from './icons';
 
 interface SearchInputProps {
   inputValue: string;
@@ -21,63 +23,6 @@ interface SearchInputProps {
   isSearchActive?: boolean;
 }
 
-// ── Contextual icons ───────────────────────────────────────────────────────────
-const PrisonerIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-    <path d="M12 11C12 12.0609 12.4214 13.0783 13.1716 13.8284C13.9217 14.5786 14.9391 15 16 15C17.0609 15 18.0783 14.5786 18.8284 13.8284C19.5786 13.0783 20 12.0609 20 11C20 9.93913 19.5786 8.92172 18.8284 8.17157C18.0783 7.42143 17.0609 7 16 7C14.9391 7 13.9217 7.42143 13.1716 8.17157C12.4214 8.92172 12 9.93913 12 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 25V23C10 21.9391 10.4214 20.9217 11.1716 20.1716C11.9217 19.4214 12.9391 19 14 19H18C19.0609 19 20.0783 19.4214 20.8284 20.1716C21.5786 20.9217 22 21.9391 22 23V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M13 17V25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M15 17L15 25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M17 17L17 25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M19 17V25" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const GuardIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-    <path d="M12 11C12 12.0609 12.4214 13.0783 13.1716 13.8284C13.9217 14.5786 14.9391 15 16 15C17.0609 15 18.0783 14.5786 18.8284 13.8284C19.5786 13.0783 20 12.0609 20 11C20 9.93913 19.5786 8.92172 18.8284 8.17157C18.0783 7.42143 17.0609 7 16 7C14.9391 7 13.9217 7.42143 13.1716 8.17157C12.4214 8.92172 12 9.93913 12 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 25V23C10 21.9391 10.4214 20.9217 11.1716 20.1716C11.9217 19.4214 12.9391 19 14 19H18C19.0609 19 20.0783 19.4214 20.8284 20.1716C21.5786 20.9217 22 21.9391 22 23V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M18.6667 6H13.3333C12.597 6 12 6.59695 12 7.33333V8C12 8.73638 12.597 9.33333 13.3333 9.33333H18.6667C19.403 9.33333 20 8.73638 20 8V7.33333C20 6.59695 19.403 6 18.6667 6Z" fill="currentColor"/>
-  </svg>
-);
-
-const CivilianIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-    <path d="M12 11C12 12.0609 12.4214 13.0783 13.1716 13.8284C13.9217 14.5786 14.9391 15 16 15C17.0609 15 18.0783 14.5786 18.8284 13.8284C19.5786 13.0783 20 12.0609 20 11C20 9.93913 19.5786 8.92172 18.8284 8.17157C18.0783 7.42143 17.0609 7 16 7C14.9391 7 13.9217 7.42143 13.1716 8.17157C12.4214 8.92172 12 9.93913 12 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 25V23C10 21.9391 10.4214 20.9217 11.1716 20.1716C11.9217 19.4214 12.9391 19 14 19H18C19.0609 19 20.0783 19.4214 20.8284 20.1716C21.5786 20.9217 22 21.9391 22 23V25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const TYPE_CONFIG: {
-  type: PersonType;
-  label: string;
-  Icon: React.FC;
-  activeClass: string;
-  idleClass: string;
-}[] = [
-  {
-    type: 'asir',
-    label: 'אסיר',
-    Icon: PrisonerIcon,
-    activeClass: 'text-rose-500',
-    idleClass:   'text-gray-300 hover:text-rose-400',
-  },
-  {
-    type: 'soher',
-    label: 'סוהר',
-    Icon: GuardIcon,
-    activeClass: 'text-blue-500',
-    idleClass:   'text-gray-300 hover:text-blue-400',
-  },
-  {
-    type: 'ezrach',
-    label: 'אזרח',
-    Icon: CivilianIcon,
-    activeClass: 'text-emerald-500',
-    idleClass:   'text-gray-300 hover:text-emerald-400',
-  },
-];
-
 // ── Tooltip wrapper ────────────────────────────────────────────────────────────
 const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="relative group flex items-center">
@@ -91,6 +36,36 @@ const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, ch
     </div>
   </div>
 );
+
+const TYPE_CONFIG: {
+  type: PersonType;
+  label: string;
+  Icon: React.ComponentType<{ size?: number }>;
+  activeClass: string;
+  idleClass: string;
+}[] = [
+  {
+    type: 'asir',
+    label: 'אסיר',
+    Icon: PrisonerIcon,
+    activeClass: 'text-[#006aff] bg-[#e6f4ff] rounded-lg p-0.5 w-8 h-8 box-border',
+    idleClass:   'text-[#8e929f] bg-transparent rounded-lg p-1',
+  },
+  {
+    type: 'soher',
+    label: 'סוהר',
+    Icon: GuardIcon,
+    activeClass: 'text-[#006aff] bg-[#e6f4ff] rounded-lg p-0.5 w-8 h-8 box-border',
+    idleClass:   'text-[#8e929f] bg-transparent rounded-lg p-1',
+  },
+  {
+    type: 'ezrach',
+    label: 'אזרח',
+    Icon: CitizenIcon,
+    activeClass: 'text-[#006aff] bg-[#e6f4ff] rounded-lg p-0.5 w-8 h-8 box-border',
+    idleClass:   'text-[#8e929f] bg-transparent rounded-lg p-1',
+  },
+];
 
 const SearchInput: React.FC<SearchInputProps> = ({
   inputValue,
@@ -114,8 +89,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const [internalActive, setInternalActive] = useState(isDefaultActive ?? false);
   const isActive = activeToggleValue !== undefined ? activeToggleValue : internalActive;
 
-  const handleToggle = () => {
-    const next = !isActive;
+  const handleToggle = (next: boolean) => {
     setInternalActive(next);
     onActiveToggle?.(next);
   };
@@ -132,18 +106,15 @@ const SearchInput: React.FC<SearchInputProps> = ({
       {/* ── Single bar ──────────────────────────────────────────────────────── */}
       <div
         className={[
-          'group/filters flex items-center gap-1.5 border bg-white px-3 h-10 transition-all',
-          isOpen ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm',
-          disabled
-            ? 'border-gray-200 opacity-60 cursor-not-allowed'
-            : 'border-gray-200 focus-within:border-blue-300',
+          'group/filters flex items-center gap-2 bg-white px-4 h-[47px] transition-all',
+          isOpen
+            ? 'rounded-t-lg rounded-b-none border-b-0 border-2 border-[#006aff] shadow-search'
+            : 'rounded-lg border border-[#006aff]',
+          disabled ? 'opacity-60 cursor-not-allowed' : '',
         ].join(' ')}
       >
         {/* Search icon */}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0" aria-hidden="true">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <SearchIcon className="flex-shrink-0 text-[#8e929f]" size={20} />
 
         {/* Input */}
         <input
@@ -151,10 +122,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
           value={inputValue}
           onChange={(e) => onInputChange(e.target.value)}
           onFocus={onFocus}
-          placeholder="חיפוש אדם..."
+          placeholder="חיפוש אדם"
           disabled={disabled}
           dir="rtl"
-          className="flex-1 outline-none text-right text-sm text-gray-800 placeholder-gray-400 bg-transparent min-w-0"
+          className="flex-1 outline-none text-right font-rubik font-normal text-base text-[#00033d] placeholder:text-[#8e929f] bg-transparent min-w-0"
           aria-label="חיפוש אדם"
         />
 
@@ -164,7 +135,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
             type="button"
             onClick={onClear}
             disabled={disabled}
-            className="flex items-center justify-center text-gray-300 hover:text-gray-500 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none flex-shrink-0 p-0.5"
+            className="flex items-center justify-center text-[#8e929f] hover:text-[#00033d] transition-colors focus-visible:ring-2 focus-visible:ring-[#006aff] focus-visible:outline-none flex-shrink-0 p-0.5"
             aria-label="נקה חיפוש"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
@@ -180,45 +151,14 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
             {/* ── Active toggle ─────────────────────────────────────────── */}
             {activeOnly === undefined && (
-              <>
-                <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={isActive}
-                  onClick={handleToggle}
-                  disabled={disabled}
-                  dir="ltr"
-                  className={[
-                    'flex items-center gap-1.5 flex-shrink-0 select-none',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 rounded',
-                    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-                  ].join(' ')}
-                  aria-label="פעילים בלבד"
-                >
-                  <span
-                    className={[
-                      'relative inline-flex w-[34px] h-[18px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0',
-                      isActive ? 'bg-blue-500' : 'bg-gray-300',
-                    ].join(' ')}
-                  >
-                    <span
-                      className={[
-                        'absolute top-[3px] h-[12px] w-[12px] rounded-full bg-white shadow-sm transition-[left] duration-200',
-                        isActive ? 'left-[19px]' : 'left-[3px]',
-                      ].join(' ')}
-                    />
-                  </span>
-                  <span dir="rtl" className={`text-[11px] font-medium transition-colors ${isActive ? 'text-blue-500' : 'text-gray-400'}`}>
-                    פעיל
-                  </span>
-                </button>
-              </>
+              <Toggle
+                checked={isActive}
+                onChange={disabled ? undefined : handleToggle}
+                className={disabled ? 'opacity-50 pointer-events-none' : ''}
+              />
             )}
 
             {/* ── Type filter icons ─────────────────────────────────────── */}
-            <div className="w-px h-5 bg-gray-200 flex-shrink-0" aria-hidden="true" />
-
             {visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
               const isSelected = typeFilter === type;
               return (
@@ -228,15 +168,15 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     onClick={() => handleTypeClick(type)}
                     disabled={disabled}
                     className={[
-                      'flex items-center justify-center p-0.5 rounded transition-all flex-shrink-0',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+                      'flex items-center justify-center transition-all flex-shrink-0',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006aff] focus-visible:ring-offset-1',
                       isSelected ? activeClass : idleClass,
                       disabled ? 'cursor-not-allowed' : 'cursor-pointer',
                     ].join(' ')}
                     aria-pressed={isSelected}
                     aria-label={`סנן לפי ${label}`}
                   >
-                    <Icon />
+                    <Icon size={28} />
                   </button>
                 </Tip>
               );
@@ -247,7 +187,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
       {/* Hint */}
       {inputValue.length > 0 && inputValue.length < minChars && (
-        <p className="text-xs text-gray-400 text-right px-1" role="status" aria-live="polite">
+        <p className="font-rubik text-sm text-[#8e929f] text-right px-1" role="status" aria-live="polite">
           הקלד לפחות {minChars} תווים לחיפוש
         </p>
       )}
