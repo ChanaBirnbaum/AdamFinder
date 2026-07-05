@@ -20,6 +20,8 @@ interface ResultsPanelProps {
     HideMishmorot?: PersonLocatorProps['HideMishmorot'];
     hideNavigationLinks?: PersonLocatorProps['hideNavigationLinks'];
     additionalResultFields?: string[];
+    /** Element the panel should be positioned under/over. Required to portal the panel out of clipping ancestors. */
+    anchorRef: React.RefObject<HTMLElement | null>;
 }
-declare const ResultsPanel: React.FC<ResultsPanelProps>;
+declare const ResultsPanel: React.ForwardRefExoticComponent<ResultsPanelProps & React.RefAttributes<HTMLDivElement>>;
 export default ResultsPanel;

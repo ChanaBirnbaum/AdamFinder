@@ -3,12 +3,19 @@ import { createPortal } from 'react-dom';
 import type { PersonType } from '../types';
 import type { RecentPerson } from '../hooks/useRecentSearches';
 import { useAnchoredPosition } from '../hooks/useAnchoredPosition';
+import { CitizenIcon, GuardIcon, PrisonerIcon } from './icons';
 
-const TYPE_META: Record<PersonType, { label: string; dotClass: string; textClass: string }> = {
-  asir: { label: 'אסיר',  dotClass: 'bg-rose-400',    textClass: 'text-rose-500' },
-  soher:    { label: 'סוהר',  dotClass: 'bg-blue-400',    textClass: 'text-blue-500' },
-  ezrach: { label: 'אזרח',  dotClass: 'bg-emerald-400', textClass: 'text-emerald-500' },
+const TYPE_LABEL: Record<PersonType, string> = {
+  asir:   'אסיר',
+  soher:  'סוהר',
+  ezrach: 'אזרח',
 };
+
+function TypeIcon({ type }: { type: PersonType }) {
+  if (type === 'ezrach') return <CitizenIcon className="text-primary-main" />;
+  if (type === 'soher')  return <GuardIcon className="text-primary-main" />;
+  return <PrisonerIcon className="text-primary-main" />;
+}
 
 const XSmall = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
@@ -50,11 +57,11 @@ const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanel
     <div ref={forwardedRef} className={panelClass} style={panelStyle} role="listbox" aria-label="חיפושים אחרונים" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
-        <span className="text-[11px] text-gray-400 font-medium">חיפושים אחרונים</span>
+        <span className="text-2xs text-gray-400 font-medium">חיפושים אחרונים</span>
         <button
           type="button"
           onClick={onClearAll}
-          className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded"
+          className="text-2xs text-gray-400 hover:text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded"
         >
           נקה הכל
         </button>
@@ -62,7 +69,6 @@ const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanel
 
       {/* Items */}
       {recents.map((person) => {
-        const meta = TYPE_META[person.personType];
         const fullName = String(person.data['fullName'] ?? '');
         return (
           <div
@@ -74,26 +80,25 @@ const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanel
             onClick={() => onSelect(person)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(person); } }}
           >
-            {/* Name + type badge — right in RTL (first child) */}
-            <div className="flex items-center gap-2 min-w-0">
-              {/* Type badge */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <span className={`w-1.5 h-1.5 rounded-full ${meta.dotClass}`} aria-hidden="true" />
-                <span className={`text-[10px] font-semibold ${meta.textClass}`}>{meta.label}</span>
-              </div>
-              {/* Name */}
+            {/* Name — right in RTL (first child) */}
+            <div className="flex items-center min-w-0">
               <span className="text-sm text-gray-700 truncate">{fullName}</span>
             </div>
 
-            {/* Remove button — left in RTL (last child) */}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onRemove(person.id); }}
-              className="text-gray-300 hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded p-0.5 flex-shrink-0"
-              aria-label={`הסר ${String(person.data['fullName'] ?? '')}`}
-            >
-              <XSmall />
-            </button>
+            {/* Type icon + remove button — left in RTL (last child) */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <span role="img" aria-label={TYPE_LABEL[person.personType]}>
+                <TypeIcon type={person.personType} />
+              </span>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRemove(person.id); }}
+                className="text-gray-300 hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded p-0.5 flex-shrink-0"
+                aria-label={`הסר ${String(person.data['fullName'] ?? '')}`}
+              >
+                <XSmall />
+              </button>
+            </div>
           </div>
         );
       })}

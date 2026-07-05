@@ -63,8 +63,8 @@ const ResultsPanel = React.forwardRef<HTMLDivElement, ResultsPanelProps>(({
 }, forwardedRef) => {
   const panelClass =
     resultDirection === 'up'
-      ? 'z-50 bg-white rounded-t-xl shadow-lg max-h-64 flex flex-col border border-b-0 border-gray-200'
-      : 'z-50 bg-white rounded-b-xl shadow-lg max-h-64 flex flex-col border border-t-0 border-gray-200';
+      ? 'z-50 bg-white rounded-t-xl shadow-lg max-h-64 flex flex-col border border-b-0 border-gray-200 overflow-hidden'
+      : 'z-50 bg-white rounded-b-xl shadow-lg max-h-64 flex flex-col border border-t-0 border-gray-200 overflow-hidden';
 
   const scrollClass = 'flex-1 overflow-y-auto';
 

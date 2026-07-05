@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/components/SkeletonCard.tsx</title>
+    <title>Code coverage report for src/components/Badge.tsx</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/components</a> SkeletonCard.tsx</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/components</a> Badge.tsx</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">27.27% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/11</span>
+                <span class='fraction'>6/15</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">27.27% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/11</span>
+                <span class='fraction'>6/15</span>
             </div>
         
             
@@ -84,39 +84,39 @@
 <a name='L19'></a><a href='#L19'>19</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react';
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export type BadgeStatus = 'active' | 'future' | 'past';
 &nbsp;
-const SkeletonCard: React.FC = <span class="fstat-no" title="function not covered" >() =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >  &lt;div className="flex items-start gap-3 p-3" aria-hidden="true"&gt;</span>
-    {/* Photo circle */}
-<span class="cstat-no" title="statement not covered" >    &lt;div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse flex-shrink-0" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="flex-1 space-y-2"&gt;</span>
-      {/* Name line */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" /&gt;</span>
-      {/* Secondary info */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" /&gt;</span>
-      {/* Tertiary info */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="h-3 bg-gray-200 rounded animate-pulse w-2/3" /&gt;</span>
+const BADGE_STYLES: Record&lt;BadgeStatus, { className: string; label: string }&gt; = {
+  active: { className: 'bg-badge-success-bg border-hairline border-badge-success-fg text-badge-success-fg', label: 'פעיל'  },
+  future: { className: 'bg-badge-warning-bg border-hairline border-badge-warning-fg text-badge-warning-fg', label: 'עתידי' },
+  past:   { className: 'bg-badge-neutral-bg border border-badge-neutral-fg text-badge-neutral-fg',          label: 'עבר'   },
+};
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export default function Badge({ status, label: labelOverride, className }: { status: BadgeStatus; label?: string; className?: string }) {</span></span>
+<span class="cstat-no" title="statement not covered" >  const { className: statusClass, label } = BADGE_STYLES[status];</span>
+<span class="cstat-no" title="statement not covered" >  return (</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className={`flex items-center justify-end px-2 py-1 rounded-lg border-solid shrink-0 ${statusClass} ${className ?? ''}`}&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;p className="m-0 font-rubik font-normal text-xs leading-tight whitespace-nowrap text-center break-words" dir="auto"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        {labelOverride ?? label}</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >  &lt;/div&gt;</span>
-);
-&nbsp;
-export default SkeletonCard;
+  );
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->

@@ -13,18 +13,18 @@ export default function Toggle({ checked, onChange, className }: ToggleProps) {
       className={`flex gap-1 items-center bg-transparent border-0 cursor-pointer p-0 shrink-0 ${className ?? ''}`}
     >
       <div
-        className={`relative flex h-6 w-12 items-center rounded-full transition-colors shrink-0 ${
-          checked ? 'bg-[#006aff]' : 'bg-[#c5cbdd]'
+        className={`relative flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ${
+          checked ? 'bg-primary-main' : 'bg-control-off'
         }`}
       >
         <span
-          className={`absolute left-0 top-[2px] h-5 w-5 rounded-full bg-white shadow transition-transform ${
-            checked ? 'translate-x-[26px]' : 'translate-x-[2px]'
+          className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-5.5' : 'translate-x-0.5'
           }`}
         />
       </div>
       <p
-        className="m-0 font-rubik font-normal leading-[1.25] text-[#8e929f] text-sm text-right whitespace-nowrap"
+        className="m-0 font-rubik font-normal leading-tight text-text-muted text-sm text-right whitespace-nowrap"
         dir="auto"
       >
         {checked ? 'לא פעיל' : 'פעיל'}

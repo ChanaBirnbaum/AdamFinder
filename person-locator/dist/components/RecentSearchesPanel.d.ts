@@ -6,6 +6,8 @@ interface RecentSearchesPanelProps {
     onRemove: (id: string) => void;
     onClearAll: () => void;
     resultDirection?: 'up' | 'down';
+    /** Element the panel should be positioned under/over. Required to portal the panel out of clipping ancestors. */
+    anchorRef: React.RefObject<HTMLElement | null>;
 }
-declare const RecentSearchesPanel: React.FC<RecentSearchesPanelProps>;
+declare const RecentSearchesPanel: React.ForwardRefExoticComponent<RecentSearchesPanelProps & React.RefAttributes<HTMLDivElement>>;
 export default RecentSearchesPanel;

@@ -28,7 +28,7 @@ const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, ch
   <div className="relative group flex items-center">
     {children}
     <div
-      className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-[11px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
+      className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-2xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
       role="tooltip"
     >
       {label}
@@ -48,22 +48,22 @@ const TYPE_CONFIG: {
     type: 'asir',
     label: 'אסיר',
     Icon: PrisonerIcon,
-    activeClass: 'text-[#006aff] bg-[#e6f4ff] rounded-lg p-0.5 w-8 h-8 box-border',
-    idleClass:   'text-[#8e929f] bg-transparent rounded-lg p-1',
+    activeClass: 'text-primary-main bg-primary-soft rounded-lg p-0.5 w-8 h-8 box-border',
+    idleClass:   'text-text-muted bg-transparent rounded-lg p-1',
   },
   {
     type: 'soher',
     label: 'סוהר',
     Icon: GuardIcon,
-    activeClass: 'text-[#006aff] bg-[#e6f4ff] rounded-lg p-0.5 w-8 h-8 box-border',
-    idleClass:   'text-[#8e929f] bg-transparent rounded-lg p-1',
+    activeClass: 'text-primary-main bg-primary-soft rounded-lg p-0.5 w-8 h-8 box-border',
+    idleClass:   'text-text-muted bg-transparent rounded-lg p-1',
   },
   {
     type: 'ezrach',
     label: 'אזרח',
     Icon: CitizenIcon,
-    activeClass: 'text-[#006aff] bg-[#e6f4ff] rounded-lg p-0.5 w-8 h-8 box-border',
-    idleClass:   'text-[#8e929f] bg-transparent rounded-lg p-1',
+    activeClass: 'text-primary-main bg-primary-soft rounded-lg p-0.5 w-8 h-8 box-border',
+    idleClass:   'text-text-muted bg-transparent rounded-lg p-1',
   },
 ];
 
@@ -106,15 +106,15 @@ const SearchInput: React.FC<SearchInputProps> = ({
       {/* ── Single bar ──────────────────────────────────────────────────────── */}
       <div
         className={[
-          'group/filters flex items-center gap-2 bg-white px-4 h-[47px] transition-all',
+          'group/filters flex items-center gap-2 bg-white px-4 h-input transition-all',
           isOpen
-            ? 'rounded-t-lg rounded-b-none border-b-0 border-2 border-[#006aff] shadow-search'
-            : 'rounded-lg border border-[#006aff]',
+            ? 'rounded-t-lg rounded-b-none border-b-0 border-2 border-primary-main shadow-search'
+            : 'rounded-lg border border-primary-main',
           disabled ? 'opacity-60 cursor-not-allowed' : '',
         ].join(' ')}
       >
         {/* Search icon */}
-        <SearchIcon className="flex-shrink-0 text-[#8e929f]" size={20} />
+        <SearchIcon className="flex-shrink-0 text-text-muted" size={20} />
 
         {/* Input */}
         <input
@@ -125,7 +125,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
           placeholder="חיפוש אדם"
           disabled={disabled}
           dir="rtl"
-          className="flex-1 outline-none text-right font-rubik font-normal text-base text-[#00033d] placeholder:text-[#8e929f] bg-transparent min-w-0"
+          className="flex-1 outline-none text-right font-rubik font-normal text-base text-text-primary placeholder:text-text-muted bg-transparent min-w-0"
           aria-label="חיפוש אדם"
         />
 
@@ -135,7 +135,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
             type="button"
             onClick={onClear}
             disabled={disabled}
-            className="flex items-center justify-center text-[#8e929f] hover:text-[#00033d] transition-colors focus-visible:ring-2 focus-visible:ring-[#006aff] focus-visible:outline-none flex-shrink-0 p-0.5"
+            className="flex items-center justify-center text-text-muted hover:text-text-primary transition-colors focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:outline-none flex-shrink-0 p-0.5"
             aria-label="נקה חיפוש"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
@@ -169,7 +169,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     disabled={disabled}
                     className={[
                       'flex items-center justify-center transition-all flex-shrink-0',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006aff] focus-visible:ring-offset-1',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-1',
                       isSelected ? activeClass : idleClass,
                       disabled ? 'cursor-not-allowed' : 'cursor-pointer',
                     ].join(' ')}
@@ -187,7 +187,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
       {/* Hint */}
       {inputValue.length > 0 && inputValue.length < minChars && (
-        <p className="font-rubik text-sm text-[#8e929f] text-right px-1" role="status" aria-live="polite">
+        <p className="font-rubik text-sm text-text-muted text-right px-1" role="status" aria-live="polite">
           הקלד לפחות {minChars} תווים לחיפוש
         </p>
       )}
