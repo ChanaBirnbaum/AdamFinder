@@ -33,7 +33,12 @@
       "Bash(curl -s -X POST \"http://localhost:5174/AdamFinder/asirs/_search\" -H \"Content-Type: application/json\" -d '{\"query\":{}}' -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\")",
       "Bash(curl -s \"http://localhost:5174/AdamFinder/\" -o /dev/null -w \"GET / -> %{http_code}\\\\n\")",
       "Bash(netstat -ano)",
-      "Bash(curl -s -X POST http://localhost:5173/AdamFinder/asirs/_search -H 'Content-Type: application/json' -d '{\"query\":{\"bool\":{\"must\":[{\"bool\":{\"must\":[{\"bool\":{\"minimum_should_match\":1}},{\"query_string\":{\"query\":\"עלי*\",\"fields\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\"]}}]}}]}},\"sort\":[{\"_score\":\"desc\"}],\"_source\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\",\"isActive\",\"photoUrl\"],\"size\":10,\"from\":0}' -w '\\\\nHTTP_CODE:%{http_code}\\\\n')"
+      "Bash(curl -s -X POST http://localhost:5173/AdamFinder/asirs/_search -H 'Content-Type: application/json' -d '{\"query\":{\"bool\":{\"must\":[{\"bool\":{\"must\":[{\"bool\":{\"minimum_should_match\":1}},{\"query_string\":{\"query\":\"עלי*\",\"fields\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\"]}}]}}]}},\"sort\":[{\"_score\":\"desc\"}],\"_source\":[\"fullName\",\"idNumber\",\"unit\",\"prisonerNumber\",\"isActive\",\"photoUrl\"],\"size\":10,\"from\":0}' -w '\\\\nHTTP_CODE:%{http_code}\\\\n')",
+      "Bash(grep -oE '[^\\\\\\\\n{]*\\\\{\\\\\\\\n *--tw-translate-x: 0;[^}]*' dist/index.mjs)",
+      "Bash(grep -oE '\\\\.plib-translate-x-5\\\\\\\\\\\\\\\\\\\\.5 ?\\\\{[^}]*' dist/index.mjs)",
+      "Bash(grep -oE '--tw-ring-offset-width: 0px' dist/index.mjs)",
+      "Bash(npm pack *)",
+      "Bash(mkdir -p \"c:/Users/user1/AdamFinder/playground\")"
     ]
   }
 }
