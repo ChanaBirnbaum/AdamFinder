@@ -61,12 +61,14 @@ const ResultsPanel = React.forwardRef<HTMLDivElement, ResultsPanelProps>(({
   additionalResultFields = [],
   anchorRef,
 }, forwardedRef) => {
+  // plib-root scopes the library reset onto this portaled subtree; plib-font-sans
+  // replaces the font it previously inherited from the consumer's <body>.
   const panelClass =
     resultDirection === 'up'
-      ? 'z-50 bg-white rounded-t-xl shadow-lg max-h-64 flex flex-col border border-b-0 border-gray-200 overflow-hidden'
-      : 'z-50 bg-white rounded-b-xl shadow-lg max-h-64 flex flex-col border border-t-0 border-gray-200 overflow-hidden';
+      ? 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-t-xl plib-shadow-lg plib-max-h-64 plib-flex plib-flex-col plib-border plib-border-b-0 plib-border-gray-200 plib-overflow-hidden'
+      : 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-b-xl plib-shadow-lg plib-max-h-64 plib-flex plib-flex-col plib-border plib-border-t-0 plib-border-gray-200 plib-overflow-hidden';
 
-  const scrollClass = 'flex-1 overflow-y-auto';
+  const scrollClass = 'plib-flex-1 plib-overflow-y-auto';
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeResults = results[RESULTS_MAP[activeTab]] as PersonResult[];

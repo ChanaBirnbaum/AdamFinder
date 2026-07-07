@@ -25,14 +25,14 @@ interface SearchInputProps {
 
 // ── Tooltip wrapper ────────────────────────────────────────────────────────────
 const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="relative group flex items-center">
+  <div className="plib-relative plib-group plib-flex plib-items-center">
     {children}
     <div
-      className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-2xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-lg"
+      className="plib-pointer-events-none plib-absolute plib-bottom-full plib-mb-1.5 plib-left-1/2 -plib-translate-x-1/2 plib-whitespace-nowrap plib-rounded-md plib-bg-gray-800 plib-px-2 plib-py-1 plib-text-2xs plib-text-white plib-opacity-0 group-hover:plib-opacity-100 plib-transition-opacity plib-duration-150 plib-z-50 plib-shadow-lg"
       role="tooltip"
     >
       {label}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+      <div className="plib-absolute plib-top-full plib-left-1/2 -plib-translate-x-1/2 plib-border-4 plib-border-transparent plib-border-t-gray-800" />
     </div>
   </div>
 );
@@ -48,22 +48,22 @@ const TYPE_CONFIG: {
     type: 'asir',
     label: 'אסיר',
     Icon: PrisonerIcon,
-    activeClass: 'text-primary-main bg-primary-soft rounded-lg p-0.5 w-8 h-8 box-border',
-    idleClass:   'text-text-muted bg-transparent rounded-lg p-1',
+    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5 plib-w-8 plib-h-8 plib-box-border',
+    idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
   },
   {
     type: 'soher',
     label: 'סוהר',
     Icon: GuardIcon,
-    activeClass: 'text-primary-main bg-primary-soft rounded-lg p-0.5 w-8 h-8 box-border',
-    idleClass:   'text-text-muted bg-transparent rounded-lg p-1',
+    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5 plib-w-8 plib-h-8 plib-box-border',
+    idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
   },
   {
     type: 'ezrach',
     label: 'אזרח',
     Icon: CitizenIcon,
-    activeClass: 'text-primary-main bg-primary-soft rounded-lg p-0.5 w-8 h-8 box-border',
-    idleClass:   'text-text-muted bg-transparent rounded-lg p-1',
+    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5 plib-w-8 plib-h-8 plib-box-border',
+    idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
   },
 ];
 
@@ -102,19 +102,19 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const visibleTypes = allowedTypes ? TYPE_CONFIG.filter(c => allowedTypes.includes(c.type)) : TYPE_CONFIG;
 
   return (
-    <div className="space-y-1">
+    <div className="plib-space-y-1">
       {/* ── Single bar ──────────────────────────────────────────────────────── */}
       <div
         className={[
-          'group/filters flex items-center gap-2 bg-white px-4 h-input transition-all',
+          'plib-group/filters plib-flex plib-items-center plib-gap-2 plib-bg-white plib-px-4 plib-h-input plib-transition-all',
           isOpen
-            ? 'rounded-t-lg rounded-b-none border-b-0 border-2 border-primary-main shadow-search'
-            : 'rounded-lg border border-primary-main',
-          disabled ? 'opacity-60 cursor-not-allowed' : '',
+            ? 'plib-rounded-t-lg plib-rounded-b-none plib-border-b-0 plib-border-2 plib-border-primary-main plib-shadow-search'
+            : 'plib-rounded-lg plib-border plib-border-primary-main',
+          disabled ? 'plib-opacity-60 plib-cursor-not-allowed' : '',
         ].join(' ')}
       >
         {/* Search icon */}
-        <SearchIcon className="flex-shrink-0 text-text-muted" size={20} />
+        <SearchIcon className="plib-flex-shrink-0 plib-text-text-muted" size={20} />
 
         {/* Input */}
         <input
@@ -125,7 +125,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
           placeholder="חיפוש אדם"
           disabled={disabled}
           dir="rtl"
-          className="flex-1 outline-none text-right font-rubik font-normal text-base text-text-primary placeholder:text-text-muted bg-transparent min-w-0"
+          className="plib-flex-1 plib-outline-none plib-text-right plib-font-rubik plib-font-normal plib-text-base plib-text-text-primary placeholder:plib-text-text-muted plib-bg-transparent plib-min-w-0"
           aria-label="חיפוש אדם"
         />
 
@@ -135,7 +135,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
             type="button"
             onClick={onClear}
             disabled={disabled}
-            className="flex items-center justify-center text-text-muted hover:text-text-primary transition-colors focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:outline-none flex-shrink-0 p-0.5"
+            className="plib-flex plib-items-center plib-justify-center plib-text-text-muted hover:plib-text-text-primary plib-transition-colors focus-visible:plib-ring-2 focus-visible:plib-ring-primary-main focus-visible:plib-outline-none plib-flex-shrink-0 plib-p-0.5"
             aria-label="נקה חיפוש"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
@@ -147,14 +147,14 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
         {/* ── Active toggle + type filter icons — visible while focused ─── */}
         {showTypeButtons && (
-          <div className="flex items-center gap-0.5 flex-shrink-0">
+          <div className="plib-flex plib-items-center plib-gap-0.5 plib-flex-shrink-0">
 
             {/* ── Active toggle ─────────────────────────────────────────── */}
             {activeOnly === undefined && (
               <Toggle
                 checked={isActive}
                 onChange={disabled ? undefined : handleToggle}
-                className={disabled ? 'opacity-50 pointer-events-none' : ''}
+                className={disabled ? 'plib-opacity-50 plib-pointer-events-none' : ''}
               />
             )}
 
@@ -168,10 +168,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     onClick={() => handleTypeClick(type)}
                     disabled={disabled}
                     className={[
-                      'flex items-center justify-center transition-all flex-shrink-0',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-1',
+                      'plib-flex plib-items-center plib-justify-center plib-transition-all plib-flex-shrink-0',
+                      'focus-visible:plib-outline-none focus-visible:plib-ring-2 focus-visible:plib-ring-primary-main focus-visible:plib-ring-offset-1',
                       isSelected ? activeClass : idleClass,
-                      disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                      disabled ? 'plib-cursor-not-allowed' : 'plib-cursor-pointer',
                     ].join(' ')}
                     aria-pressed={isSelected}
                     aria-label={`סנן לפי ${label}`}
@@ -187,7 +187,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
       {/* Hint */}
       {inputValue.length > 0 && inputValue.length < minChars && (
-        <p className="font-rubik text-sm text-text-muted text-right px-1" role="status" aria-live="polite">
+        <p className="plib-font-rubik plib-text-sm plib-text-text-muted plib-text-right plib-px-1" role="status" aria-live="polite">
           הקלד לפחות {minChars} תווים לחיפוש
         </p>
       )}

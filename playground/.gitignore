@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# regenerate with: cd ../person-locator && npm run build && npm pack --pack-destination ../playground
+*.tgz

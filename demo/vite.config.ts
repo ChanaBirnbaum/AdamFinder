@@ -82,12 +82,6 @@ export default defineConfig(({ mode }) => {
         allow: [path.resolve(__dirname, '..')],
       },
     },
-    resolve: {
-      alias: {
-        // Point to the library source so Tailwind classes are processed
-        '@ips/searchAdam': path.resolve(__dirname, '../person-locator/src/index.ts'),
-      },
-    },
     plugins: [
       react(),
       ...(isMock

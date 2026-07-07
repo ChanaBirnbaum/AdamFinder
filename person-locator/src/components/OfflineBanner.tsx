@@ -2,7 +2,7 @@ import React from 'react';
 
 const OfflineBanner: React.FC = () => (
   <div
-    className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm px-3 py-2 rounded-lg"
+    className="plib-flex plib-items-center plib-gap-2 plib-bg-yellow-50 plib-border plib-border-yellow-200 plib-text-yellow-800 plib-text-sm plib-px-3 plib-py-2 plib-rounded-lg"
     role="alert"
     aria-live="polite"
   >

@@ -10,7 +10,7 @@ export default function Avatar({
   className?: string;
 }) {
   return (
-    <div className={className}>
+    <div className={`plib-root ${className ?? ''}`}>
       <ProfilePlaceholder photoUrl={photoUrl} online={online} />
     </div>
   );

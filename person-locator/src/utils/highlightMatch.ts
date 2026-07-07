@@ -13,7 +13,7 @@ export function highlightMatch(text: string, query: string): React.ReactNode {
 
   return parts.map((part, i) =>
     regex.test(part)
-      ? React.createElement('strong', { key: i, className: 'font-semibold' }, part)
+      ? React.createElement('strong', { key: i, className: 'plib-font-semibold' }, part)
       : part
   );
 }

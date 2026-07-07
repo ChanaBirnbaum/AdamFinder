@@ -1,5 +1,76 @@
+/* 1. Brand font — self-hosted Rubik via src/fonts.css (@fontsource files).
+   postcss-url inlines the woff2 sources as base64 data URIs at build time,
+   so the injected CSS carries the font itself: no external/CDN requests
+   (required for closed/air-gapped networks) and no relative url() paths,
+   which injected CSS could not resolve. */
 @import './fonts.css';
 
+/* 2. Scoped mini-reset. Replaces the parts of Tailwind preflight the
+   components implicitly rely on, WITHOUT touching the consumer's app.
+   Scoped strictly under .plib-root (which is also applied to every
+   portaled subtree the library renders into <body>).
+
+   Element selectors are wrapped in :where() so these rules keep the same
+   0,1,0 specificity as utility classes — utilities are emitted later in
+   this sheet, so they win ties, exactly like real preflight (0,0,1) loses
+   to utilities. Without :where(), e.g. `.plib-root button { background-
+   color: transparent }` would beat `plib-bg-primary-soft` on the selected
+   type-filter button. */
+.plib-root,
+.plib-root *,
+.plib-root *::before,
+.plib-root *::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: theme('colors.divider');
+  margin: 0;
+  padding: 0;
+}
+/* Preflight sets html { line-height: 1.5 } and everything inherits it;
+   reproduce that at the scope root (portal roots included). */
+.plib-root {
+  line-height: 1.5;
+}
+.plib-root :where(button, input, select, textarea),
+.plib-root:where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+  background-color: transparent;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+.plib-root :where(button, [role='button']),
+.plib-root:where(button, [role='button']) {
+  cursor: pointer;
+  appearance: button;
+  background-image: none;
+}
+.plib-root :where(:disabled) {
+  cursor: default;
+}
+.plib-root :where(input)::placeholder,
+.plib-root :where(textarea)::placeholder {
+  color: theme('colors.text.muted');
+  opacity: 1; /* preflight sets this; Firefox default is ~0.54 */
+}
+.plib-root :where(img, svg) {
+  display: block;
+  vertical-align: middle;
+}
+.plib-root :where(img, video) {
+  max-width: 100%;
+  height: auto;
+}
+.plib-root :where(ul, ol) {
+  list-style: none;
+}
+
+/* 3. Tailwind layers. Preflight is disabled, so `@tailwind base` emits ONLY
+   the --tw-* variable defaults that transform/ring/filter utilities depend
+   on (transforms, rings and grayscale break without them) — and with
+   `experimental.optimizeUniversalDefaults` those defaults are attached to
+   the prefixed utility selectors, not to a global `*` selector. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

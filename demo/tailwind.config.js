@@ -1,13 +1,11 @@
-// Inherit the library's full theme (colors, spacing, fontSize tokens...) so
-// classes used inside person-locator components resolve identically here.
-import libraryConfig from '../person-locator/tailwind.config.ts';
-
+// The library now ships its own compiled, prefixed CSS (auto-injected on
+// import), so the demo no longer presets the library config or scans its
+// sources — doing so would inherit `prefix`/`preflight: false` and break
+// the demo's own classes.
 /** @type {import('tailwindcss').Config} */
 export default {
-  presets: [libraryConfig],
   content: [
     './index.html',
     './src/**/*.{ts,tsx}',
-    '../person-locator/src/**/*.tsx',
   ],
 }

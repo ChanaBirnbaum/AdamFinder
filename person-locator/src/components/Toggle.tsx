@@ -10,21 +10,21 @@ export default function Toggle({ checked, onChange, className }: ToggleProps) {
       type="button"
       onClick={() => onChange?.(!checked)}
       dir="ltr"
-      className={`flex gap-1 items-center bg-transparent border-0 cursor-pointer p-0 shrink-0 ${className ?? ''}`}
+      className={`plib-root plib-flex plib-gap-1 plib-items-center plib-bg-transparent plib-border-0 plib-cursor-pointer plib-p-0 plib-shrink-0 ${className ?? ''}`}
     >
       <div
-        className={`relative flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ${
-          checked ? 'bg-primary-main' : 'bg-control-off'
+        className={`plib-relative plib-flex plib-h-5 plib-w-10 plib-items-center plib-rounded-full plib-transition-colors plib-shrink-0 ${
+          checked ? 'plib-bg-primary-main' : 'plib-bg-control-off'
         }`}
       >
         <span
-          className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-            checked ? 'translate-x-5.5' : 'translate-x-0.5'
+          className={`plib-absolute plib-left-0 plib-top-0.5 plib-h-4 plib-w-4 plib-rounded-full plib-bg-white plib-shadow plib-transition-transform ${
+            checked ? 'plib-translate-x-5.5' : 'plib-translate-x-0.5'
           }`}
         />
       </div>
       <p
-        className="m-0 font-rubik font-normal leading-tight text-text-muted text-sm text-right whitespace-nowrap"
+        className="plib-m-0 plib-font-rubik plib-font-normal plib-leading-tight plib-text-text-muted plib-text-sm plib-text-right plib-whitespace-nowrap"
         dir="auto"
       >
         {checked ? 'לא פעיל' : 'פעיל'}

@@ -17,9 +17,9 @@ const TABS: { type: PersonType; label: string }[] = [
 ];
 
 const TYPE_STYLE: Record<PersonType, { active: string; badge: string; ring: string }> = {
-  asir:   { active: 'border-b border-primary-main text-primary-main', badge: 'bg-primary-soft text-primary-main', ring: 'focus-visible:ring-primary-main' },
-  soher:  { active: 'border-b border-primary-main text-primary-main', badge: 'bg-primary-soft text-primary-main', ring: 'focus-visible:ring-primary-main' },
-  ezrach: { active: 'border-b border-primary-main text-primary-main', badge: 'bg-primary-soft text-primary-main', ring: 'focus-visible:ring-primary-main' },
+  asir:   { active: 'plib-border-b plib-border-primary-main plib-text-primary-main', badge: 'plib-bg-primary-soft plib-text-primary-main', ring: 'focus-visible:plib-ring-primary-main' },
+  soher:  { active: 'plib-border-b plib-border-primary-main plib-text-primary-main', badge: 'plib-bg-primary-soft plib-text-primary-main', ring: 'focus-visible:plib-ring-primary-main' },
+  ezrach: { active: 'plib-border-b plib-border-primary-main plib-text-primary-main', badge: 'plib-bg-primary-soft plib-text-primary-main', ring: 'focus-visible:plib-ring-primary-main' },
 };
 
 function TabIcon({ type, active }: { type: PersonType; active: boolean }) {
@@ -41,7 +41,7 @@ const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedT
   if (visibleTabs.length === 0) return null;
 
   return (
-    <div className="flex border-b border-grey-50" role="tablist" aria-label="קטגוריות תוצאות">
+    <div className="plib-flex plib-border-b plib-border-grey-50" role="tablist" aria-label="קטגוריות תוצאות">
       {visibleTabs.map((tab) => {
         const count = getTotal(results, tab.type);
         const isActive = activeTab === tab.type;
@@ -53,18 +53,18 @@ const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedT
             aria-selected={isActive}
             aria-controls={`panel-${tab.type}`}
             className={[
-              'flex items-center gap-2 h-12 px-2 py-2.5 font-rubik text-base transition-colors focus-visible:outline-none focus-visible:ring-2 bg-transparent',
+              'plib-flex plib-items-center plib-gap-2 plib-h-12 plib-px-2 plib-py-2.5 plib-font-rubik plib-text-base plib-transition-colors focus-visible:plib-outline-none focus-visible:plib-ring-2 plib-bg-transparent',
               style.ring,
-              isActive ? style.active : 'border-b border-transparent text-text-muted',
+              isActive ? style.active : 'plib-border-b plib-border-transparent plib-text-text-muted',
             ].join(' ')}
             onClick={() => onTabChange(tab.type)}
           >
-             <div className="flex items-center justify-center p-1 rounded-lg shrink-0">
+             <div className="plib-flex plib-items-center plib-justify-center plib-p-1 plib-rounded-lg plib-shrink-0">
               <TabIcon type={tab.type} active={isActive} />
             </div>
-            <span className={isActive ? 'font-semibold' : 'font-normal'}>{tab.label}</span>
+            <span className={isActive ? 'plib-font-semibold' : 'plib-font-normal'}>{tab.label}</span>
             {count > 0 && (
-              <span className={`text-sm rounded-4xl w-6 h-6 flex items-center justify-center shrink-0 ${isActive ? style.badge : 'bg-grey-50 text-text-muted'}`}>
+              <span className={`plib-text-sm plib-rounded-4xl plib-w-6 plib-h-6 plib-flex plib-items-center plib-justify-center plib-shrink-0 ${isActive ? style.badge : 'plib-bg-grey-50 plib-text-text-muted'}`}>
                 {count}
               </span>
             )}

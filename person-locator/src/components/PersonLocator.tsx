@@ -128,7 +128,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full font-sans"
+      className="plib-root plib-relative plib-w-full plib-font-sans"
       dir="rtl"
       aria-disabled={disabled}
       style={disabled ? { pointerEvents: 'none' } : undefined}
@@ -164,12 +164,12 @@ onBlurCapture={() => {
       />
 
       {error && (
-        <div className="mt-1 text-xs text-red-600 text-right" role="alert" aria-live="assertive">
+        <div className="plib-mt-1 plib-text-xs plib-text-red-600 plib-text-right" role="alert" aria-live="assertive">
           {error}
           <button
             type="button"
             onClick={() => setInputValue(inputValue)}
-            className="mr-2 underline focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+            className="plib-mr-2 plib-underline focus-visible:plib-ring-2 focus-visible:plib-ring-blue-500 focus-visible:plib-outline-none"
             aria-label="נסה שוב"
           >
             נסה שוב

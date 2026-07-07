@@ -2,6 +2,17 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: ['./src/**/*.tsx'],
+  prefix: 'plib-',
+  corePlugins: {
+    preflight: false,
+  },
+  experimental: {
+    // Attach the --tw-* variable defaults (translate/rotate/ring/filter...)
+    // to the prefixed utility selectors that need them instead of a global
+    // `*, ::before, ::after` block, so the injected CSS never touches
+    // elements outside the library's own markup.
+    optimizeUniversalDefaults: true,
+  },
   future: {
     hoverOnlyWhenSupported: true,
   },

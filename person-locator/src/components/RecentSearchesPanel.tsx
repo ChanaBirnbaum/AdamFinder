@@ -12,9 +12,9 @@ const TYPE_LABEL: Record<PersonType, string> = {
 };
 
 function TypeIcon({ type }: { type: PersonType }) {
-  if (type === 'ezrach') return <CitizenIcon className="text-primary-main" />;
-  if (type === 'soher')  return <GuardIcon className="text-primary-main" />;
-  return <PrisonerIcon className="text-primary-main" />;
+  if (type === 'ezrach') return <CitizenIcon className="plib-text-primary-main" />;
+  if (type === 'soher')  return <GuardIcon className="plib-text-primary-main" />;
+  return <PrisonerIcon className="plib-text-primary-main" />;
 }
 
 const XSmall = () => (
@@ -42,10 +42,12 @@ const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanel
   resultDirection = 'down',
   anchorRef,
 }, forwardedRef) => {
+  // plib-root scopes the library reset onto this portaled subtree; plib-font-sans
+  // replaces the font it previously inherited from the consumer's <body>.
   const panelClass =
     resultDirection === 'up'
-      ? 'z-50 bg-white rounded-t-xl shadow-lg border border-b-0 border-gray-200'
-      : 'z-50 bg-white rounded-b-xl shadow-lg border border-t-0 border-gray-200';
+      ? 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-t-xl plib-shadow-lg plib-border plib-border-b-0 plib-border-gray-200'
+      : 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-b-xl plib-shadow-lg plib-border plib-border-t-0 plib-border-gray-200';
 
   // Panel is portaled to <body>, so it needs its own fixed-position coordinates
   // pinned to the anchor element instead of relying on a relative-positioned parent.
@@ -56,12 +58,12 @@ const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanel
   return createPortal(
     <div ref={forwardedRef} className={panelClass} style={panelStyle} role="listbox" aria-label="חיפושים אחרונים" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
-        <span className="text-2xs text-gray-400 font-medium">חיפושים אחרונים</span>
+      <div className="plib-flex plib-items-center plib-justify-between plib-px-3 plib-py-2 plib-border-b plib-border-gray-100">
+        <span className="plib-text-2xs plib-text-gray-400 plib-font-medium">חיפושים אחרונים</span>
         <button
           type="button"
           onClick={onClearAll}
-          className="text-2xs text-gray-400 hover:text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded"
+          className="plib-text-2xs plib-text-gray-400 hover:plib-text-gray-600 plib-transition-colors focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-gray-300 plib-rounded"
         >
           נקה הכל
         </button>
@@ -73,7 +75,7 @@ const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanel
         return (
           <div
             key={person.id}
-            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer group transition-colors"
+            className="plib-flex plib-items-center plib-justify-between plib-px-3 plib-py-2 hover:plib-bg-gray-50 plib-cursor-pointer plib-group plib-transition-colors"
             role="option"
             aria-selected={false}
             tabIndex={0}
@@ -81,19 +83,19 @@ const RecentSearchesPanel = React.forwardRef<HTMLDivElement, RecentSearchesPanel
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(person); } }}
           >
             {/* Name — right in RTL (first child) */}
-            <div className="flex items-center min-w-0">
-              <span className="text-sm text-gray-700 truncate">{fullName}</span>
+            <div className="plib-flex plib-items-center plib-min-w-0">
+              <span className="plib-text-sm plib-text-gray-700 plib-truncate">{fullName}</span>
             </div>
 
             {/* Type icon + remove button — left in RTL (last child) */}
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="plib-flex plib-items-center plib-gap-1 plib-flex-shrink-0">
               <span role="img" aria-label={TYPE_LABEL[person.personType]}>
                 <TypeIcon type={person.personType} />
               </span>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onRemove(person.id); }}
-                className="text-gray-300 hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 rounded p-0.5 flex-shrink-0"
+                className="plib-text-gray-300 hover:plib-text-gray-500 plib-transition-colors plib-opacity-0 group-hover:plib-opacity-100 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-gray-300 plib-rounded plib-p-0.5 plib-flex-shrink-0"
                 aria-label={`הסר ${String(person.data['fullName'] ?? '')}`}
               >
                 <XSmall />
