@@ -2,7 +2,7 @@
 
 ## Context
 
-This repository is an internal React component library (currently containing a "person lookup" component) styled with Tailwind CSS v3. Today, consumers must set up Tailwind themselves (config + content scanning) to get styled components. We are changing the distribution model:
+This repository is an internal React component library (currently containing a "person-locator" component) styled with Tailwind CSS v3. Today, consumers must set up Tailwind themselves (config + content scanning) to get styled components. We are changing the distribution model:
 
 **Goal:** A consumer should be able to `npm install` the library, `import { Component }`, and get a fully styled component — no Tailwind, no config, no CSS import on their side. The Tailwind CSS will be compiled at library build time and auto-injected into `document.head` when the library is imported.
 
