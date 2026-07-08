@@ -10,6 +10,8 @@ const NAMES = [
 ];
 const UNITS = ['יחידה א׳', 'יחידה ב׳', 'כלא מגידו', 'כלא הדרים', 'מחוז צפון'];
 const RANKS = ['סוהר', 'סוהר בכיר', 'קצין', 'ממונה'];
+const CRIME_TYPES = ['עבירות רכוש', 'עבירות אלימות', 'עבירות סמים', 'עבירות תנועה'];
+const CELL_BLOCKS = ['אגף א', 'אגף ב', 'אגף ג', 'אגף פתוח'];
 const MISHMOROT: Array<Array<{ title: string; status: string }>> = [
   [],
   [{ title: 'עונש סגר', status: 'active' }],
@@ -42,6 +44,10 @@ function makeFakeHits(query: string, from: number, size: number) {
         badge: t === 'soher' ? `תג-${idx + 100}` : undefined,
         station: t === 'soher' ? `עמדה ${(idx % 5) + 1}` : undefined,
         mishmorot: mishmorot?.length ? mishmorot : undefined,
+        crimeType: t === 'asir' ? CRIME_TYPES[idx % CRIME_TYPES.length] : undefined,
+        cellBlock: t === 'asir' ? CELL_BLOCKS[idx % CELL_BLOCKS.length] : undefined,
+        entryDate: t === 'asir' ? `${(idx % 28) + 1}/0${(idx % 9) + 1}/2023` : undefined,
+        sentenceEnd: t === 'asir' ? `${(idx % 28) + 1}/0${(idx % 9) + 1}/2027` : undefined,
       },
     };
   });

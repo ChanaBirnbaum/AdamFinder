@@ -103,11 +103,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
   return (
     <div
       ref={isLast ? lastRef : undefined}
-      className="plib-p-4 plib-border-b plib-border-divider hover:plib-bg-gray-50 plib-transition-colors plib-duration-100 plib-animate-fadeIn"
+      className="plib-px-4 plib-py-2.5 plib-border-b plib-border-divider hover:plib-bg-gray-50 plib-transition-colors plib-duration-100 plib-animate-fadeIn"
     >
       {/* ── Main row ── */}
       <div
-        className="plib-flex plib-items-start plib-gap-4 plib-cursor-pointer"
+        className="plib-flex plib-items-start plib-gap-3 plib-cursor-pointer"
         role="option"
         aria-label={String(person.data['fullName'] ?? '')}
         aria-selected={false}
@@ -139,13 +139,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
             return (
               <>
                 <div className="plib-flex plib-items-center plib-gap-1.5 plib-min-w-0">
-                  <p className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-truncate">
+                  <p className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-truncate">
                     {highlightMatch(String(person.data['fullName'] ?? ''), query)}
                   </p>
                   {primaryId != null && (
                     <>
                       <span className="plib-w-px plib-h-4 plib-bg-divider plib-flex-shrink-0" aria-hidden="true" />
-                      <p className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-flex-shrink-0">
+                      <p className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-flex-shrink-0">
                         {String(primaryId)}
                       </p>
                     </>
@@ -178,7 +178,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
                 {/* Row 2 – remaining prisoner number / rank */}
                 {restRow2.length > 0 && (
-                  <p className="plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-mt-0.5">
+                  <p className="plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-leading-tight plib-mt-0.5">
                     {restRow2.join(' · ')}
                   </p>
                 )}
@@ -188,7 +188,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
           {/* Row 3 – unit / shibutz / phone */}
           {[person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].some(Boolean) && (
-            <p className="plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-mt-0.5">
+            <p className="plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-leading-tight plib-mt-0.5">
               {[person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].filter(Boolean).join(' · ')}
             </p>
           )}

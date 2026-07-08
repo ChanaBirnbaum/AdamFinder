@@ -7,6 +7,7 @@ import type {
   ServiceConfig,
 } from '../types';
 import { enrichPersonsWithPhotoUrls } from './photoService';
+import { buildMishmorot } from '../utils/mishmorot';
 
 export { OfflineError };
 
@@ -25,7 +26,10 @@ export const DEFAULT_QUERY_SETTINGS: Record<PersonType, ElasticQuerySettings> = 
   asir: {
     wrapMode:     'prefix',
     searchFields: ['fullName', 'idNumber', 'unit', 'prisonerNumber'],
-    sourceFields: ['fullName', 'idNumber', 'unit', 'prisonerNumber', 'isActive', 'photoUrl'],
+    sourceFields: [
+      'fullName', 'idNumber', 'unit', 'prisonerNumber', 'isActive', 'photoUrl',
+      'text_status_xx', 'text_status_yy', 'text_status_m',
+    ],
     activeField:  'isActive',
   },
   soher: {
@@ -156,7 +160,7 @@ function mapHitToPersonResult(
     personType,
     isActive:   Boolean(source[activeField] ?? true),
     source:     'elasticsearch',
-    data:       { ...source },
+    data:       { ...source, mishmorot: buildMishmorot(source) },
   };
 }
 

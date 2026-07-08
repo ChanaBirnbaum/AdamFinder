@@ -44,6 +44,7 @@ export default function App() {
             type="asir"
             minChars={2}
             serviceConfig={mockServiceConfig}
+            additionalSourceFields={{ asir: ['crimeType', 'cellBlock', 'entryDate', 'sentenceEnd'] }}
             onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'])}
             openTikAsir={(p: PersonResult) => console.log('תיק אסיר:', p.data['prisonerNumber'])}
           />

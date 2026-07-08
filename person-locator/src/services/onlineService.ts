@@ -1,5 +1,6 @@
 import { get } from './axiosInstance';
 import type { PersonResult, PersonType, ServiceConfig } from '../types';
+import { buildMishmorot } from '../utils/mishmorot';
 
 /**
  * Fetch persons from the online DB service.
@@ -33,7 +34,7 @@ export async function fetchOnlinePersons(params: {
       personType: (p['personType'] as PersonType) ?? 'ezrach',
       isActive: Boolean(p['isActive'] ?? true),
       source: 'online' as const,
-      data: { ...p },
+      data: { ...p, mishmorot: buildMishmorot(p) },
     }));
   } catch {
     return [];

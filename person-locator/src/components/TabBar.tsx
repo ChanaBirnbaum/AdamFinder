@@ -53,7 +53,7 @@ const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedT
             aria-selected={isActive}
             aria-controls={`panel-${tab.type}`}
             className={[
-              'plib-flex plib-items-center plib-gap-2 plib-h-12 plib-px-2 plib-py-2.5 plib-font-rubik plib-text-base plib-transition-colors focus-visible:plib-outline-none focus-visible:plib-ring-2 plib-bg-transparent',
+              'plib-flex plib-items-center plib-gap-1 plib-h-12 plib-px-2 plib-py-2.5 plib-font-rubik plib-text-base plib-transition-colors focus-visible:plib-outline-none focus-visible:plib-ring-2 plib-bg-transparent',
               style.ring,
               isActive ? style.active : 'plib-border-b plib-border-transparent plib-text-text-muted',
             ].join(' ')}
@@ -64,7 +64,7 @@ const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedT
             </div>
             <span className={isActive ? 'plib-font-semibold' : 'plib-font-normal'}>{tab.label}</span>
             {count > 0 && (
-              <span className={`plib-text-sm plib-rounded-4xl plib-w-6 plib-h-6 plib-flex plib-items-center plib-justify-center plib-shrink-0 ${isActive ? style.badge : 'plib-bg-grey-50 plib-text-text-muted'}`}>
+              <span className={`plib-text-sm plib-rounded-full plib-min-w-6 plib-h-6 plib-px-1.5 plib-flex plib-items-center plib-justify-center plib-shrink-0 ${isActive ? style.badge : 'plib-bg-grey-50 plib-text-text-muted'}`}>
                 {count}
               </span>
             )}

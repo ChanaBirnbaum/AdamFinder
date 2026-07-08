@@ -1,5 +1,6 @@
 import { get } from './axiosInstance';
 import type { PersonResult, PersonType, ServiceConfig } from '../types';
+import { buildMishmorot } from '../utils/mishmorot';
 
 /** Offline search only supports exact identifier lookup — ID length varies by person type, but it's always numeric. */
 const ID_PATTERN = /^\d+$/;
@@ -36,7 +37,7 @@ export async function searchOffline(params: {
       personType: personType ?? (p['personType'] as PersonType) ?? 'ezrach',
       isActive: Boolean(p['isActive'] ?? true),
       source: 'offline' as const,
-      data,
+      data: { ...data, mishmorot: buildMishmorot(p) },
     };
   });
 }
