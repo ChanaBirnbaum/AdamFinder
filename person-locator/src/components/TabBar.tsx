@@ -53,13 +53,13 @@ const TabBar: React.FC<TabBarProps> = ({ results, activeTab, isLoading, allowedT
             aria-selected={isActive}
             aria-controls={`panel-${tab.type}`}
             className={[
-              'plib-flex plib-items-center plib-gap-1 plib-h-12 plib-px-2 plib-py-2.5 plib-font-rubik plib-text-base plib-transition-colors focus-visible:plib-outline-none focus-visible:plib-ring-2 plib-bg-transparent',
+              'plib-flex plib-items-center plib-gap-0.5 plib-h-12 plib-px-2 plib-py-2.5 plib-font-rubik plib-text-base plib-transition-colors focus-visible:plib-outline-none focus-visible:plib-ring-2 plib-bg-transparent',
               style.ring,
               isActive ? style.active : 'plib-border-b plib-border-transparent plib-text-text-muted',
             ].join(' ')}
             onClick={() => onTabChange(tab.type)}
           >
-             <div className="plib-flex plib-items-center plib-justify-center plib-p-1 plib-rounded-lg plib-shrink-0">
+             <div className="plib-flex plib-items-center plib-justify-center plib-p-0.5 plib-rounded-lg plib-shrink-0">
               <TabIcon type={tab.type} active={isActive} />
             </div>
             <span className={isActive ? 'plib-font-semibold' : 'plib-font-normal'}>{tab.label}</span>

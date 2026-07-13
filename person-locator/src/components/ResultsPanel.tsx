@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { PersonLocatorProps, PersonResult, PersonType, SearchResults } from '../types';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -71,6 +71,12 @@ const ResultsPanel = React.forwardRef<HTMLDivElement, ResultsPanelProps>(({
   const scrollClass = 'plib-flex-1 plib-overflow-y-auto';
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // The scroll container is shared across tabs — reset it so a new tab starts at the top.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [activeTab]);
+
   const activeResults = results[RESULTS_MAP[activeTab]] as PersonResult[];
   const handleLoadMore = useCallback(() => loadMore(activeTab), [loadMore, activeTab]);
   const lastCardRef = useInfiniteScroll(
