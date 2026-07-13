@@ -236,6 +236,13 @@ export interface PersonLocatorProps {
    */
   additionalSourceFields?: Partial<Record<PersonType, string[]>>;
 
+  /**
+   * תצוגה מורחבת לסוהרים — when `true`, fetches the soher description blob from ES
+   * and shows the סטטוס/אזור headers extracted from it in the expanded card.
+   * Default: false
+   */
+  soherExpandedView?: boolean;
+
   /** Search only active persons. Hides the active toggle entirely. */
   activeOnly?: boolean;
 

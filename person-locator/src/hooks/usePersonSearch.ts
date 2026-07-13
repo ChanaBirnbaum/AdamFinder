@@ -8,6 +8,7 @@ import { fetchOnlinePersons } from '../services/onlineService';
 import { searchOffline } from '../services/offlineService';
 import { enrichPersonsWithPhotoUrls } from '../services/photoService';
 import { mergeResults } from '../utils/mergeResults';
+import { DESCRIPTION_FIELD } from '../utils/descriptionFields';
 import { normalizeQuery } from '../utils/normalizeQuery';
 import { getConfig } from '../serviceConfig';
 import { normalize, composeWithBase, compileToElasticQuery, compileToPredicate } from '../filters';
@@ -119,6 +120,12 @@ export interface UsePersonSearchReturn {
   displayFields: string[];
 }
 
+/**
+ * Flat keys lifted out of the soher description blob at map time (see
+ * `parseDescriptionEntries`) — shown in the expanded card when `soherExpandedView` is on.
+ */
+const SOHER_EXPANDED_DISPLAY_FIELDS = ['סטטוס', 'אזור'];
+
 const emptyResults: SearchResults = {
   asirs: [],
   sohers: [],
@@ -142,6 +149,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     baseFilter,
     additionalSearchFields = [],
     additionalSourceFields,
+    soherExpandedView = false,
     fallbackToOfflineIfNoAuth = false,
     singleSearch,
     state,
@@ -154,6 +162,16 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   const config = { ...getConfig(env), ...serviceConfigOverride };
   const pageSize = config.pageSize ?? 3;
+
+  // soherExpandedView fetches the raw description blob from ES; its parsed keys
+  // (SOHER_EXPANDED_DISPLAY_FIELDS) are what actually get displayed — see displayFields below.
+  // buildEsConfig dedupes, so overlap with caller-provided soher fields is harmless.
+  const effectiveSourceFields = soherExpandedView
+    ? {
+        ...additionalSourceFields,
+        soher: [...(additionalSourceFields?.soher ?? []), DESCRIPTION_FIELD],
+      }
+    : additionalSourceFields;
 
   // Normalize type → always a sorted array (or undefined = all)
   const typeArr: PersonType[] | undefined = type
@@ -289,7 +307,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       const hasAccess = !fallbackToOfflineIfNoAuth || hasPersonTypeAccess(personPermissionRef.current, singleType);
 
-      const esConfig = buildEsConfig(config, asirWhitelistRef.current, remoteFieldConfigRef.current, additionalSourceFields);
+      const esConfig = buildEsConfig(config, asirWhitelistRef.current, remoteFieldConfigRef.current, effectiveSourceFields);
 
       const esPromise = hasAccess
         ? fetchSinglePerson({
@@ -405,7 +423,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       // Whitelist only ever touches querySettings.asir, and remote fields are merged per type —
       // safe to compute once and reuse for every type's ES call.
-      const esConfig = buildEsConfig(config, asirWhitelistRef.current, remoteFieldConfigRef.current, additionalSourceFields);
+      const esConfig = buildEsConfig(config, asirWhitelistRef.current, remoteFieldConfigRef.current, effectiveSourceFields);
 
       // Build ES promises per category
       const esPromises = (['asir', 'soher', 'ezrach'] as PersonType[]).map((pt, i) => {
@@ -695,6 +713,20 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     [debouncedInput, minChars, pagingState, isLoadingMore, runSearch]
   );
 
+  const baseDisplayFields =
+    buildEsConfig(config, null, remoteFieldConfig, effectiveSourceFields)
+      .querySettings?.[activeTab]?.sourceFields
+      ?? DEFAULT_QUERY_SETTINGS[activeTab].sourceFields;
+  // The raw description blob is fetched only for extraction — swap it for its parsed keys
+  // so the expanded card shows סטטוס/אזור instead of the blob itself.
+  const displayFields =
+    soherExpandedView && activeTab === 'soher'
+      ? [
+          ...baseDisplayFields.filter((f) => f !== DESCRIPTION_FIELD),
+          ...SOHER_EXPANDED_DISPLAY_FIELDS,
+        ]
+      : baseDisplayFields;
+
   return {
     results,
     isLoading,
@@ -712,8 +744,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
-    displayFields: buildEsConfig(config, null, remoteFieldConfig, additionalSourceFields)
-      .querySettings?.[activeTab]?.sourceFields
-      ?? DEFAULT_QUERY_SETTINGS[activeTab].sourceFields,
+    displayFields,
   };
 }

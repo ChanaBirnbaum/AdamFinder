@@ -8,6 +8,7 @@ import type {
 } from '../types';
 import { enrichPersonsWithPhotoUrls } from './photoService';
 import { buildMishmorot } from '../utils/mishmorot';
+import { DESCRIPTION_FIELD, parseDescriptionEntries } from '../utils/descriptionFields';
 
 export { OfflineError };
 
@@ -160,7 +161,13 @@ function mapHitToPersonResult(
     personType,
     isActive:   Boolean(source[activeField] ?? true),
     source:     'elasticsearch',
-    data:       { ...source, mishmorot: buildMishmorot(source) },
+    // The description blob is flattened into individual Hebrew-keyed entries so the
+    // generic expanded-card renderer can address them as plain data fields.
+    data:       {
+      ...source,
+      ...parseDescriptionEntries(source[DESCRIPTION_FIELD]),
+      mishmorot: buildMishmorot(source),
+    },
   };
 }
 
