@@ -386,6 +386,12 @@ interface PersonLocatorProps {
      * @example `additionalSourceFields={{ soher: ['badge', 'station'] }}`
      */
     additionalSourceFields?: Partial<Record<PersonType, string[]>>;
+    /**
+     * תצוגה מורחבת לסוהרים — when `true`, fetches the soher description blob from ES
+     * and shows the סטטוס/אזור headers extracted from it in the expanded card.
+     * Default: false
+     */
+    soherExpandedView?: boolean;
     /** Search only active persons. Hides the active toggle entirely. */
     activeOnly?: boolean;
     /** Default value for the active toggle (only when activeOnly is undefined). */

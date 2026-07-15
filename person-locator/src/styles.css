@@ -10,16 +10,17 @@
    Scoped strictly under .plib-root (which is also applied to every
    portaled subtree the library renders into <body>).
 
-   Element selectors are wrapped in :where() so these rules keep the same
-   0,1,0 specificity as utility classes — utilities are emitted later in
-   this sheet, so they win ties, exactly like real preflight (0,0,1) loses
-   to utilities. Without :where(), e.g. `.plib-root button { background-
-   color: transparent }` would beat `plib-bg-primary-soft` on the selected
-   type-filter button. */
-.plib-root,
-.plib-root *,
-.plib-root *::before,
-.plib-root *::after {
+   Element selectors are wrapped in :where() so these rules keep 0
+   specificity — same reasoning as the box/border reset above: `.plib-root`
+   sits on the same node as the consumer's `className` prop (Avatar,
+   Badge, Toggle, icons, ...), so a bare `.plib-root { border-width: 0 }`
+   would tie with a consumer class like `.my-border` (both 0,1,0) and the
+   winner would depend on stylesheet load order instead of author intent.
+   :where() drops the reset to 0 specificity so it always loses to any
+   real class — while `plib-*` utilities (real classes, 0,1,0) still win
+   here via source order, since utilities are emitted later in this sheet,
+   exactly like real preflight (0,0,1) loses to utilities. */
+:where(.plib-root, .plib-root *, .plib-root *::before, .plib-root *::after) {
   box-sizing: border-box;
   border-width: 0;
   border-style: solid;
@@ -28,12 +29,14 @@
   padding: 0;
 }
 /* Preflight sets html { line-height: 1.5 } and everything inherits it;
-   reproduce that at the scope root (portal roots included). */
-.plib-root {
+   reproduce that at the scope root (portal roots included). Wrapped in
+   :where() for the same reason as the block above: `.plib-root` can land
+   on the same node as the consumer's `className` prop. */
+:where(.plib-root) {
   line-height: 1.5;
 }
 .plib-root :where(button, input, select, textarea),
-.plib-root:where(button, input, select, textarea) {
+:where(.plib-root):where(button, input, select, textarea) {
   font: inherit;
   color: inherit;
   background-color: transparent;
@@ -41,7 +44,7 @@
   letter-spacing: inherit;
 }
 .plib-root :where(button, [role='button']),
-.plib-root:where(button, [role='button']) {
+:where(.plib-root):where(button, [role='button']) {
   cursor: pointer;
   appearance: button;
   background-image: none;
