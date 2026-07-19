@@ -101,14 +101,16 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
   const isOpen = showResults || showRecents;
   const showTabBar = !lockedType;
 
-  const handleSelect = useCallback((person: Parameters<typeof selectPerson>[0]) => {
+  const handleSelect = useCallback((person: Parameters<typeof selectPerson>[0], refreshPhoto = false) => {
     addPerson(person);
-    selectPerson(person);
+    selectPerson(person, { refreshPhoto });
     setIsFocused(false);
   }, [addPerson, selectPerson]);
 
   const handleRecentSelect = useCallback((recent: RecentPerson) => {
-    handleSelect(recent);
+    // Recents are read straight from localStorage, so any cached photoUrl could be stale
+    // (e.g. an expired signed link) — re-resolve it rather than trusting the persisted value.
+    handleSelect(recent, true);
   }, [handleSelect]);
 
   const selectedOnlyResults: typeof results = selectedPerson

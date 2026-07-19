@@ -111,7 +111,7 @@ export interface UsePersonSearchReturn {
   pagingState: PagingState;
   setInputValue: (v: string) => void;
   setActiveTab: (tab: PersonType) => void;
-  selectPerson: (person: PersonResult) => void;
+  selectPerson: (person: PersonResult, options?: { refreshPhoto?: boolean }) => void;
   clearSelection: () => void;
   loadMore: (tab: PersonType) => void;
   showActiveOnly: boolean;
@@ -220,6 +220,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   const abortControllers = useRef<AbortController[]>([]);
   const justSelectedRef = useRef(false);
+  /** Aborts the in-flight photo refresh (see selectPerson) when a new person is selected before it resolves. */
+  const selectedPhotoAbortRef = useRef<AbortController | null>(null);
   /** Online-only additions (people merged in from the online service but absent from the ES page) per type — online is only fetched on a fresh search, so load-more must reuse this. */
   const onlineExtraByTypeRef = useRef<Record<PersonType, number>>({ asir: 0, soher: 0, ezrach: 0 });
   /** Cached whitelist result (מידור) — specific prisoner IDs this user may see. Injected as ES filter. */
@@ -666,7 +668,10 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => cancelPendingRequests();
+    return () => {
+      cancelPendingRequests();
+      selectedPhotoAbortRef.current?.abort();
+    };
   }, [cancelPendingRequests]);
 
   const setInputValue = useCallback((v: string) => {
@@ -684,13 +689,40 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   }, []);
 
   const selectPerson = useCallback(
-    (person: PersonResult) => {
+    (person: PersonResult, options?: { refreshPhoto?: boolean }) => {
       justSelectedRef.current = true;
-      setSelectedPerson(person);
+      setActiveTabState(person.personType);
       setInputValueState(String(person.data['fullName'] ?? ''));
       onSelect?.(person);
+
+      if (!options?.refreshPhoto || !person.data['photoUrl']) {
+        setSelectedPerson(person);
+        return;
+      }
+
+      // Recent-search entries are read straight from localStorage and may carry a stale
+      // photoUrl (e.g. an expired signed link) — strip it so we never render a broken
+      // <img>, then resolve a fresh one in the background.
+      const { photoUrl: _stale, ...restData } = person.data;
+      const personWithoutPhoto = { ...person, data: restData };
+      setSelectedPerson(personWithoutPhoto);
+
+      selectedPhotoAbortRef.current?.abort();
+      const controller = new AbortController();
+      selectedPhotoAbortRef.current = controller;
+      enrichPersonsWithPhotoUrls({ persons: [personWithoutPhoto], config, signal: controller.signal })
+        .then(([enriched]) => {
+          const freshUrl = enriched?.data['photoUrl'];
+          if (!freshUrl) return;
+          setSelectedPerson((prev) =>
+            prev && prev.id === person.id && prev.personType === person.personType
+              ? { ...prev, data: { ...prev.data, photoUrl: freshUrl } }
+              : prev
+          );
+        })
+        .catch(() => { /* best effort — keep the placeholder if the refresh fails */ });
     },
-    [onSelect]
+    [onSelect, config]
   );
 
   const clearSelection = useCallback(() => {

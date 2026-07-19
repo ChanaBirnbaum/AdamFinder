@@ -48,21 +48,21 @@ const TYPE_CONFIG: {
     type: 'asir',
     label: 'אסיר',
     Icon: PrisonerIcon,
-    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5 plib-w-8 plib-h-8 plib-box-border',
+    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
     idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
   },
   {
     type: 'soher',
     label: 'סוהר',
     Icon: GuardIcon,
-    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5 plib-w-8 plib-h-8 plib-box-border',
+    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
     idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
   },
   {
     type: 'ezrach',
     label: 'אזרח',
     Icon: CitizenIcon,
-    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5 plib-w-8 plib-h-8 plib-box-border',
+    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
     idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
   },
 ];
@@ -102,7 +102,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const visibleTypes = allowedTypes ? TYPE_CONFIG.filter(c => allowedTypes.includes(c.type)) : TYPE_CONFIG;
 
   return (
-    <div className="plib-space-y-1">
+    <div className="plib-relative">
       {/* ── Single bar ──────────────────────────────────────────────────────── */}
       <div
         className={[
@@ -147,47 +147,59 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
         {/* ── Active toggle + type filter icons — visible while focused ─── */}
         {showTypeButtons && (
-          <div className="plib-flex plib-items-center plib-gap-0.5 plib-flex-shrink-0">
+          <>
+            <div className="plib-w-px plib-h-6 plib-bg-divider plib-flex-shrink-0" aria-hidden="true" />
+            <div className="plib-flex plib-items-center plib-gap-0.5 plib-flex-shrink-0">
+              {/* ── Active toggle ─────────────────────────────────────────── */}
+              {activeOnly === undefined && (
+                <Toggle
+                  checked={isActive}
+                  onChange={disabled ? undefined : handleToggle}
+                  className={disabled ? 'plib-opacity-50 plib-pointer-events-none' : ''}
+                />
+              )}
 
-            {/* ── Active toggle ─────────────────────────────────────────── */}
-            {activeOnly === undefined && (
-              <Toggle
-                checked={isActive}
-                onChange={disabled ? undefined : handleToggle}
-                className={disabled ? 'plib-opacity-50 plib-pointer-events-none' : ''}
-              />
-            )}
+              {activeOnly === undefined && visibleTypes.length > 0 && (
+                <div className="plib-w-px plib-h-6 plib-bg-divider plib-flex-shrink-0 plib-mx-1" aria-hidden="true" />
+              )}
 
-            {/* ── Type filter icons ─────────────────────────────────────── */}
-            {visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
-              const isSelected = typeFilter === type;
-              return (
-                <Tip key={type} label={label}>
-                  <button
-                    type="button"
-                    onClick={() => handleTypeClick(type)}
-                    disabled={disabled}
-                    className={[
-                      'plib-flex plib-items-center plib-justify-center plib-transition-all plib-flex-shrink-0',
-                      'focus-visible:plib-outline-none focus-visible:plib-ring-2 focus-visible:plib-ring-primary-main focus-visible:plib-ring-offset-1',
-                      isSelected ? activeClass : idleClass,
-                      disabled ? 'plib-cursor-not-allowed' : 'plib-cursor-pointer',
-                    ].join(' ')}
-                    aria-pressed={isSelected}
-                    aria-label={`סנן לפי ${label}`}
-                  >
-                    <Icon size={28} />
-                  </button>
-                </Tip>
-              );
-            })}
-          </div>
+              {/* ── Type filter icons ─────────────────────────────────────── */}
+              {visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
+                const isSelected = typeFilter === type;
+                return (
+                  <Tip key={type} label={label}>
+                    <button
+                      type="button"
+                      onClick={() => handleTypeClick(type)}
+                      disabled={disabled}
+                      className={[
+                        'plib-flex plib-items-center plib-justify-center plib-transition-all plib-flex-shrink-0',
+                        'focus-visible:plib-outline-none focus-visible:plib-ring-2 focus-visible:plib-ring-primary-main focus-visible:plib-ring-offset-1',
+                        isSelected ? activeClass : idleClass,
+                        disabled ? 'plib-cursor-not-allowed' : 'plib-cursor-pointer',
+                      ].join(' ')}
+                      aria-pressed={isSelected}
+                      aria-label={`סנן לפי ${label}`}
+                    >
+                      <Icon size={28} />
+                    </button>
+                  </Tip>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Hint */}
+      {/* Hint — absolutely positioned so it never reserves layout space; showing/hiding it
+          must not resize this container, since anchored portals (results/recents panels)
+          measure this container's rect to position themselves. */}
       {inputValue.length > 0 && inputValue.length < minChars && (
-        <p className="plib-font-rubik plib-text-sm plib-text-text-muted plib-text-right plib-px-1" role="status" aria-live="polite">
+        <p
+          className="plib-absolute plib-top-full plib-inset-x-0 plib-mt-1 plib-pointer-events-none plib-font-rubik plib-text-sm plib-text-text-muted plib-text-right plib-px-1"
+          role="status"
+          aria-live="polite"
+        >
           הקלד לפחות {minChars} תווים לחיפוש
         </p>
       )}

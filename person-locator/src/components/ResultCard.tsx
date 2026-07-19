@@ -111,7 +111,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
         <div className="plib-flex-1 plib-min-w-0">
           {/* ── Main row ── */}
           <div
-            className="plib-flex plib-items-start plib-gap-3 plib-cursor-pointer"
+            className="plib-flex plib-items-center plib-gap-3 plib-cursor-pointer"
             role="option"
             aria-label={String(person.data['fullName'] ?? '')}
             aria-selected={false}

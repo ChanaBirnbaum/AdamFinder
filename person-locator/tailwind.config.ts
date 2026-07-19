@@ -50,6 +50,7 @@ const config: Config = {
       spacing: {
         '1.25': '0.3125rem', // 5px  — presence-dot offset
         '3.75': '0.9375rem', // 15px — presence-dot size
+        '4.5':  '1.125rem',  // 18px — toggle knob travel (small)
         '5.5':  '1.375rem',  // 22px — toggle knob travel
         input:  '47px',      // FLAG: 47px (not 48px/h-12) per Figma — possible design slip
         photo:  '45.714px',  // FLAG: fractional Figma export value, kept verbatim

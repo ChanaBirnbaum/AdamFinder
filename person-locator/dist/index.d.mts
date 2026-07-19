@@ -416,7 +416,9 @@ interface UsePersonSearchReturn {
     pagingState: PagingState;
     setInputValue: (v: string) => void;
     setActiveTab: (tab: PersonType) => void;
-    selectPerson: (person: PersonResult) => void;
+    selectPerson: (person: PersonResult, options?: {
+        refreshPhoto?: boolean;
+    }) => void;
     clearSelection: () => void;
     loadMore: (tab: PersonType) => void;
     showActiveOnly: boolean;
