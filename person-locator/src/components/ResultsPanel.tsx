@@ -65,10 +65,10 @@ const ResultsPanel = React.forwardRef<HTMLDivElement, ResultsPanelProps>(({
   // replaces the font it previously inherited from the consumer's <body>.
   const panelClass =
     resultDirection === 'up'
-      ? 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-t-xl plib-shadow-lg plib-max-h-64 plib-flex plib-flex-col plib-border plib-border-b-0 plib-border-gray-200 plib-overflow-hidden'
-      : 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-b-xl plib-shadow-lg plib-max-h-64 plib-flex plib-flex-col plib-border plib-border-t-0 plib-border-gray-200 plib-overflow-hidden';
+      ? 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-t-lg plib-shadow-search-top plib-max-h-64 plib-flex plib-flex-col plib-border plib-border-b-0 plib-border-gray-200 plib-overflow-hidden'
+      : 'plib-root plib-font-sans plib-z-50 plib-bg-white plib-rounded-b-lg plib-shadow-search-bottom plib-max-h-64 plib-flex plib-flex-col plib-border plib-border-t-0 plib-border-gray-200 plib-overflow-hidden';
 
-  const scrollClass = 'plib-flex-1 plib-overflow-y-auto';
+  const scrollClass = 'plib-flex-1 plib-overflow-y-auto plib-scrollbar-thin';
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
