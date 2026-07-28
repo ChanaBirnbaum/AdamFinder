@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { PersonLocatorProps, PersonType } from '../types';
 import Toggle from './Toggle';
+import Tip from './Tooltip';
 import { SearchIcon, CitizenIcon, GuardIcon, PrisonerIcon } from './icons';
 
 interface SearchInputProps {
@@ -22,20 +23,6 @@ interface SearchInputProps {
   hasSelectedPerson?: boolean;
   isSearchActive?: boolean;
 }
-
-// ── Tooltip wrapper ────────────────────────────────────────────────────────────
-const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="plib-relative plib-group plib-flex plib-items-center">
-    {children}
-    <div
-      className="plib-pointer-events-none plib-absolute plib-bottom-full plib-mb-1.5 plib-left-1/2 -plib-translate-x-1/2 plib-whitespace-nowrap plib-rounded-md plib-bg-gray-800 plib-px-2 plib-py-1 plib-text-2xs plib-text-white plib-opacity-0 group-hover:plib-opacity-100 plib-transition-opacity plib-duration-150 plib-z-50 plib-shadow-lg"
-      role="tooltip"
-    >
-      {label}
-      <div className="plib-absolute plib-top-full plib-left-1/2 -plib-translate-x-1/2 plib-border-4 plib-border-transparent plib-border-t-gray-800" />
-    </div>
-  </div>
-);
 
 const TYPE_CONFIG: {
   type: PersonType;
