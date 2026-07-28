@@ -95,7 +95,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         className={[
           'plib-group/filters plib-flex plib-items-center plib-gap-2 plib-bg-white plib-px-4 plib-h-input plib-transition-all',
           isOpen
-            ? 'plib-rounded-t-lg plib-rounded-b-none plib-border-b-0 plib-border-2 plib-border-primary-main plib-shadow-search'
+            ? 'plib-rounded-t-lg plib-rounded-b-none plib-border plib-border-primary-main plib-shadow-search-top'
             : 'plib-rounded-lg plib-border plib-border-primary-main',
           disabled ? 'plib-opacity-60 plib-cursor-not-allowed' : '',
         ].join(' ')}

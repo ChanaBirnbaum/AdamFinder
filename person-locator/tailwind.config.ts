@@ -67,6 +67,12 @@ const config: Config = {
       },
       boxShadow: {
         search: '0px 4px 12px 0px rgba(6,77,173,0.15)',
+        // Split elevation for the OPEN search assembly (input on top, results panel
+        // below). Each half casts away from the shared seam — the input's halo goes
+        // up + sides, the panel's goes down + sides — so they form one soft brand-blue
+        // shadow around the whole thing without doubling into a hard line at the join.
+        'search-top':    '0 -4px 16px -8px rgba(6,77,173,0.12)',
+        'search-bottom': '0 10px 22px -8px rgba(6,77,173,0.15)',
       },
       animation: {
         fadeIn: 'fadeIn 150ms ease-out',

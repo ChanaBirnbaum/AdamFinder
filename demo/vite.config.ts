@@ -24,6 +24,34 @@ function makeFakeHits(query: string, from: number, size: number) {
   const types = ['asir', 'soher', 'ezrach'] as const;
   return Array.from({ length: size }, (_, i) => {
     const idx = from + i;
+
+    // DEMO: first hit on the first page is an asir with a very long name AND several
+    // custody badges — to eyeball that the title truncates + tooltips without the
+    // badges stealing its width. Remove this block to restore the plain fake data.
+    if (idx === 0) {
+      return {
+        _index: 'persons',
+        _id: 'demo-long-name',
+        _source: {
+          fullName: 'אברהם יצחק בן-מנחם מנדל שניאורסון הלוי אבו-ראס אלחווארי השלישי',
+          idNumber: '312345678',
+          personType: 'asir',
+          isActive: true,
+          prisonerNumber: 'P999',
+          shibutz: 'כלא מגידו · אגף ב׳ · מחלקת ביטחון מוגבר',
+          // Badges are built from these raw fields (see utils/mishmorot.ts), NOT from
+          // a `mishmorot` array. Values must be פעיל / מועמד / משוחרר to map to a status.
+          text_status_xx: 'פעיל',   // → badge "סס" (active)
+          text_status_yy: 'משוחרר', // → badge "שפוט" (past)
+          text_status_m: 'מועמד',   // → badge "עצור" (future)
+          crimeType: 'עבירות אלימות',
+          cellBlock: 'אגף ב',
+          entryDate: '1/03/2023',
+          sentenceEnd: '1/03/2027',
+        },
+      };
+    }
+
     const t = types[idx % 3];
     const isActive = idx % 4 !== 0; // every 4th is inactive → shows grayscale + gray dot
     const name = `${NAMES[idx % NAMES.length]} ${idx + 1}`;

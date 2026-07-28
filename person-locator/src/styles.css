@@ -69,6 +69,24 @@
   list-style: none;
 }
 
+/* Thin light-grey scrollbar for the results scroll container. Scoped under
+   .plib-root so it never touches the consumer's own scrollable elements.
+   Colour comes from the grey.300 config token via theme(). */
+.plib-root .plib-scrollbar-thin {
+  scrollbar-width: thin;                                  /* Firefox: thin track */
+  scrollbar-color: theme('colors.grey.300') transparent; /* Firefox: thumb / track */
+}
+.plib-root .plib-scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.plib-root .plib-scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.plib-root .plib-scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: theme('colors.grey.300');
+  border-radius: 9999px;
+}
+
 /* 3. Tailwind layers. Preflight is disabled, so `@tailwind base` emits ONLY
    the --tw-* variable defaults that transform/ring/filter utilities depend
    on (transforms, rings and grayscale break without them) — and with

@@ -38,10 +38,12 @@ declare function Avatar({ photoUrl, online, className, }: {
 }): react_jsx_runtime.JSX.Element;
 
 type BadgeStatus = 'active' | 'future' | 'past';
-declare function Badge({ status, label: labelOverride, className }: {
+type BadgeSize = 'default' | 'compact';
+declare function Badge({ status, label: labelOverride, className, size }: {
     status: BadgeStatus;
     label?: string;
     className?: string;
+    size?: BadgeSize;
 }): react_jsx_runtime.JSX.Element;
 
 /** Primitive types that terminate path recursion. */
