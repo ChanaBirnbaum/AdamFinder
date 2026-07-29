@@ -3,6 +3,7 @@ import type { PersonLocatorProps, PersonResult, PersonType } from '../types';
 import { highlightMatch } from '../utils/highlightMatch';
 import { CitizenIcon, GuardIcon, PrisonerIcon } from './icons';
 import Badge, { type BadgeStatus } from './Badge';
+import Tip from './Tooltip';
 
 interface ResultCardProps {
   person: PersonResult;
@@ -24,20 +25,6 @@ function TypeIcon({ type }: { type: PersonType }) {
   if (type === 'soher')  return <GuardIcon className="plib-text-primary-main" />;
   return <PrisonerIcon className="plib-text-primary-main" />;
 }
-
-// ── Inline tooltip ─────────────────────────────────────────────────────────────
-const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="plib-relative plib-group plib-flex plib-items-center">
-    {children}
-    <div
-      className="plib-pointer-events-none plib-absolute plib-bottom-full plib-mb-1.5 plib-left-1/2 -plib-translate-x-1/2 plib-whitespace-nowrap plib-rounded-md plib-bg-gray-800 plib-px-2 plib-py-1 plib-text-2xs plib-text-white plib-opacity-0 group-hover:plib-opacity-100 plib-transition-opacity plib-duration-150 plib-z-50 plib-shadow-lg"
-      role="tooltip"
-    >
-      {label}
-      <div className="plib-absolute plib-top-full plib-left-1/2 -plib-translate-x-1/2 plib-border-4 plib-border-transparent plib-border-t-gray-800" />
-    </div>
-  </div>
-);
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
 const TikAsirIcon = () => (
