@@ -126,19 +126,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(person); }
   };
 
-  // ── Text rows ──────────────────────────────────────────────────────────────
   const fullName = String(person.data['fullName'] ?? '');
-  const idVal = (displayIdNumber ?? []).includes(person.personType) ? person.data['idNumber'] : undefined;
-  const [primaryId, ...restRow2] = [idVal, person.data['prisonerNumber'], person.data['rank']].filter(Boolean);
-  const row3Parts = [person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].filter(Boolean);
-  // Body lines below the title, built as a list and filtered to the ones that have
-  // content — so this stays correct no matter which rows a given person type yields.
-  // The trailing rail (badges + type icon) attaches to the LAST line only, so it
-  // competes for width solely with the text physically beside it; every line above
-  // (title included) keeps the full width. Empty body → rail rides the title line.
-  const bodyLines = [restRow2.join(' · '), row3Parts.join(' · ')].filter((s) => s.length > 0);
-  const badgesOnTitle = bodyLines.length === 0;
-
   const mishmorot = person.data['mishmorot'] as Array<{ title: string; status: BadgeStatus }> | undefined;
   const { ref: nameRef, truncated: nameTruncated } = useIsTruncated(fullName);
 
@@ -154,7 +142,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
     </button>
   ) : null;
 
-  // Custody badges + person-type icon; pinned to the end of whichever row is last.
+  // Custody badges + person-type icon; sits at the bottom-end of the body block
+  // (or the title line when there's no body text).
   const trailing = (
     <div className="plib-flex plib-items-end plib-gap-2 plib-flex-shrink-0">
       {mishmorot?.length ? (
@@ -198,66 +187,70 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
         {/* ── Info ── */}
         <div className="plib-flex-1 plib-min-w-0">
-
-          {/* Row 1 – name | id number */}
-          <div className="plib-flex plib-items-center plib-gap-1.5 plib-min-w-0">
-            <p ref={nameRef} className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-truncate plib-min-w-0">
-              {highlightMatch(fullName, query)}
-            </p>
-            {primaryId != null && (
-              <>
-                <span className="plib-w-px plib-h-4 plib-bg-divider plib-flex-shrink-0" aria-hidden="true" />
-                <p className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-flex-shrink-0">
-                  {String(primaryId)}
-                </p>
-              </>
-            )}
-            {!hideNavigationLinks && person.personType === 'asir' && openTikAsir && (
-              <Tip label="תיק אסיר">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); openTikAsir(person); }}
-                  className="plib-text-rose-400 hover:plib-text-rose-600 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-rose-400 plib-rounded plib-transition-colors"
-                  aria-label={`תיק אסיר – ${fullName}`}
-                >
-                  <TikAsirIcon />
-                </button>
-              </Tip>
-            )}
-            {!hideNavigationLinks && navigate && (
-              <Tip label="פרופיל">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/person/${person.id}`); }}
-                  className="plib-text-gray-300 hover:plib-text-gray-500 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-gray-400 plib-rounded plib-transition-colors"
-                  aria-label={`פרופיל – ${fullName}`}
-                >
-                  <ExternalIcon />
-                </button>
-              </Tip>
-            )}
-            {(chevronBtn || badgesOnTitle) && (
-              <div className="plib-ml-auto plib-flex plib-items-center plib-gap-2 plib-flex-shrink-0 plib-pl-1">
-                {chevronBtn}
-                {badgesOnTitle && trailing}
-              </div>
-            )}
-          </div>
-
-          {/* Body lines — the last one shares its row with the badges (so only it can
-              truncate against them + tooltip); the rest stay full-width and wrap. */}
-          {bodyLines.map((line, i) => {
-            const isLastLine = i === bodyLines.length - 1;
-            const base = 'plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-leading-tight plib-flex-1 plib-min-w-0';
+          {(() => {
+            const idVal = (displayIdNumber ?? []).includes(person.personType) ? person.data['idNumber'] : undefined;
+            const [primaryId, ...restRow2] = [idVal, person.data['prisonerNumber'], person.data['rank']].filter(Boolean);
+            const detail = 'plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-leading-tight plib-truncate';
+            const row2 = restRow2.join(' · ');
+            const row3 = [person.data['unit'], person.data['shibutz'], !HideMishmorot ? person.data['phone'] : undefined].filter(Boolean).join(' · ');
             return (
-              <div key={i} className="plib-flex plib-items-end plib-gap-2 plib-mt-0.5">
-                {isLastLine
-                  ? <TruncatingText text={line} className={`${base} plib-truncate`} />
-                  : <p className={base}>{line}</p>}
-                {isLastLine && trailing}
-              </div>
+              <>
+                {/* Title on its own line, kept at full width. */}
+                <div className="plib-flex plib-items-center plib-gap-1.5 plib-min-w-0">
+                  <p ref={nameRef} className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-truncate plib-min-w-0">
+                    {highlightMatch(fullName, query)}
+                  </p>
+                  {primaryId != null && (
+                    <>
+                      <span className="plib-w-px plib-h-4 plib-bg-divider plib-flex-shrink-0" aria-hidden="true" />
+                      <p className="plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-flex-shrink-0">
+                        {String(primaryId)}
+                      </p>
+                    </>
+                  )}
+                  {!hideNavigationLinks && person.personType === 'asir' && openTikAsir && (
+                    <Tip label="תיק אסיר">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openTikAsir(person); }}
+                        className="plib-text-rose-400 hover:plib-text-rose-600 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-rose-400 plib-rounded plib-transition-colors"
+                        aria-label={`תיק אסיר – ${fullName}`}
+                      >
+                        <TikAsirIcon />
+                      </button>
+                    </Tip>
+                  )}
+                  {!hideNavigationLinks && navigate && (
+                    <Tip label="פרופיל">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/person/${person.id}`); }}
+                        className="plib-text-gray-300 hover:plib-text-gray-500 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-gray-400 plib-rounded plib-transition-colors"
+                        aria-label={`פרופיל – ${fullName}`}
+                      >
+                        <ExternalIcon />
+                      </button>
+                    </Tip>
+                  )}
+                  {chevronBtn && (
+                    <div className="plib-ml-auto plib-flex plib-items-center plib-flex-shrink-0 plib-pl-1">
+                      {chevronBtn}
+                    </div>
+                  )}
+                </div>
+
+                {/* Detail rows next to the badges: the text column truncates against
+                    them (+ tooltip) when it runs long; the badges stay pinned bottom. */}
+                <div className="plib-flex plib-items-end plib-gap-2 plib-mt-0.5">
+                  <div className="plib-flex-1 plib-min-w-0">
+                    {row2 && <TruncatingText text={row2} className={detail} />}
+                    {row3 && <TruncatingText text={row3} className={`${detail} ${row2 ? 'plib-mt-0.5' : ''}`} />}
+                  </div>
+                  {trailing}
+                </div>
+              </>
             );
-          })}
+          })()}
         </div>
       </div>
 

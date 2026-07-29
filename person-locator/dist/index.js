@@ -2027,11 +2027,6 @@ var ResultCard = ({
     }
   };
   const fullName = String(person.data["fullName"] ?? "");
-  const idVal = (displayIdNumber ?? []).includes(person.personType) ? person.data["idNumber"] : void 0;
-  const [primaryId, ...restRow2] = [idVal, person.data["prisonerNumber"], person.data["rank"]].filter(Boolean);
-  const row3Parts = [person.data["unit"], person.data["shibutz"], !HideMishmorot ? person.data["phone"] : void 0].filter(Boolean);
-  const bodyLines = [restRow2.join(" \xB7 "), row3Parts.join(" \xB7 ")].filter((s) => s.length > 0);
-  const badgesOnTitle = bodyLines.length === 0;
   const mishmorot = person.data["mishmorot"];
   const { ref: nameRef, truncated: nameTruncated } = useIsTruncated(fullName);
   const chevronBtn = hasExpandableFields ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
@@ -2074,53 +2069,56 @@ var ResultCard = ({
                 showPhoto ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("img", { src: person.data["photoUrl"], alt: fullName, className: `plib-w-10 plib-h-10 plib-rounded plib-object-cover plib-border plib-border-photo-frame ${!person.isActive ? "plib-grayscale" : ""}` }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "plib-w-10 plib-h-10 plib-rounded plib-bg-grey-100 plib-flex plib-items-center plib-justify-center plib-border plib-border-photo-frame", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("svg", { xmlns: "http://www.w3.org/2000/svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "currentColor", className: "plib-text-text-disabled", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("path", { d: "M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" }) }) }),
                 /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: `plib-absolute -plib-top-1.25 -plib-right-1.25 plib-w-3.75 plib-h-3.75 plib-rounded-full plib-border-2 plib-border-white ${person.isActive ? "plib-bg-online" : "plib-bg-grey-400"}`, "aria-hidden": "true" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "plib-flex-1 plib-min-w-0", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "plib-flex plib-items-center plib-gap-1.5 plib-min-w-0", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { ref: nameRef, className: "plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-truncate plib-min-w-0", children: highlightMatch(fullName, query) }),
-                  primaryId != null && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "plib-w-px plib-h-4 plib-bg-divider plib-flex-shrink-0", "aria-hidden": "true" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-flex-shrink-0", children: String(primaryId) })
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "plib-flex-1 plib-min-w-0", children: (() => {
+                const idVal = (displayIdNumber ?? []).includes(person.personType) ? person.data["idNumber"] : void 0;
+                const [primaryId, ...restRow2] = [idVal, person.data["prisonerNumber"], person.data["rank"]].filter(Boolean);
+                const detail = "plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-leading-tight plib-truncate";
+                const row2 = restRow2.join(" \xB7 ");
+                const row3 = [person.data["unit"], person.data["shibutz"], !HideMishmorot ? person.data["phone"] : void 0].filter(Boolean).join(" \xB7 ");
+                return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "plib-flex plib-items-center plib-gap-1.5 plib-min-w-0", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { ref: nameRef, className: "plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-truncate plib-min-w-0", children: highlightMatch(fullName, query) }),
+                    primaryId != null && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "plib-w-px plib-h-4 plib-bg-divider plib-flex-shrink-0", "aria-hidden": "true" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "plib-font-rubik plib-font-medium plib-text-text-primary plib-text-base plib-leading-tight plib-flex-shrink-0", children: String(primaryId) })
+                    ] }),
+                    !hideNavigationLinks && person.personType === "asir" && openTikAsir && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Tip2, { label: "\u05EA\u05D9\u05E7 \u05D0\u05E1\u05D9\u05E8", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          openTikAsir(person);
+                        },
+                        className: "plib-text-rose-400 hover:plib-text-rose-600 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-rose-400 plib-rounded plib-transition-colors",
+                        "aria-label": `\u05EA\u05D9\u05E7 \u05D0\u05E1\u05D9\u05E8 \u2013 ${fullName}`,
+                        children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(TikAsirIcon, {})
+                      }
+                    ) }),
+                    !hideNavigationLinks && navigate && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Tip2, { label: "\u05E4\u05E8\u05D5\u05E4\u05D9\u05DC", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          navigate(`/person/${person.id}`);
+                        },
+                        className: "plib-text-gray-300 hover:plib-text-gray-500 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-gray-400 plib-rounded plib-transition-colors",
+                        "aria-label": `\u05E4\u05E8\u05D5\u05E4\u05D9\u05DC \u2013 ${fullName}`,
+                        children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(ExternalIcon, {})
+                      }
+                    ) }),
+                    chevronBtn && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "plib-ml-auto plib-flex plib-items-center plib-flex-shrink-0 plib-pl-1", children: chevronBtn })
                   ] }),
-                  !hideNavigationLinks && person.personType === "asir" && openTikAsir && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Tip2, { label: "\u05EA\u05D9\u05E7 \u05D0\u05E1\u05D9\u05E8", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        openTikAsir(person);
-                      },
-                      className: "plib-text-rose-400 hover:plib-text-rose-600 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-rose-400 plib-rounded plib-transition-colors",
-                      "aria-label": `\u05EA\u05D9\u05E7 \u05D0\u05E1\u05D9\u05E8 \u2013 ${fullName}`,
-                      children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(TikAsirIcon, {})
-                    }
-                  ) }),
-                  !hideNavigationLinks && navigate && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Tip2, { label: "\u05E4\u05E8\u05D5\u05E4\u05D9\u05DC", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        navigate(`/person/${person.id}`);
-                      },
-                      className: "plib-text-gray-300 hover:plib-text-gray-500 focus-visible:plib-outline-none focus-visible:plib-ring-1 focus-visible:plib-ring-gray-400 plib-rounded plib-transition-colors",
-                      "aria-label": `\u05E4\u05E8\u05D5\u05E4\u05D9\u05DC \u2013 ${fullName}`,
-                      children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(ExternalIcon, {})
-                    }
-                  ) }),
-                  (chevronBtn || badgesOnTitle) && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "plib-ml-auto plib-flex plib-items-center plib-gap-2 plib-flex-shrink-0 plib-pl-1", children: [
-                    chevronBtn,
-                    badgesOnTitle && trailing
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "plib-flex plib-items-end plib-gap-2 plib-mt-0.5", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "plib-flex-1 plib-min-w-0", children: [
+                      row2 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(TruncatingText, { text: row2, className: detail }),
+                      row3 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(TruncatingText, { text: row3, className: `${detail} ${row2 ? "plib-mt-0.5" : ""}` })
+                    ] }),
+                    trailing
                   ] })
-                ] }),
-                bodyLines.map((line, i) => {
-                  const isLastLine = i === bodyLines.length - 1;
-                  const base = "plib-font-rubik plib-font-normal plib-text-sm plib-text-text-muted plib-text-right plib-leading-tight plib-flex-1 plib-min-w-0";
-                  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "plib-flex plib-items-end plib-gap-2 plib-mt-0.5", children: [
-                    isLastLine ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(TruncatingText, { text: line, className: `${base} plib-truncate` }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: base, children: line }),
-                    isLastLine && trailing
-                  ] }, i);
-                })
-              ] })
+                ] });
+              })() })
             ]
           }
         ),
