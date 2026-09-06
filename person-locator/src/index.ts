@@ -27,5 +27,6 @@ export type {
   QueryWrapMode,
   AllowedListFilter,
   ScriptSort,
+  ScoreTiers,
   ElasticQuerySettings,
 } from './types';

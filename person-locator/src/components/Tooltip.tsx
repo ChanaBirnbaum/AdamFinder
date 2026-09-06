@@ -45,13 +45,17 @@ const Tip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, ch
       {children}
       {visible &&
         createPortal(
-          <div
-            className="plib-pointer-events-none plib-fixed plib-whitespace-nowrap plib-rounded-md plib-bg-gray-800 plib-px-2 plib-py-1 plib-text-2xs plib-text-white plib-shadow-lg plib-z-50 plib-animate-fadeIn"
-            style={style}
-            role="tooltip"
-          >
-            {label}
-            <div className="plib-absolute plib-top-full plib-left-1/2 -plib-translate-x-1/2 plib-border-4 plib-border-transparent plib-border-t-gray-800" />
+          // Two elements on purpose: the outer one owns the positioning
+          // transform (translateX(-50%) for centering), the inner one owns the
+          // fadeIn animation. fadeIn animates `transform`, and an animated
+          // value beats inline styles — sharing one element would drop the
+          // centering for the animation's duration and snap it into place at
+          // the end.
+          <div className="plib-pointer-events-none plib-z-50" style={style} role="tooltip">
+            <div className="plib-relative plib-whitespace-nowrap plib-rounded-md plib-bg-gray-800 plib-px-2 plib-py-1 plib-text-2xs plib-text-white plib-shadow-lg plib-animate-fadeIn">
+              {label}
+              <div className="plib-absolute plib-top-full plib-left-1/2 -plib-translate-x-1/2 plib-border-4 plib-border-transparent plib-border-t-gray-800" />
+            </div>
           </div>,
           document.body,
         )}

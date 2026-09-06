@@ -219,6 +219,14 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   pagingStateRef.current = pagingState;
 
   const abortControllers = useRef<AbortController[]>([]);
+  /**
+   * Monotonic id of the most recently started search. Aborting the in-flight requests is not
+   * enough on its own: Promise.allSettled swallows the AbortError, and a run whose requests had
+   * already resolved cannot be cancelled at all — either way the superseded run would keep going
+   * and write its (older, broader) results over the newer ones. Every run captures its id and
+   * bails after each await once a newer run has started.
+   */
+  const runIdRef = useRef(0);
   const justSelectedRef = useRef(false);
   /** Aborts the in-flight photo refresh (see selectPerson) when a new person is selected before it resolves. */
   const selectedPhotoAbortRef = useRef<AbortController | null>(null);
@@ -365,6 +373,9 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const cancelPendingRequests = useCallback(() => {
     abortControllers.current.forEach((c) => c.abort());
     abortControllers.current = [];
+    // Retire the in-flight run as well: aborting only stops requests that are still open, while
+    // the run-id bump also stops one that is mid-flight between its awaits.
+    runIdRef.current++;
   }, []);
 
   const effectiveActiveOnly =
@@ -378,6 +389,10 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const query = normalizeQuery(rawQuery);
       cancelPendingRequests();
 
+      const runId = ++runIdRef.current;
+      /** True once a newer search has started — this run must not touch any state. */
+      const isStale = () => runIdRef.current !== runId;
+
       const controllers = [
         new AbortController(), // 0: ES asirs
         new AbortController(), // 1: ES sohers
@@ -390,6 +405,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
       if (!isLoadMore) {
         setIsLoading(true);
+        // A fresh search supersedes any in-flight load-more, which now bails before clearing this.
+        setIsLoadingMore(false);
         setError(null);
         setIsOffline(false);
         resetPaging();
@@ -403,12 +420,14 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       // hardcoded DEFAULT_QUERY_SETTINGS fields.
       if (remoteFieldConfigPromiseRef.current) {
         await remoteFieldConfigPromiseRef.current;
+        if (isStale()) return;
       }
 
       // If fallbackToOfflineIfNoAuth is on, wait for the permission check to complete
       if (fallbackToOfflineIfNoAuth && personPermissionPromiseRef.current) {
         await personPermissionPromiseRef.current;
         personPermissionPromiseRef.current = null; // only await once
+        if (isStale()) return;
       }
 
       // No permission at all for a given type → use offline for that type (הרשאת איתור נדחתה)
@@ -463,6 +482,8 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const [asirSettled, soherSettled, ezrachSettled, onlinePrisonerSettled, onlineGuardSettled] =
         await Promise.allSettled([...esPromises, onlinePrisonerPromise, onlineGuardPromise]);
 
+      if (isStale()) return;
+
       // Client-side filtering — mirrors the ES filter clause so all three sources agree.
       const rawOnlinePrisoners: PersonResult[] =
         onlinePrisonerSettled.status === 'fulfilled' ? (onlinePrisonerSettled.value as PersonResult[]) : [];
@@ -504,7 +525,9 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
             .filter((pt) => offlineNeededTypes.has(pt))
             .map(async (pt) => {
               const offlineController = new AbortController();
-              abortControllers.current.push(offlineController);
+              // Push onto this run's own array — abortControllers.current may already have been
+              // replaced by a newer run, which would leave this request uncancellable.
+              controllers.push(offlineController);
               const offlineResults = await searchOffline({
                 query,
                 personType: pt,
@@ -522,6 +545,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
               return { pt, offlineResults: offlineResults.filter(filterPredicate) };
             })
         );
+        if (isStale()) return;
         for (const settled of offlineSettled) {
           if (settled.status === 'fulfilled') {
             offlineByType[settled.value.pt] = settled.value.offlineResults;
@@ -530,7 +554,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       }
 
       // Banner only for a genuine ES outage — permission-based fallback is expected behaviour, not an outage.
-      if (esFailedTypes.size > 0) setIsOffline(true);
+      if (esFailedTypes.size > 0 && !isStale()) setIsOffline(true);
 
       // Extract ES results per type
       const getESResult = (
@@ -559,6 +583,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         config,
         signal: controllers[5].signal,
       });
+      if (isStale()) return;
       const enrichedAll = [...enrichedOnline, ...offlinePersons];
 
       const asirEnriched = enrichedAll.filter((p) => p.personType === 'asir');
@@ -678,11 +703,16 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     setInputValueState(v);
     setSelectedPerson(null);
     if (v.length < minChars) {
+      // Below minChars no search will run, so nothing would supersede a search still in flight
+      // for the longer text — cancel it explicitly or its results would land on an empty box.
+      cancelPendingRequests();
       setResults(emptyResults);
       setError(null);
       setIsOffline(false);
+      setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [minChars]);
+  }, [minChars, cancelPendingRequests]);
 
   const setActiveTab = useCallback((tab: PersonType) => {
     setActiveTabState(tab);
@@ -726,14 +756,17 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   );
 
   const clearSelection = useCallback(() => {
+    cancelPendingRequests();
     setInputValueState('');
     setResults(emptyResults);
     setSelectedPerson(null);
     setError(null);
     setIsOffline(false);
+    setIsLoading(false);
+    setIsLoadingMore(false);
     resetPaging();
     onClear?.();
-  }, [onClear, resetPaging]);
+  }, [onClear, resetPaging, cancelPendingRequests]);
 
   const loadMore = useCallback(
     (tab: PersonType) => {

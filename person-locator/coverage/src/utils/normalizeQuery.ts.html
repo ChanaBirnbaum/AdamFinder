@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>16/16</span>
+                <span class='fraction'>0/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>8/8</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>16/16</span>
+                <span class='fraction'>0/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -103,15 +103,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -122,29 +120,31 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">25x</span>
-<span class="cline-any cline-yes">25x</span>
-<span class="cline-any cline-yes">25x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * English→Hebrew keyboard-layout map (standard Hebrew keyboard, physical key position).
  * Not a phonetic transliteration — e.g. 't' (positioned where 'א' sits) maps to 'א', not to a
  * phonetically similar letter.
  */
-const KEY_POSITION_MAP: Record&lt;string, string&gt; = {
-  q: '/', w: "'", e: 'ק', r: 'ר', t: 'א', y: 'ט', u: 'ו', i: 'ן', o: 'ם', p: 'פ',
-  a: 'ש', s: 'ד', d: 'ג', f: 'כ', g: 'ע', h: 'י', j: 'ח', k: 'ל', l: 'ך',
-  z: 'ז', x: 'ס', c: 'ב', v: 'ה', b: 'נ', n: 'מ', m: 'צ',
-};
+<span class="cstat-no" title="statement not covered" >const KEY_POSITION_MAP: Record&lt;string, string&gt; = {</span>
+<span class="cstat-no" title="statement not covered" >  q: '/', w: "'", e: 'ק', r: 'ר', t: 'א', y: 'ט', u: 'ו', i: 'ן', o: 'ם', p: 'פ',</span>
+<span class="cstat-no" title="statement not covered" >  a: 'ש', s: 'ד', d: 'ג', f: 'כ', g: 'ע', h: 'י', j: 'ח', k: 'ל', l: 'ך',</span>
+<span class="cstat-no" title="statement not covered" >  z: 'ז', x: 'ס', c: 'ב', v: 'ה', b: 'נ', n: 'מ', m: 'צ',</span>
+<span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;
-const HAS_LATIN_LETTER = /[a-z]/i;
+<span class="cstat-no" title="statement not covered" >const HAS_LATIN_LETTER = /[a-z]/i;</span>
 &nbsp;
 /**
  * Converts a query left typed on an English keyboard layout into the Hebrew it was meant to
@@ -157,17 +157,17 @@ const HAS_LATIN_LETTER = /[a-z]/i;
  *
  * Non-Latin characters (digits, spaces, hyphens, Hebrew letters already) pass through unchanged.
  */
-export function normalizeQuery(query: string | null | undefined): string {
-  if (!query) return '';
-  if (!HAS_LATIN_LETTER.test(query)) return query;
+<span class="cstat-no" title="statement not covered" >export function normalizeQuery(query: string | null | undefined): string {</span>
+<span class="cstat-no" title="statement not covered" >  if (!query) return '';</span>
+<span class="cstat-no" title="statement not covered" >  if (!HAS_LATIN_LETTER.test(query)) return query;</span>
 &nbsp;
-  let result = '';
-  for (const char of query) {
-    const lower = char.toLowerCase();
-    result += KEY_POSITION_MAP[lower] ?? char;
-  }
-  return result;
-}
+<span class="cstat-no" title="statement not covered" >  let result = '';</span>
+<span class="cstat-no" title="statement not covered" >  for (const char of query) {</span>
+<span class="cstat-no" title="statement not covered" >    const lower = char.toLowerCase();</span>
+<span class="cstat-no" title="statement not covered" >    result += KEY_POSITION_MAP[lower] ?? char;</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  return result;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -175,7 +175,7 @@ export function normalizeQuery(query: string | null | undefined): string {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-05T10:10:28.289Z
+                at 2026-07-29T08:20:44.200Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

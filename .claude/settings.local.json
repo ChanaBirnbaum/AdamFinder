@@ -38,7 +38,11 @@
       "Bash(grep -oE '\\\\.plib-translate-x-5\\\\\\\\\\\\\\\\\\\\.5 ?\\\\{[^}]*' dist/index.mjs)",
       "Bash(grep -oE '--tw-ring-offset-width: 0px' dist/index.mjs)",
       "Bash(npm pack *)",
-      "Bash(mkdir -p \"c:/Users/user1/AdamFinder/playground\")"
+      "Bash(mkdir -p \"c:/Users/user1/AdamFinder/playground\")",
+      "Bash(node scripts/validate_palette.js \"#2f5d8c,#8a94a6\" --mode light)",
+      "Bash(node scripts/validate_palette.js \"#85aed6,#6f7686\" --mode dark)",
+      "Bash(node scripts/validate_palette.js \"#12689f,#5c6472\" --mode light)",
+      "Bash(node scripts/validate_palette.js \"#4fa3dc,#8b93a2\" --mode dark)"
     ]
   }
 }

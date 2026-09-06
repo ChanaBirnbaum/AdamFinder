@@ -1,0 +1,1322 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>למה חיפוש "774" לא מחזיר קודם את 774 — וכיצד לתקן</title>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}</style>
+<style>
+/* ── print ───────────────────────────────────────────────────────────── */
+@page { margin: 14mm 12mm; }
+
+@media print {
+  /* Always print the light palette — a dark ground wastes toner and reads worse. */
+  :root {
+    --ink: #14171c; --ink-2: #3f4654; --ink-3: #5f6675;
+    --paper: #ffffff; --card: #ffffff; --rule: #c9cdd6; --rule-soft: #e8ebf0;
+    --accent: #1d4d79; --accent-ink: #ffffff; --accent-dim: #eaf1f7;
+    --good: #35604a; --good-bg: #e6efe9;
+    --warn: #7a5a12; --warn-bg: #f5eddb;
+    --bad:  #8d3324; --bad-bg:  #f7e7e3;
+    --chart: #12689f; --chart-fade: #12689f40;
+  }
+
+  html, body { background: #fff; font-size: 10.5pt; }
+
+  /* Chrome drops background fills by default; the chart and badges depend on them. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .doc { max-width: none; padding: 0; gap: 1.6rem; }
+
+  /* Keep every self-contained block whole across a page break. */
+  .opt, .rung, .rec-row, .bar-row, .callout, figure.chart,
+  .demo, .qs li, tr, pre, details { break-inside: avoid; }
+
+  h1, h2, h3 { break-after: avoid; }
+  section { break-inside: auto; }
+
+  /* Panes that scroll on screen must print in full instead. */
+  .scroll, pre { overflow: visible; }
+  table { min-width: 0; }
+  pre { white-space: pre-wrap; word-break: break-word; font-size: 8pt; }
+
+  summary { list-style: none; }
+  summary::marker, summary::-webkit-details-marker { display: none; }
+
+  a { text-decoration: none; color: inherit; }
+}
+</style>
+</head>
+<body>
+<style>
+  :root {
+    --ink:        #14171c;
+    --ink-2:      #4b5262;
+    --ink-3:      #6f7686;
+    --paper:      #f2f4f6;
+    --card:       #ffffff;
+    --rule:       #dbdfe6;
+    --rule-soft:  #e8ebf0;
+    --accent:     #2f5d8c;
+    --accent-ink: #ffffff;
+    --accent-dim: #e6eef6;
+    --good:       #3f6b52;
+    --good-bg:    #e6efe9;
+    --warn:       #8a6716;
+    --warn-bg:    #f5eddb;
+    --bad:        #9d3c2a;
+    --bad-bg:     #f7e7e3;
+    /* chart — single-series hue, validated against the card surface */
+    --chart:      #12689f;
+    --chart-fade: #12689f40;
+
+    --sans: "Segoe UI", "Helvetica Neue", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e6e9ee; --ink-2: #a3abbb; --ink-3: #7d8494;
+      --paper: #0f1216; --card: #171b21; --rule: #2b313a; --rule-soft: #232830;
+      --accent: #85aed6; --accent-ink: #0f1216; --accent-dim: #1c2733;
+      --good: #8fc4a5; --good-bg: #1a2620;
+      --warn: #d9b463; --warn-bg: #2a2416;
+      --bad:  #e0897a; --bad-bg:  #2c1d1a;
+      --chart: #3d92cc; --chart-fade: #3d92cc47;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e6e9ee; --ink-2: #a3abbb; --ink-3: #7d8494;
+    --paper: #0f1216; --card: #171b21; --rule: #2b313a; --rule-soft: #232830;
+    --accent: #85aed6; --accent-ink: #0f1216; --accent-dim: #1c2733;
+    --good: #8fc4a5; --good-bg: #1a2620;
+    --warn: #d9b463; --warn-bg: #2a2416;
+    --bad:  #e0897a; --bad-bg:  #2c1d1a;
+    --chart: #3d92cc; --chart-fade: #3d92cc47;
+  }
+  :root[data-theme="light"] {
+    --ink: #14171c; --ink-2: #4b5262; --ink-3: #6f7686;
+    --paper: #f2f4f6; --card: #ffffff; --rule: #dbdfe6; --rule-soft: #e8ebf0;
+    --accent: #2f5d8c; --accent-ink: #ffffff; --accent-dim: #e6eef6;
+    --good: #3f6b52; --good-bg: #e6efe9;
+    --warn: #8a6716; --warn-bg: #f5eddb;
+    --bad:  #9d3c2a; --bad-bg:  #f7e7e3;
+    --chart: #12689f; --chart-fade: #12689f40;
+  }
+
+  body {
+    direction: rtl;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .doc {
+    max-width: 1060px; margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 4vw, 3rem) 6rem;
+    display: flex; flex-direction: column; gap: clamp(2.75rem, 5vw, 4rem);
+  }
+
+  /* ── type ─────────────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  h1 {
+    font-size: clamp(1.85rem, 4.2vw, 2.75rem); line-height: 1.16;
+    letter-spacing: -0.02em; font-weight: 700; text-wrap: balance; margin: 0;
+  }
+  h2 {
+    font-size: clamp(1.28rem, 2.6vw, 1.55rem); line-height: 1.28;
+    letter-spacing: -0.012em; font-weight: 700; text-wrap: balance; margin: 0;
+    padding-bottom: 0.55rem; border-bottom: 2px solid var(--ink);
+  }
+  h3 { font-size: 1.06rem; font-weight: 700; margin: 0; }
+  p  { margin: 0; max-width: var(--measure); }
+  .lede { font-size: clamp(1.02rem, 1.9vw, 1.15rem); color: var(--ink-2); max-width: 62ch; }
+  strong { font-weight: 700; }
+  em { font-style: normal; color: var(--accent); font-weight: 600; }
+
+  code {
+    font-family: var(--mono); font-size: 0.86em;
+    direction: ltr; unicode-bidi: isolate;
+    background: var(--rule-soft); padding: 0.1em 0.36em;
+    border-radius: 3px; white-space: nowrap;
+  }
+
+  section { display: flex; flex-direction: column; gap: 1.2rem; }
+  .stack  { display: flex; flex-direction: column; gap: 1rem; }
+  .header { display: flex; flex-direction: column; gap: 0.85rem; }
+
+  .meta {
+    font-family: var(--mono); font-size: 0.75rem; color: var(--ink-3);
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem;
+    padding-top: 0.9rem; border-top: 1px solid var(--rule);
+  }
+
+  .callout {
+    background: var(--accent-dim); border-inline-start: 3px solid var(--accent);
+    padding: 1.1rem 1.3rem; display: flex; flex-direction: column; gap: 0.55rem;
+  }
+  .callout p { max-width: 66ch; }
+
+  /* ── worked example ───────────────────────────────── */
+  .demo {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: clamp(1.1rem, 3vw, 1.7rem);
+    display: flex; flex-direction: column; gap: 1.4rem;
+  }
+  .searchbar {
+    display: flex; align-items: center; gap: 0.7rem;
+    border: 1.5px solid var(--rule); background: var(--paper);
+    padding: 0.6rem 0.9rem; max-width: 22rem;
+  }
+  .searchbar .lbl { font-size: 0.8rem; color: var(--ink-3); }
+  .searchbar .val {
+    font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
+    color: var(--ink); direction: ltr;
+  }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+  @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
+
+  .col { display: flex; flex-direction: column; gap: 0.6rem; }
+  .col > h4 {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.07em;
+    text-transform: uppercase; font-weight: 600; margin: 0;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
+  }
+  .col.now  > h4 { color: var(--bad); }
+  .col.want > h4 { color: var(--good); }
+
+  .rows { display: flex; flex-direction: column; gap: 0.4rem; }
+  .row {
+    display: grid; grid-template-columns: 1.7rem 1fr auto;
+    gap: 0.6rem; align-items: center;
+    padding: 0.5rem 0.6rem; background: var(--paper);
+    border: 1px solid transparent;
+  }
+  .row .pos {
+    font-family: var(--mono); font-size: 0.75rem; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .row .rec { font-size: 0.9rem; line-height: 1.35; }
+  .row .rec b { font-family: var(--mono); font-weight: 700; direction: ltr; unicode-bidi: isolate; }
+  .row .rec span { display: block; color: var(--ink-3); font-size: 0.78rem; }
+  .row.hit { border-color: var(--accent); background: var(--accent-dim); }
+
+  .tier {
+    font-size: 0.68rem; font-family: var(--mono); letter-spacing: 0.03em;
+    padding: 0.15rem 0.45rem; white-space: nowrap; font-weight: 600;
+  }
+  .t1 { background: var(--accent);     color: var(--accent-ink); }
+  .t2 { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
+  .t3 { background: var(--rule-soft);  color: var(--ink-2); }
+  .t4 { background: transparent; color: var(--ink-3); border: 1px dashed var(--rule); }
+
+  /* ── ladder ───────────────────────────────────────── */
+  .ladder { display: flex; flex-direction: column; gap: 0.5rem; }
+  .rung {
+    display: grid; grid-template-columns: 8.5rem 1fr; gap: 0.9rem; align-items: start;
+    background: var(--card); border: 1px solid var(--rule); padding: 0.85rem 1rem;
+  }
+  @media (max-width: 560px) { .rung { grid-template-columns: 1fr; gap: 0.4rem; } }
+  .rung .who { display: flex; flex-direction: column; gap: 0.3rem; }
+  .rung .who .name { font-weight: 700; font-size: 0.95rem; }
+  .rung .who .ex {
+    font-family: var(--mono); font-size: 0.78rem; color: var(--ink-3);
+    direction: ltr; unicode-bidi: isolate;
+  }
+  .rung p { font-size: 0.9rem; color: var(--ink-2); max-width: 62ch; }
+
+  /* ── chart ────────────────────────────────────────── */
+  figure.chart {
+    margin: 0; background: var(--card); border: 1px solid var(--rule);
+    padding: clamp(1.1rem, 3vw, 1.6rem);
+    display: flex; flex-direction: column; gap: 1.2rem;
+  }
+  figure.chart figcaption { display: flex; flex-direction: column; gap: 0.3rem; }
+  figure.chart figcaption .t { font-weight: 700; font-size: 1rem; }
+  figure.chart figcaption .s { font-size: 0.85rem; color: var(--ink-3); max-width: 62ch; }
+
+  .plot { position: relative; display: flex; flex-direction: column; gap: 0.9rem; }
+
+  .refline {
+    position: absolute; inset-block: -0.2rem 1.5rem;
+    inset-inline-start: 25%; width: 0;
+    border-inline-start: 1.5px dashed var(--ink-3);
+    pointer-events: none;
+  }
+  .refline span {
+    position: absolute; bottom: -1.45rem; inset-inline-start: 0.35rem;
+    font-family: var(--mono); font-size: 0.68rem; color: var(--ink-3);
+    white-space: nowrap;
+  }
+
+  .bar-row {
+    display: flex; flex-direction: column; gap: 0.32rem;
+    padding: 0.25rem 0.3rem; margin: -0.25rem -0.3rem;
+    border-radius: 3px; transition: background 120ms ease;
+  }
+  .bar-row:hover, .bar-row:focus-visible { background: var(--rule-soft); }
+  @media (prefers-reduced-motion: reduce) { .bar-row { transition: none; } }
+
+  .bar-head { display: flex; align-items: baseline; gap: 0.6rem; }
+  .bar-head .nm { font-size: 0.9rem; font-weight: 600; }
+  .bar-head .vl {
+    margin-inline-start: auto; font-family: var(--mono); font-size: 0.82rem;
+    font-weight: 700; color: var(--chart);
+    font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate;
+  }
+  .bar-track { position: relative; height: 12px; background: var(--rule-soft); border-radius: 2px; }
+  .bar-hi, .bar-lo {
+    position: absolute; inset-block: 0; inset-inline-start: 0;
+    border-start-end-radius: 4px; border-end-end-radius: 4px;
+  }
+  .bar-hi { background: var(--chart-fade); }
+  .bar-lo { background: var(--chart); }
+  .bar-note { font-size: 0.79rem; color: var(--ink-3); line-height: 1.45; }
+
+  /* the hypothetical row is not an option — encoded by form, not hue */
+  .bar-row.hyp .bar-lo { background: transparent; border: 1.5px dashed var(--chart); }
+  .bar-row.hyp .bar-hi { background: transparent; }
+  .bar-row.hyp .nm::after {
+    content: "היפותטי"; font-family: var(--mono); font-size: 0.62rem;
+    letter-spacing: 0.05em; color: var(--ink-3); border: 1px dashed var(--rule);
+    padding: 0.05rem 0.35rem; margin-inline-start: 0.5rem; white-space: nowrap;
+  }
+
+  /* ── tables ───────────────────────────────────────── */
+  .scroll { overflow-x: auto; }
+  table {
+    border-collapse: collapse; width: 100%; min-width: 580px;
+    font-size: 0.91rem; background: var(--card);
+  }
+  thead th {
+    text-align: start; font-family: var(--mono); font-size: 0.71rem;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3);
+    font-weight: 600; padding: 0.7rem 0.9rem;
+    border-bottom: 1.5px solid var(--ink); white-space: nowrap;
+  }
+  tbody td {
+    padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top; line-height: 1.5;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; }
+  td.num  { font-variant-numeric: tabular-nums; white-space: nowrap; direction: ltr; unicode-bidi: isolate; text-align: start; }
+
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: 0.69rem;
+    letter-spacing: 0.04em; padding: 0.15rem 0.5rem; font-weight: 600; white-space: nowrap;
+  }
+  .pill.good { color: var(--good); background: var(--good-bg); }
+  .pill.warn { color: var(--warn); background: var(--warn-bg); }
+  .pill.bad  { color: var(--bad);  background: var(--bad-bg);  }
+
+  /* ── option cards ─────────────────────────────────── */
+  .options { display: flex; flex-direction: column; gap: 1.1rem; }
+  .opt {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 1.3rem clamp(1rem, 2.5vw, 1.6rem);
+    display: flex; flex-direction: column; gap: 0.95rem;
+  }
+  .opt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 0.8rem; }
+  .opt-key  { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); font-weight: 700; }
+  .opt-head .pill { margin-inline-start: auto; }
+
+  .plain {
+    font-size: 0.97rem; color: var(--ink); max-width: 70ch;
+    background: var(--rule-soft); padding: 0.75rem 0.95rem;
+    border-inline-start: 2px solid var(--ink-3);
+  }
+  .plain b {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 0.2rem;
+  }
+
+  .qbox { display: flex; flex-direction: column; gap: 0.45rem; }
+  .qbox > .cap {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+  }
+  .qbox .after { font-size: 0.85rem; color: var(--ink-3); max-width: 70ch; }
+
+  .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.6rem; }
+  @media (max-width: 640px) { .pc { grid-template-columns: 1fr; } }
+  .pc h4 {
+    font-family: var(--mono); font-size: 0.69rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 600; margin: 0 0 0.45rem;
+  }
+  .pc .pros h4 { color: var(--good); }
+  .pc .cons h4 { color: var(--bad); }
+  .pc ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.42rem; }
+  .pc li {
+    font-size: 0.91rem; line-height: 1.55; padding-inline-start: 0.9rem;
+    position: relative; color: var(--ink-2);
+  }
+  .pc li::before {
+    content: ""; position: absolute; inset-inline-start: 0; top: 0.62em;
+    width: 4px; height: 4px; border-radius: 50%;
+  }
+  .pc .pros li::before { background: var(--good); }
+  .pc .cons li::before { background: var(--bad); }
+  .pc li strong { color: var(--ink); font-weight: 600; }
+
+  .verdict {
+    font-size: 0.92rem; border-top: 1px solid var(--rule-soft);
+    padding-top: 0.8rem; max-width: 74ch;
+  }
+  .verdict b {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+    margin-inline-end: 0.5rem;
+  }
+
+  /* ── questions ────────────────────────────────────── */
+  .qs { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.85rem; counter-reset: q; }
+  .qs li {
+    display: grid; grid-template-columns: 2.2rem 1fr; gap: 0.7rem;
+    align-items: baseline; padding-bottom: 0.85rem; border-bottom: 1px solid var(--rule-soft);
+  }
+  .qs li:last-child { border-bottom: none; padding-bottom: 0; }
+  .qs li::before {
+    counter-increment: q; content: "Q" counter(q);
+    font-family: var(--mono); font-size: 0.72rem; color: var(--accent); font-weight: 700;
+  }
+  .qs p { font-size: 0.95rem; }
+  .qs .why { color: var(--ink-3); font-size: 0.86rem; margin-top: 0.15rem; }
+
+  /* ── recommendation ───────────────────────────────── */
+  .rec { display: flex; flex-direction: column; gap: 0.85rem; }
+  .rec-row {
+    display: grid; grid-template-columns: 7rem 1fr; gap: 1rem; align-items: baseline;
+    background: var(--card); border: 1px solid var(--rule); padding: 0.95rem 1.1rem;
+  }
+  @media (max-width: 560px) { .rec-row { grid-template-columns: 1fr; gap: 0.35rem; } }
+  .rec-row .tag {
+    font-family: var(--mono); font-size: 0.69rem; letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 700; color: var(--accent);
+  }
+  .rec-row.no .tag { color: var(--bad); }
+  .rec-row p { font-size: 0.94rem; max-width: 72ch; }
+
+  pre {
+    direction: ltr; text-align: left; background: var(--rule-soft);
+    border: 1px solid var(--rule); padding: 0.85rem 1rem; overflow-x: auto;
+    margin: 0; font-family: var(--mono); font-size: 0.77rem; line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; white-space: pre; font-size: 1em; }
+
+  details { background: var(--card); border: 1px solid var(--rule); padding: 0 1.1rem; }
+  details[open] { padding-bottom: 1.1rem; }
+  summary { cursor: pointer; padding: 0.9rem 0; font-weight: 600; font-size: 0.95rem; list-style-position: inside; }
+  summary::marker { color: var(--accent); }
+  details .stack { padding-top: 0.4rem; }
+
+  footer { color: var(--ink-3); font-size: 0.84rem; border-top: 1px solid var(--rule); padding-top: 1.2rem; }
+  footer p { max-width: 72ch; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<article class="doc">
+
+  <header class="header">
+    <p class="eyebrow">person-locator · חיפוש אלסטיק</p>
+    <h1>למה חיפוש "774" לא מחזיר קודם את&nbsp;774</h1>
+    <p class="lede">
+      היום מנוע החיפוש מחזיר את כל מי שהמספר 774 מופיע אצלו — אבל בסדר שרירותי, כך
+      שהרשומה שמספרה בדיוק 774 עלולה להיות בעמוד השלישי. המסמך מסביר למה זה קורה, אילו
+      דרכים קיימות לתקן, ומה כל אחת עולה ביחס למצב היום.
+    </p>
+    <div class="meta">
+      <span>מסמך החלטה</span>
+      <span>קהל: פיתוח + BI</span>
+      <span>נדרשת הכרעה: כן</span>
+    </div>
+  </header>
+
+  <!-- ══════════ 1 ══════════ -->
+  <section>
+    <h2>1 · הבעיה, בדוגמה אחת</h2>
+    <p>
+      משתמשת מחפשת אסיר לפי מספר. היא מקלידה <code>774</code>. באינדקס יש חמש רשומות שהמספר
+      774 מופיע בהן בצורה כלשהי:
+    </p>
+
+    <div class="demo">
+      <div class="searchbar">
+        <span class="lbl">חיפוש</span>
+        <span class="val">774</span>
+      </div>
+
+      <div class="cols">
+        <div class="col now">
+          <h4>מה מוחזר היום</h4>
+          <div class="rows">
+            <div class="row">
+              <span class="pos">1</span>
+              <span class="rec"><b>19774</b><span>אבי מזרחי</span></span>
+              <span class="tier t4">מכיל</span>
+            </div>
+            <div class="row">
+              <span class="pos">2</span>
+              <span class="rec"><b>37742</b><span>שרה בן דוד</span></span>
+              <span class="tier t4">מכיל</span>
+            </div>
+            <div class="row">
+              <span class="pos">3</span>
+              <span class="rec"><b>7741</b><span>דוד כהן</span></span>
+              <span class="tier t3">מתחיל ב־</span>
+            </div>
+            <div class="row hit">
+              <span class="pos">4</span>
+              <span class="rec"><b>774</b><span>יוסף לוי</span></span>
+              <span class="tier t1">זהה</span>
+            </div>
+            <div class="row">
+              <span class="pos">5</span>
+              <span class="rec"><b>77412</b><span>משה אברהם</span></span>
+              <span class="tier t3">מתחיל ב־</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col want">
+          <h4>מה אמור להיות מוחזר</h4>
+          <div class="rows">
+            <div class="row hit">
+              <span class="pos">1</span>
+              <span class="rec"><b>774</b><span>יוסף לוי</span></span>
+              <span class="tier t1">זהה</span>
+            </div>
+            <div class="row">
+              <span class="pos">2</span>
+              <span class="rec"><b>7741</b><span>דוד כהן</span></span>
+              <span class="tier t3">מתחיל ב־</span>
+            </div>
+            <div class="row">
+              <span class="pos">3</span>
+              <span class="rec"><b>77412</b><span>משה אברהם</span></span>
+              <span class="tier t3">מתחיל ב־</span>
+            </div>
+            <div class="row">
+              <span class="pos">4</span>
+              <span class="rec"><b>19774</b><span>אבי מזרחי</span></span>
+              <span class="tier t4">מכיל</span>
+            </div>
+            <div class="row">
+              <span class="pos">5</span>
+              <span class="rec"><b>37742</b><span>שרה בן דוד</span></span>
+              <span class="tier t4">מכיל</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>
+      <strong>אותן חמש תוצאות בדיוק, בסדר אחר.</strong> אף אחת לא נעלמת ואף אחת לא נוספת —
+      השאלה היחידה היא מי ראשון. עם דפדוף של חמש תוצאות בעמוד, ההבדל הזה קובע אם המשתמשת
+      מוצאת את הרשומה מיד או מוותרת.
+    </p>
+  </section>
+
+  <!-- ══════════ 2 ══════════ -->
+  <section>
+    <h2>2 · ארבע רמות של "התאמה"</h2>
+    <p>
+      כדי לדבר על העדפה צריך להסכים מה עדיף על מה. בחיפוש הערך <code>774</code>, רשומה יכולה
+      להתאים באחת מארבע דרכים — מהחזקה לחלשה:
+    </p>
+
+    <div class="ladder">
+      <div class="rung">
+        <div class="who"><span class="name">זהה</span><span class="ex">"774"</span></div>
+        <p>הערך בשדה הוא בדיוק מה שהוקלד, לא יותר ולא פחות. זו כמעט תמיד הרשומה שחיפשו.</p>
+      </div>
+      <div class="rung">
+        <div class="who"><span class="name">מתחיל ב־</span><span class="ex">"7741", "77412"</span></div>
+        <p>הערך פותח במה שהוקלד וממשיך. סביר שהמשתמשת פשוט לא סיימה להקליד.</p>
+      </div>
+      <div class="rung">
+        <div class="who"><span class="name">מילה שלמה</span><span class="ex">"יוסי 774 כהן"</span></div>
+        <p>מה שהוקלד מופיע כמילה שלמה בתוך הערך. רלוונטי בעיקר לשמות ולשדות טקסט חופשי.</p>
+      </div>
+      <div class="rung">
+        <div class="who"><span class="name">מכיל</span><span class="ex">"19774", "37742"</span></div>
+        <p>הרצף מופיע איפשהו בתוך הערך, גם באמצע מספר. הכי רחב, והכי סביר שאינו מה שחיפשו.</p>
+      </div>
+    </div>
+
+    <p>
+      החלוקה הזו היא כל המסמך. <strong>כל הפתרונות שיוצגו עושים את אותו דבר</strong> — מסמנים
+      לאלסטיק שהרמות האלה אינן שוות ערך. ההבדל ביניהם הוא באמינות הסימון ובמחיר שלו.
+    </p>
+  </section>
+
+  <!-- ══════════ 3 ══════════ -->
+  <section>
+    <h2>3 · למה זה לא קורה מעצמו</h2>
+    <p>התשובה מפתיעה: <strong>אלסטיק לא מדרג את התוצאות האלה בכלל.</strong></p>
+    <p>
+      החיפוש היום נשלח בצורה של "מצא כל ערך שמתחיל ב־774" או "שמכיל 774". כששאילתה מנוסחת
+      עם תו כללי כזה, אלסטיק לא טורח לחשב ציון רלוונטיות לכל תוצאה — הוא נותן
+      <em>לכולן ציון זהה בדיוק</em>. הסדר שמתקבל בפועל הוא סדר האחסון הפנימי של האינדקס,
+      שאין לו שום קשר לשאלה כמה טוב כל רשומה מתאימה.
+    </p>
+    <div class="callout">
+      <p>
+        זו למעשה בשורה טובה: <strong>הבעיה אינה שאלסטיק מדרג לא נכון, אלא שהוא לא מדרג.</strong>
+        אין כאן אלגוריתם ניקוד להילחם בו — צריך רק להוסיף סימון מפורש של דרגות, וזה
+        בדיוק מה שכל האפשרויות למטה עושות.
+      </p>
+    </div>
+    <p>
+      נקודה שנייה, פחות אינטואיטיבית: <strong>אלסטיק לא מבחין בין "הערך הוא 774" לבין "המילה 774
+      מופיעה בערך"</strong>, אלא אם אומרים לו במפורש לבדוק את הערך המלא. לכן "יוסי 774 כהן"
+      עלול להיחשב התאמה מדויקת אם לא מנסחים את השאילתה בזהירות. זה ההבדל בין האפשרויות
+      בסעיף 5, יותר מכל שיקול אחר.
+    </p>
+  </section>
+
+  <!-- ══════════ 4 ══════════ -->
+  <section>
+    <h2>4 · מה יקר ומה זול</h2>
+    <p>
+      אינדקס של אלסטיק בנוי כמו מפתח עניינים בסוף ספר: רשימה ממוינת של כל הערכים, ולצד כל
+      אחד המסמכים שבהם הוא מופיע. מכאן נובע כל ההבדל בעלות:
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>סוג חיפוש</th><th>מה המנוע עושה בפועל</th><th>עלות</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">זהה — <code>774</code></td>
+            <td>קופץ ישירות לערך במפתח. כמו לפתוח מילון בעמוד הנכון.</td>
+            <td><span class="pill good">זניחה</span></td>
+          </tr>
+          <tr>
+            <td class="name">מתחיל ב־ — <code>774*</code></td>
+            <td>קופץ ל־774 וקורא את הערכים העוקבים כל עוד הם פותחים באותה קידומת.</td>
+            <td><span class="pill warn">נמוכה</span></td>
+          </tr>
+          <tr>
+            <td class="name">מכיל — <code>*774*</code></td>
+            <td><strong>קורא את כל הערכים במפתח, אחד־אחד</strong>, ובודק בכל אחד אם 774 מופיע איפשהו. אי אפשר "לקפוץ" לאמצע ערך.</td>
+            <td><span class="pill bad">גבוהה</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p>
+        <strong>המסקנה שמשנה את כל הדיון:</strong> מה שאנחנו רוצים להוסיף — העדפת התאמה מדויקת —
+        הוא הפעולה הזולה ביותר שקיימת. מה שיקר הוא חיפוש ה"מכיל", <strong>והוא כבר רץ היום</strong>,
+        לפני כל שינוי. סעיף 6 מראה את זה במספרים.
+      </p>
+    </div>
+
+    <p>
+      מכפיל אחד שכדאי להכיר: כל אחד מסוגי החיפוש בטבלה מתבצע <strong>בנפרד לכל שדה</strong>
+      שמחפשים בו. חיפוש על 12 שדות עולה פי 12 מחיפוש על שדה אחד — בכל האפשרויות באותה מידה.
+      לכן המכפיל הזה מצטמצם בהשוואה היחסית שבסעיף 6, אבל הוא הנושא של סעיף 7.
+    </p>
+  </section>
+
+  <!-- ══════════ 5 ══════════ -->
+  <section>
+    <h2>5 · דרכי המימוש</h2>
+    <p>
+      חמש דרכים לסמן לאלסטיק שהדרגות אינן שוות. כולן משיגות את התוצאה מסעיף 1; הן נבדלות
+      באמינות, במחיר ובמורכבות. בדוגמאות שלוש שדות חיפוש לשם קריאוּת — במציאות יש יותר.
+    </p>
+
+    <div class="options">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-head">
+          <span class="opt-key">A</span>
+          <h3>לכתוב את המשקלים בתוך מחרוזת החיפוש</h3>
+          <span class="pill warn">106–145</span>
+        </div>
+        <div class="plain">
+          <b>בעברית פשוטה</b>
+          שולחים לאלסטיק שאילתה אחת שאומרת "חפש 774, או 774 בהתחלה, או 774 באמצע — ותן
+          למקרה הראשון משקל 1000, לשני 100 ולשלישי 1".
+        </div>
+        <div class="qbox">
+          <span class="cap">התשאול</span>
+<pre><code>{
+  "query": {
+    "query_string": {
+      "query":  "(774)^1000 OR (774*)^100 OR (*774*)^1",
+      "fields": ["fullName", "idNumber", "prisonerNumber"]
+    }
+  },
+  "sort": [ { "_score": "desc" } ],
+  "size": 5, "from": 0
+}</code></pre>
+          <p class="after">שאילתה אחת, שלוש שכבות בתוך מחרוזת אחת. שום שינוי מבני.</p>
+        </div>
+        <div class="pc">
+          <div class="pros">
+            <h4>יתרונות</h4>
+            <ul>
+              <li><strong>שינוי הגדרה בלבד</strong> — שורת טקסט אחת, בלי לגעת במבנה השאילתה.</li>
+              <li>אותו חיפוש משמש גם לסינון וגם לדירוג, בלי בדיקה נוספת.</li>
+              <li>אפשר לדחוף מהשרת בלי גרסה חדשה של הלקוח.</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>חסרונות</h4>
+            <ul>
+              <li><strong>המשקלים לא באמת נשמרים.</strong> למערכת יש כבר משקלים לכל שדה (למשל "שם משפחה חשוב פי 2"), והם מוכפלים במשקלי הדרגות. שדה עם משקל גבוה יכול להקפיץ תוצאת "מתחיל ב־" מעל תוצאה זהה — בדיוק ההיפך מהמבוקש.</li>
+              <li><strong>"זהה" כאן אינו זהה.</strong> גם "יוסי 774 כהן" יקבל את משקל ה־1000, כי אלסטיק בודק מילים ולא את הערך המלא.</li>
+              <li>חיפוש של שתי מילים ומעלה מתפרק בצורה שגויה.</li>
+              <li>המחרוזת נבנית מטקסט שהמשתמשת הקלידה — גרשיים או סוגריים בשם שוברים את השאילתה.</li>
+              <li><strong>שכבת "מתחיל ב־" כאן אינה חסומה</strong> במספר הערכים שהיא סורקת, ולכן דווקא היא שמייקרת — ראו סעיף 6.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="verdict"><b>שורה תחתונה</b>הכי מהירה ליישום, אבל לא מבטיחה את התוצאה — ולא בהכרח זולה יותר מ־B. שמישה רק אם מוותרים על המשקלים לכל שדה.</p>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-head">
+          <span class="opt-key">B</span>
+          <h3>שכבות ניקוד נפרדות לצד החיפוש <span style="color:var(--ink-3);font-weight:400">— מיושם כרגע</span></h3>
+          <span class="pill warn">106–120</span>
+        </div>
+        <div class="plain">
+          <b>בעברית פשוטה</b>
+          משאירים את החיפוש הקיים בדיוק כפי שהוא — הוא ממשיך לקבוע <em>מי</em> נכנס לתוצאות —
+          ומוסיפים לצידו שלוש בדיקות שתפקידן היחיד הוא לחלק נקודות: 1000 לזהה, 100 למילה
+          שלמה, 10 למתחיל ב־. הנקודות קבועות ומנותקות לגמרי מחישובי הרלוונטיות של אלסטיק.
+        </div>
+        <div class="qbox">
+          <span class="cap">התשאול</span>
+<pre><code>{
+  "query": {
+    "bool": {
+      "must": [                                    // ← קובע מי נכנס
+        { "query_string": { "query": "774*",
+            "fields": ["fullName", "idNumber", "prisonerNumber"] } }
+      ],
+      "should": [                                  // ← קובע רק את הסדר
+        { "constant_score": { "boost": 1000, "filter": { "bool": {
+            "should": [
+              { "term": { "fullName.keyword":       "774" } },
+              { "term": { "idNumber.keyword":       "774" } },
+              { "term": { "prisonerNumber.keyword": "774" } }
+            ],
+            "minimum_should_match": 1 } } } },
+
+        { "constant_score": { "boost": 100, "filter": {
+            "multi_match": { "query": "774", "type": "phrase", "lenient": true,
+              "fields": ["fullName", "idNumber", "prisonerNumber"] } } } },
+
+        { "constant_score": { "boost": 10, "filter": {
+            "multi_match": { "query": "774", "type": "phrase_prefix", "lenient": true,
+              "max_expansions": 20,
+              "fields": ["fullName", "idNumber", "prisonerNumber"] } } } }
+      ]
+    }
+  },
+  "sort": [ { "_score": "desc" },
+            { "idNumber.keyword": "asc" } ],       // ← שובר שוויון, ראו Q4
+  "size": 5, "from": 0
+}</code></pre>
+          <p class="after">
+            הנקודות מצטברות: תוצאה זהה מקבלת 1110, מילה שלמה 110, מתחיל ב־ 10, ומכיל 0.
+            הפער קבוע ולכן הסדר לא יכול להתהפך.
+          </p>
+        </div>
+        <div class="pc">
+          <div class="pros">
+            <h4>יתרונות</h4>
+            <ul>
+              <li><strong>הסדר מובטח.</strong> הנקודות קבועות, ולכן שום שיקול אחר — משקלי שדות, נדירות מילים — לא יכול להפוך את הסדר.</li>
+              <li><strong>אף תוצאה לא נעלמת.</strong> הבדיקות רק מוסיפות נקודות, לא מסננות; מספר התוצאות הכולל נשאר זהה.</li>
+              <li>"זהה" הוא באמת השוואה לערך המלא, לא למילה בתוכו.</li>
+              <li>שכבת "מתחיל ב־" חסומה ל־20 ערכים, ולכן העלות שלה תחומה מלמעלה.</li>
+              <li>מוגדר בקוד עם בדיקת טיפוסים, וניתן לכיבוי בנפרד לכל סוג אדם.</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>חסרונות</h4>
+            <ul>
+              <li><strong>בדיקה אחת יותר מאפשרות A</strong> — אם כי הזולה מכולן.</li>
+              <li>דורש שהאינדקס שומר גרסה "לא מפורקת" של כל שדה (<code>.keyword</code>). אם היא לא קיימת, שכבת ה"זהה" פשוט לא עובדת — בשקט, בלי שגיאה. <strong>זה הדבר הראשון שצריך לוודא.</strong></li>
+              <li><strong>הרבה תוצאות מקבלות ניקוד זהה</strong> (כל ה"מכיל" מקבלות 0). בגלילה אינסופית זה עלול לגרום לרשומה להופיע פעמיים או להיעלם בין עמודים, אם לא מוסיפים שובר שוויון קבוע.</li>
+              <li>ההשוואה רגישה לאותיות גדולות/קטנות ולרווחים כפולים, אלא אם מנרמלים באינדקס.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="verdict"><b>שורה תחתונה</b>הדרך האמינה ביותר, בתוספת עלות שולית ותחומה. זה מה שמיושם היום בקוד.</p>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-head">
+          <span class="opt-key">C</span>
+          <h3>לדרג רק את ראש הרשימה</h3>
+          <span class="pill good">101–108</span>
+        </div>
+        <div class="plain">
+          <b>בעברית פשוטה</b>
+          החיפוש הרגיל רץ על הכל, ואז בדיקות הדירוג מופעלות <em>רק על 200 התוצאות
+          הראשונות</em> ומסדרות אותן מחדש. במקום לדרג מאה אלף רשומות, מדרגים מאתיים.
+        </div>
+        <div class="qbox">
+          <span class="cap">התשאול</span>
+<pre><code>{
+  "query": {                                       // ← החיפוש הקיים, ללא שינוי
+    "query_string": { "query": "*774*",
+      "fields": ["fullName", "idNumber", "prisonerNumber"] }
+  },
+  "rescore": {
+    "window_size": 200,                            // ← רק 200 הראשונות מדורגות
+    "query": {
+      "rescore_query": { "bool": { "should": [ …אותן שכבות מ־B… ] } },
+      "query_weight": 1,
+      "rescore_query_weight": 1
+    }
+  },
+  "size": 5, "from": 0
+}</code></pre>
+          <p class="after">שימו לב: אין <code>sort</code> — <code>rescore</code> עובד רק כשממיינים לפי ניקוד.</p>
+        </div>
+        <div class="pc">
+          <div class="pros">
+            <h4>יתרונות</h4>
+            <ul>
+              <li><strong>העלות מנותקת מגודל התוצאה.</strong> חיפוש שמחזיר 100,000 רשומות עולה כמו חיפוש שמחזיר 200.</li>
+              <li>שאילתת החיפוש עצמה לא משתנה בכלל.</li>
+              <li>אם כל מה שחשוב הוא שהמדויקות יהיו בעמוד הראשון — זו התשובה המדויקת לצורך.</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>חסרונות</h4>
+            <ul>
+              <li><strong>לא מסתדר עם גלילה אינסופית.</strong> מעבר לתוצאה ה־200 הסדר חוזר להיות שרירותי, והמשתמשת רואה "קפיצה" בדיוק בגבול הזה.</li>
+              <li><strong>מבטל כל מיון מותאם אחר</strong> — כולל המיון לפי סקריפט שכבר מוגדר בחלק מסוגי האדם.</li>
+              <li>צריך לבחור גודל חלון: גדול מדי מחזיר את העלות, קטן מדי מחמיץ תוצאות.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="verdict"><b>שורה תחתונה</b>מצוינת אם מסכימים שדירוג מדויק נדרש רק בעמודים הראשונים. פחות מתאימה לרשימה שגוללים עד סופה.</p>
+      </div>
+
+      <!-- D -->
+      <div class="opt">
+        <div class="opt-head">
+          <span class="opt-key">D</span>
+          <h3>חיפוש נפרד להתאמה מדויקת</h3>
+          <span class="pill good">100–101</span>
+        </div>
+        <div class="plain">
+          <b>בעברית פשוטה</b>
+          שולחים שתי שאילתות במקביל בבקשה אחת: אחת זעירה ומיידית ששואלת רק "יש רשומה שהמספר
+          שלה הוא בדיוק 774?", והשנייה היא החיפוש הקיים ללא שינוי כלל. התוצאה המדויקת
+          מוצגת מוצמדת בראש המסך, מעל הרשימה הרגילה.
+        </div>
+        <div class="qbox">
+          <span class="cap">התשאול</span>
+<pre><code>POST /asirs/_msearch
+
+{}
+{ "query": { "bool": { "filter": { "bool": {     // ← filter = בלי חישוב ניקוד כלל
+      "should": [
+        { "term": { "idNumber.keyword":       "774" } },
+        { "term": { "prisonerNumber.keyword": "774" } }
+      ],
+      "minimum_should_match": 1 } } } },
+  "size": 3 }
+
+{}
+{ …החיפוש הקיים, מילה במילה, ללא שינוי… }</code></pre>
+          <p class="after">שתי שאילתות בבקשת רשת אחת, מתבצעות במקביל בשרת.</p>
+        </div>
+        <div class="pc">
+          <div class="pros">
+            <h4>יתרונות</h4>
+            <ul>
+              <li><strong>העומס הנמוך ביותר על השרת</strong> מכל האפשרויות — שאילתה שמחזירה תוצאה בודדת בלי חישוב ניקוד.</li>
+              <li>החיפוש הקיים לא נוגעים בו בכלל, אז אין סיכון לרגרסיה בביצועים או בתוצאות.</li>
+              <li>אפשר להציג את ההתאמה המדויקת מיד — המשתמשת מרגישה מערכת מהירה יותר.</li>
+              <li>הדפדוף נשאר פשוט, כי התוצאה המדויקת מחוץ לרשימה הנגללת.</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>חסרונות</h4>
+            <ul>
+              <li>דורש שינוי בממשק — אזור "תוצאה מדויקת" נפרד מעל הרשימה.</li>
+              <li>צריך למנוע הצגה כפולה של אותה רשומה בשני המקומות.</li>
+              <li>שני מסלולי קוד לתחזוקה, כולל התנהגות במצב לא־מקוון.</li>
+              <li><strong>לא פותר את הסדר בתוך הרשימה עצמה</strong> — רק מוציא את המדויקת החוצה.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="verdict"><b>שורה תחתונה</b>הזולה ביותר והחוויה הברורה ביותר — בתנאי שהעיצוב מאפשר להצמיד תוצאה בראש המסך.</p>
+      </div>
+
+      <!-- E -->
+      <div class="opt">
+        <div class="opt-head">
+          <span class="opt-key">E</span>
+          <h3>מיון באמצעות סקריפט</h3>
+          <span class="pill bad">200–400</span>
+        </div>
+        <div class="plain">
+          <b>בעברית פשוטה</b>
+          כותבים קוד קטן שרץ בתוך אלסטיק, מחשב "ציון דרגה" לכל רשומה, וממיין לפיו.
+          שליטה מלאה ומפורשת בסדר.
+        </div>
+        <div class="qbox">
+          <span class="cap">התשאול</span>
+<pre><code>{
+  "query": { …החיפוש הקיים… },
+  "sort": [
+    { "_script": {
+        "type": "number", "order": "desc",
+        "script": {
+          "lang":   "painless",
+          "source": "def f = doc['idNumber.keyword'];
+                     if (f.size() == 0) return 0;
+                     def v = f.value; def q = params.q;
+                     if (v == q)             return 3;
+                     if (v.startsWith(q))    return 2;
+                     if (v.contains(q))      return 1;
+                     return 0;",
+          "params": { "q": "774" }
+        } } },
+    { "_score": "desc" }
+  ],
+  "size": 5, "from": 0
+}</code></pre>
+          <p class="after">הסקריפט רץ מחדש עבור <em>כל רשומה תואמת</em>, לא רק עבור אלה שיוצגו.</p>
+        </div>
+        <div class="pc">
+          <div class="pros">
+            <h4>יתרונות</h4>
+            <ul>
+              <li>סדר מפורש לחלוטין, בלי להסתמך על מנגנוני ניקוד.</li>
+              <li>אפשר לשלב באותו חישוב שיקולים שאינם טקסטואליים, כמו סטטוס או תאריך.</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>חסרונות</h4>
+            <ul>
+              <li><strong>הכי יקרה בהפרש ניכר</strong> — רצה על כל רשומה תואמת, בלי שום קיצור דרך של האינדקס.</li>
+              <li>העלות גדלה עם מספר התוצאות, כלומר גרועה במיוחד בדיוק בחיפושים הרחבים שבהם הדירוג הכי נחוץ.</li>
+              <li>מיון כזה כבר מוגדר בחלק מסוגי האדם, ובמקומות האלה הוא <strong>מבטל כל שכבת דירוג אחרת</strong> — נקודה שצריך לבדוק בנפרד.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="verdict"><b>שורה תחתונה</b>לא מומלץ לצורך הזה. שמור לשיקולי מיון שאי אפשר לבטא כחיפוש רגיל.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ 6 ══════════ -->
+  <section>
+    <h2>6 · כמה כל אפשרות מייקרת את החיפוש</h2>
+    <p>
+      כל המספרים כאן מנורמלים כך ש<strong>החיפוש הקיים היום = 100</strong>. כלומר "120"
+      פירושו חיפוש שעולה 20% יותר מהיום. מכיוון שכל בדיקה מתבצעת בנפרד לכל שדה, מספר
+      השדות מצטמצם ביחס ואינו משפיע על ההשוואה הזו.
+    </p>
+
+    <figure class="chart">
+      <figcaption>
+        <span class="t">עלות יחסית של כל אפשרות</span>
+        <span class="s">
+          החלק המלא הוא ההערכה הנמוכה, החלק הבהיר הוא הטווח עד ההערכה הגבוהה.
+          הקו המקווקו הוא המצב היום.
+        </span>
+      </figcaption>
+
+      <div class="plot">
+        <div class="refline"><span>המצב היום · 100</span></div>
+
+        <div class="bar-row" tabindex="0">
+          <div class="bar-head"><span class="nm">D · חיפוש נפרד</span><span class="vl">100–101</span></div>
+          <div class="bar-track"><span class="bar-hi" style="width:25.25%"></span><span class="bar-lo" style="width:25%"></span></div>
+          <p class="bar-note">החיפוש הקיים לא משתנה כלל; השאילתה הנוספת היא חיפוש ערך מדויק בלי ניקוד.</p>
+        </div>
+
+        <div class="bar-row" tabindex="0">
+          <div class="bar-head"><span class="nm">C · דירוג ראש הרשימה</span><span class="vl">101–108</span></div>
+          <div class="bar-track"><span class="bar-hi" style="width:27%"></span><span class="bar-lo" style="width:25.25%"></span></div>
+          <p class="bar-note">הכנת שכבות הדירוג משולמת פעם אחת, אבל הן מופעלות רק על 200 רשומות.</p>
+        </div>
+
+        <div class="bar-row" tabindex="0">
+          <div class="bar-head"><span class="nm">B · שכבות ניקוד</span><span class="vl">106–120</span></div>
+          <div class="bar-track"><span class="bar-hi" style="width:30%"></span><span class="bar-lo" style="width:26.5%"></span></div>
+          <p class="bar-note">שכבת "מתחיל ב־" חסומה ל־20 ערכים, ולכן הקצה העליון של הטווח תחום.</p>
+        </div>
+
+        <div class="bar-row" tabindex="0">
+          <div class="bar-head"><span class="nm">A · משקלים במחרוזת</span><span class="vl">106–145</span></div>
+          <div class="bar-track"><span class="bar-hi" style="width:36.25%"></span><span class="bar-lo" style="width:26.5%"></span></div>
+          <p class="bar-note">אותה שכבת "מתחיל ב־" כאן אינה חסומה — על שדה עשיר בערכים היא סורקת הרבה יותר.</p>
+        </div>
+
+        <div class="bar-row" tabindex="0">
+          <div class="bar-head"><span class="nm">E · סקריפט</span><span class="vl">200–400</span></div>
+          <div class="bar-track"><span class="bar-hi" style="width:100%"></span><span class="bar-lo" style="width:50%"></span></div>
+          <p class="bar-note">רץ פר רשומה תואמת — ככל שהחיפוש רחב יותר, כך היחס גרוע יותר.</p>
+        </div>
+
+        <div class="bar-row hyp" tabindex="0">
+          <div class="bar-head"><span class="nm">ויתור על "מכיל"</span><span class="vl">15–35</span></div>
+          <div class="bar-track"><span class="bar-hi" style="width:8.75%"></span><span class="bar-lo" style="width:3.75%"></span></div>
+          <p class="bar-note">לא אפשרות דירוג אלא נקודת ייחוס: מעבר מ־<code>*774*</code> ל־<code>774*</code>, בלי שינוי אינדקס.</p>
+        </div>
+      </div>
+    </figure>
+
+    <div class="callout">
+      <p>
+        <strong>מה שהגרף מראה:</strong> כל אפשרויות הדירוג הסבירות נופלות בטווח 100–145 —
+        כלומר ההבדל ביניהן הוא עשרות אחוזים לכל היותר, והבחירה ביניהן צריכה להיקבע לפי
+        אמינות וחוויית משתמש, לא לפי ביצועים.
+      </p>
+      <p>
+        <strong>מה שהגרף מראה חזק יותר:</strong> השורה האחרונה. ויתור על חיפוש ה"מכיל" מוריד
+        את העלות לכ־20 — <em>פי חמישה זול יותר מהמצב היום</em>, לפני שדיברנו בכלל על דירוג.
+        אם המשתמשות לא באמת מחפשות לפי אמצע מספר, זו ההחלטה בעלת ההשפעה הגדולה ביותר במסמך,
+        והיא לא עולה כלום.
+      </p>
+    </div>
+
+    <p>
+      מה בדיוק נוסף בכל אפשרות, ומה מזיז את המספר בתוך הטווח:
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>אפשרות</th><th>מה נוסף מעל החיפוש הקיים</th><th>עלות</th><th>מה מזיז את המספר</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">D · חיפוש נפרד</td>
+            <td>שאילתת ערך מדויק, בלי ניקוד, שמחזירה עד 3 תוצאות.</td>
+            <td class="num">100–101</td>
+            <td>כמעט כלום. השאילתה הנוספת זולה מכדי להשפיע.</td>
+          </tr>
+          <tr>
+            <td class="name">C · דירוג ראש הרשימה</td>
+            <td>שלוש שכבות, אך מופעלות רק על חלון של 200 רשומות לכל shard.</td>
+            <td class="num">101–108</td>
+            <td>גודל החלון. 200 זול, 2000 כבר מתקרב ל־B.</td>
+          </tr>
+          <tr>
+            <td class="name">B · שכבות ניקוד</td>
+            <td>בדיקת ערך מדויק (זניחה) + מילה שלמה (נמוכה) + מתחיל ב־ חסום ל־20.</td>
+            <td class="num">106–120</td>
+            <td>שכבת "מתחיל ב־" בלבד. הורדת שכבת "מילה שלמה" חוסכת כ־3.</td>
+          </tr>
+          <tr>
+            <td class="name">A · משקלים במחרוזת</td>
+            <td>שכבת ערך מדויק (מנוקדת ולכן יקרה מעט יותר) + מתחיל ב־ <strong>לא חסום</strong>.</td>
+            <td class="num">106–145</td>
+            <td>כמה ערכים שונים מתחילים ב־774. בשדה מזהים עשיר זה יכול להיות אלפים.</td>
+          </tr>
+          <tr>
+            <td class="name">E · סקריפט</td>
+            <td>הרצת קוד לכל רשומה תואמת, ללא קיצורי דרך של האינדקס.</td>
+            <td class="num">200–400</td>
+            <td>מספר התוצאות התואמות. חיפוש רחב = יחס גרוע יותר.</td>
+          </tr>
+          <tr>
+            <td class="name">ויתור על "מכיל"</td>
+            <td>לא מוסיף — <em>מוריד</em>. הפעולה הכבדה ביותר יורדת לגמרי.</td>
+            <td class="num">15–35</td>
+            <td>אורך הקידומת. חיפוש בן תו אחד עדיין רחב יחסית.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      <strong>איך לקרוא את המספרים האלה.</strong> הם מודל תיאורטי המבוסס על אופן העבודה של
+      מנוע החיפוש, לא מדידה, ולכן הם מוצגים כטווחים ולא כערך יחיד. הם אמינים לצורך
+      <em>סדר יחסי</em> בין האפשרויות — הטענה "E יקרה בהרבה מכולן" ו"D כמעט חינם" יציבות.
+      הם אינם אמינים כתחזית זמן תגובה. את הערך המדויק אפשר לקבל בהרצה אחת עם דגל הפרופיילינג
+      של אלסטיק על האינדקס האמיתי, וזה שווה את הזמן לפני החלטה שדורשת בניית אינדקס מחדש.
+    </p>
+  </section>
+
+  <!-- ══════════ 7 ══════════ -->
+  <section>
+    <h2>7 · שינויים במבנה האינדקס</h2>
+    <p>
+      כל האפשרויות למעלה הן שינויי קוד, וכולן משחקות בטווח שסביב 100. השינויים כאן נוגעים
+      למבנה האינדקס עצמו, דורשים בנייה מחדש שלו — <strong>ולכן הם בתחום ההחלטה של מפתחת
+      ה־BI</strong>. הם גם היחידים שיכולים לשפר ביצועים בסדר גודל, ולא באחוזים.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>שינוי</th><th>מה זה נותן</th><th>המחיר</th><th>השפעה</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">שדה חיפוש מאוחד</td>
+            <td>בזמן טעינת הנתונים, כל שדות החיפוש מועתקים גם לשדה אחד גדול. החיפוש רץ עליו לבדו במקום על כל שדה בנפרד.</td>
+            <td>אינדקס גדול יותר; אי אפשר לתת משקל שונה לשדות שונים, ולא לדעת איזה שדה התאים.</td>
+            <td><span class="pill bad">הגדולה ביותר</span></td>
+          </tr>
+          <tr>
+            <td class="name">אינדוקס מראש של רצפים</td>
+            <td>שומרים מראש את כל תתי־המחרוזות, כך שחיפוש "מכיל" הופך לחיפוש רגיל ומיידי במקום לסריקה מלאה.</td>
+            <td>ניפוח משמעותי של נפח האינדקס וזמן הטעינה.</td>
+            <td><span class="pill bad">גדולה מאוד</span></td>
+          </tr>
+          <tr>
+            <td class="name">אינדוקס מראש של קידומות</td>
+            <td>מייעל חיפושי "מתחיל ב־" בלבד. זול בהרבה מהשורה שמעליו.</td>
+            <td>תוספת נפח מתונה. לא עוזר ל"מכיל".</td>
+            <td><span class="pill warn">בינונית</span></td>
+          </tr>
+          <tr>
+            <td class="name">גרסה "לא מפורקת" לכל שדה</td>
+            <td><strong>תנאי סף לאפשרויות B, C ו־D.</strong> בלי גרסה של הערך המלא, אי אפשר לבדוק שוויון מדויק כלל.</td>
+            <td>זניח.</td>
+            <td><span class="pill good">נכונות</span></td>
+          </tr>
+          <tr>
+            <td class="name">נרמול אותיות ורווחים</td>
+            <td>גורם לכך ש"COHEN" ו־"Cohen" ורווח כפול ייחשבו זהים בהשוואה המדויקת.</td>
+            <td>זניח.</td>
+            <td><span class="pill good">נכונות</span></td>
+          </tr>
+          <tr>
+            <td class="name">מזהים כשדה מזהה, לא טקסט</td>
+            <td>מספר אסיר, ת״ז וטלפון אינם טקסט חופשי ואין סיבה לפרק אותם למילים. מייתר את כל הבלבול בין "ערך" ל"מילה".</td>
+            <td>אין; לרוב אף מקטין את האינדקס.</td>
+            <td><span class="pill good">נכונות</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p>
+        <strong>אם בוחרים דבר אחד מהטבלה:</strong> שדה החיפוש המאוחד. הוא היחיד שתוקף את
+        המכפיל הגדול ביותר במערכת — העובדה שכל חיפוש מתבצע מחדש לכל שדה בנפרד. עם 12 שדות,
+        הוא לבדו שווה יותר מכל ההבדלים בסעיף 6 גם יחד.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════ 8 ══════════ -->
+  <section>
+    <h2>8 · מה צריך לברר לפני ההחלטה</h2>
+    <p>שבע שאלות. התשובות לרובן משנות את ההמלצה, לא רק את הניסוח שלה.</p>
+    <ol class="qs">
+      <li>
+        <div>
+          <p><strong>האם לכל שדה חיפוש קיימת באינדקס גרסה של הערך המלא, ולא רק מפורק למילים?</strong></p>
+          <p class="why">בלעדיה שכבת ההתאמה המדויקת לא עובדת — ובלי להשמיע שגיאה. זהו תנאי סף לאפשרויות B, C ו־D, ולכן השאלה הראשונה.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>האם חיפוש "מכיל" באמת נדרש, או ש"מתחיל ב־" מספיק?</strong></p>
+          <p class="why">השאלה היקרה ביותר במסמך — לפי סעיף 6 היא שווה פי חמישה מכל בחירה אחרת כאן, ואינה עולה דבר. שווה לבדוק מול המשתמשות אם הן בכלל מחפשות לפי אמצע מספר.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>בכמה שדות מחפשים, וכמה רשומות יש באינדקס?</strong></p>
+          <p class="why">כל העלויות מוכפלות במספר השדות. בעשרות אלפי רשומות כל האפשרויות מהירות והדיון תיאורטי; במיליונים, שדה החיפוש המאוחד הופך לקריטי.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>איזה שדה יכול לשמש "שובר שוויון" יציב במיון?</strong></p>
+          <p class="why">כל שיטת דירוג בדרגות יוצרת קבוצות גדולות של תוצאות עם ניקוד זהה. בלי כלל הכרעה קבוע, אותה רשומה עלולה להופיע פעמיים או להיעלם בין עמודים בגלילה.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>עד כמה עמוק המשתמשות באמת גוללות?</strong></p>
+          <p class="why">מכריע בין אפשרות C לאפשרות B. אם כמעט אף אחת לא עוברת את מאתיים התוצאות הראשונות, C זולה יותר ומספקת. בנוסף, דפדוף עמוק מתייקר עם כל עמוד וקיימת תקרה טכנית שכדאי לוודא שלא מגיעים אליה.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>כמה גדולה רשימת ההרשאות (מידור) שנשלחת בכל חיפוש?</strong></p>
+          <p class="why">אם היא מונה אלפי מזהים, ייתכן שהיא עולה יותר מכל שכבות הדירוג יחד — ואז זו נקודת השיפור האמיתית. יש לכך פתרון מקובל שאינו דורש לשלוח את הרשימה בכל בקשה.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>האם בניית האינדקס מחדש אפשרית, ובאיזה חלון זמן?</strong></p>
+          <p class="why">מפריד בין מה שאפשר לשלוח מחר לבין מה שנכנס לתכנון. אם בנייה מחדש אינה על השולחן, ההחלטה מצטמצמת ל־A מול B מול D.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ══════════ 9 ══════════ -->
+  <section>
+    <h2>9 · המלצה</h2>
+    <div class="rec">
+      <div class="rec-row">
+        <span class="tag">עכשיו</span>
+        <p>
+          להישאר ב־<strong>אפשרות B</strong>, שכבר מיושמת. עלות התוספת היא 6%–20% מעל המצב
+          הקיים, והיא היחידה שמבטיחה את הסדר בלי לשנות את הממשק ובלי לשנות את האינדקס.
+          לצידה להוסיף כלל שובר שוויון קבוע במיון, לפני שהניקוד השוויוני פוגע בגלילה.
+        </p>
+      </div>
+      <div class="rec-row">
+        <span class="tag">לבדוק ראשון</span>
+        <p>
+          שאלה 1 — האם קיימת באינדקס גרסה של הערך המלא לכל שדה חיפוש. אם לא, שכבת ההתאמה
+          המדויקת אינה עושה דבר כרגע, וזה תיקון מיפוי קטן וזול.
+        </p>
+      </div>
+      <div class="rec-row">
+        <span class="tag">הרווח הגדול</span>
+        <p>
+          שאלה 2 — לבדוק אם אפשר לוותר על חיפוש ה"מכיל". זה שינוי הגדרה בודד שמוריד את
+          עלות החיפוש לכחמישית, ולפי סעיף 6 הוא שווה יותר מכל שאר ההחלטות במסמך יחד.
+        </p>
+      </div>
+      <div class="rec-row">
+        <span class="tag">אם העיצוב מאפשר</span>
+        <p>
+          <strong>אפשרות D</strong> — הצמדת התוצאה המדויקת בראש המסך. העומס הנמוך ביותר על
+          השרת והחוויה הברורה ביותר למשתמשת. שווה לבחון מול מעצבת הממשק.
+        </p>
+      </div>
+      <div class="rec-row">
+        <span class="tag">בטווח ארוך</span>
+        <p>
+          <strong>שדה חיפוש מאוחד</strong> באינדקס — הצעד היחיד שמשנה ביצועים בסדר גודל
+          ולא באחוזים, אבל דורש בנייה מחדש ולכן החלטה של מפתחת ה־BI.
+        </p>
+      </div>
+      <div class="rec-row no">
+        <span class="tag">לא</span>
+        <p>
+          <strong>אפשרות E</strong> (סקריפט) — פי 2 עד פי 4 מהמצב הקיים, ללא יתרון שאין
+          לאחרות. ו־<strong>אפשרות C</strong> כל עוד הממשק הוא גלילה אינסופית עד סוף הרשימה.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ נספח ══════════ -->
+  <details open>
+    <summary>נספח טכני — המונחים המדויקים והעלויות</summary>
+    <div class="stack">
+      <p>
+        לצורך דיון מול מפתחת ה־BI, להלן המיפוי בין השמות בעברית לבין המונחים של אלסטיק,
+        ועלות כל אחד. הטבלה היא <strong>לכל שדה ולכל segment</strong>; N = מספר השדות,
+        V = מספר הערכים הייחודיים בשדה, E = מספר הערכים שקידומת מרחיבה אליהם,
+        M = מספר המסמכים התואמים.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr><th>בעברית</th><th>מונח אלסטיק</th><th>סיבוכיות</th><th>הערה</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="name">זהה</td>
+              <td><code>term</code> על <code>.keyword</code></td>
+              <td class="num">O(log V)</td>
+              <td>שדה שאינו ממופה מחזיר תוצאה ריקה מיידית, ללא שגיאה.</td>
+            </tr>
+            <tr>
+              <td class="name">מילה שלמה</td>
+              <td><code>match_phrase</code></td>
+              <td class="num">O(postings)</td>
+              <td>למונח יחיד מתנוון ל־<code>match</code> רגיל.</td>
+            </tr>
+            <tr>
+              <td class="name">מתחיל ב־ (חסום)</td>
+              <td><code>match_phrase_prefix</code></td>
+              <td class="num">O(E · postings)</td>
+              <td>E חסום ב־<code>max_expansions</code>. קטיעה פוגעת בדירוג בלבד, לא ברלוונטיות.</td>
+            </tr>
+            <tr>
+              <td class="name">מתחיל ב־ (לא חסום)</td>
+              <td><code>prefix</code> / <code>x*</code> ב־<code>query_string</code></td>
+              <td class="num">O(E · postings)</td>
+              <td>E אינו חסום — זה מקור הקצה העליון בטווח של אפשרות A.</td>
+            </tr>
+            <tr>
+              <td class="name">מכיל</td>
+              <td><code>wildcard</code> מוביל <code>*x*</code></td>
+              <td class="num">O(V)</td>
+              <td>סריקת מילון מונחים מלאה. ניתן להאצה רק במיפוי.</td>
+            </tr>
+            <tr>
+              <td class="name">סקריפט</td>
+              <td><code>_script</code> sort</td>
+              <td class="num">O(M)</td>
+              <td>ללא האצת אינדקס וללא early termination.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>בסיס הנרמול בסעיף 6:</strong> 100 = <code>query_string</code> עם
+        <code>*774*</code> על N שדות, כלומר N פעמים O(V). כל התוספות נמדדו כיחס לאותו
+        בסיס, ולכן N מצטמצם.
+      </p>
+      <p>
+        <strong>שמות האפשרויות במונחי אלסטיק:</strong>
+        <strong>A</strong> = בוסטים ב־<code>query_string</code>;
+        <strong>B</strong> = <code>bool.should</code> עם <code>constant_score</code>
+        (<code>function_score</code> עם <code>score_mode: max</code> היא וריאציה שקולה בעלות);
+        <strong>C</strong> = <code>rescore</code> עם <code>window_size</code>;
+        <strong>D</strong> = <code>_msearch</code> עם שאילתת <code>term</code> ב־filter context;
+        <strong>E</strong> = <code>_script</code> sort.
+      </p>
+      <p>
+        <strong>שינויי המיפוי:</strong> שדה מאוחד = <code>copy_to</code>; רצפים = ngram analyzer
+        או טיפוס שדה <code>wildcard</code>; קידומות = <code>index_prefixes</code> או
+        <code>search_as_you_type</code>; ערך מלא = subfield מסוג <code>keyword</code>;
+        נרמול = <code>normalizer</code>. רשימת המידור = <code>terms</code> filter, ופתרון
+        הגודל הוא <code>terms_lookup</code>. דפדוף עמוק = <code>search_after</code> במקום
+        <code>from</code>, ותקרת <code>index.max_result_window</code> היא 10,000 כברירת מחדל.
+      </p>
+    </div>
+  </details>
+
+  <footer>
+    <p>
+      הערכות העלות במסמך הן מודל תיאורטי המבוסס על אופן העבודה של מנוע החיפוש, לא מדידה,
+      ומוצגות כטווחים מסיבה זו. הן אמינות לצורך השוואה יחסית בין האפשרויות ולא כתחזית זמן
+      תגובה. לפני החלטה שדורשת בניית אינדקס מחדש, הרצה אחת עם דגל הפרופיילינג של אלסטיק
+      תיתן פירוק זמנים אמיתי ותכריע את הדיון במספרים.
+    </p>
+  </footer>
+
+</article>
+
+</body>
+</html>

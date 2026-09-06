@@ -47,6 +47,96 @@ export const DEFAULT_QUERY_SETTINGS: Record<PersonType, ElasticQuerySettings> = 
   },
 };
 
+// ─── Relevance tiers ──────────────────────────────────────────────────────────
+
+const DEFAULT_TIER_BOOSTS = { exact: 1000, phrase: 100, prefix: 10 };
+
+/**
+ * Caps how many terms `phrase_prefix` expands the trailing term into, per field
+ * per segment — the only clause here whose cost grows with term cardinality.
+ * Truncated expansion can only cost a document its prefix boost, never its place
+ * in the results, since the tier lives in `should`.
+ */
+const PREFIX_TIER_MAX_EXPANSIONS = 20;
+
+/** `"fullName^25"` → `"fullName"` — Lucene per-field boosts are meaningless here. */
+function stripFieldBoost(field: string): string {
+  return field.split('^')[0];
+}
+
+/**
+ * Builds the `bool.should` clauses that rank an exact match above a partial one.
+ *
+ * These sit alongside a non-empty `bool.must`, so `minimum_should_match` stays 0
+ * and the matched set is untouched — every document `query_string` matched still
+ * comes back, just further down the list. The tiers are additive and monotonic:
+ * an exact hit also satisfies phrase and prefix (1110), a whole-word hit scores
+ * 110, a prefix hit 10, and a mere substring 0.
+ *
+ * `constant_score` pins each tier to a fixed value so neither BM25 term
+ * statistics nor the `^boost` notation in `searchFields` can invert the order.
+ */
+function buildScoreTiers(
+  settings: ElasticQuerySettings,
+  query: string,
+): Record<string, unknown>[] {
+  if (settings.scoreTiers === false) return [];
+
+  const raw = query.trim();
+  const fields = settings.searchFields.map(stripFieldBoost);
+  if (!raw || !fields.length) return [];
+
+  const tiers = settings.scoreTiers ?? {};
+  // A `term` clause against a field the mapping doesn't define never matches and
+  // never errors, so appending `.keyword` blindly is safe for non-text fields.
+  const exactFields =
+    tiers.exactFields ??
+    fields.map((f) => (f.endsWith('.keyword') ? f : `${f}.keyword`));
+
+  const clauses: Record<string, unknown>[] = [];
+
+  if (exactFields.length) {
+    clauses.push({
+      constant_score: {
+        boost: tiers.exactBoost ?? DEFAULT_TIER_BOOSTS.exact,
+        filter: {
+          bool: {
+            should: exactFields.map((f) => ({ term: { [f]: raw } })),
+            minimum_should_match: 1,
+          },
+        },
+      },
+    });
+  }
+
+  // `lenient` keeps a text query from 400-ing when searchFields mixes in a
+  // numeric/date field the value can't be parsed into.
+  clauses.push(
+    {
+      constant_score: {
+        boost:  tiers.phraseBoost ?? DEFAULT_TIER_BOOSTS.phrase,
+        filter: { multi_match: { query: raw, type: 'phrase', fields, lenient: true } },
+      },
+    },
+    {
+      constant_score: {
+        boost:  tiers.prefixBoost ?? DEFAULT_TIER_BOOSTS.prefix,
+        filter: {
+          multi_match: {
+            query:          raw,
+            type:           'phrase_prefix',
+            fields,
+            lenient:        true,
+            max_expansions: PREFIX_TIER_MAX_EXPANSIONS,
+          },
+        },
+      },
+    },
+  );
+
+  return clauses;
+}
+
 // ─── Generic query builder ────────────────────────────────────────────────────
 
 /**
@@ -65,6 +155,7 @@ export const DEFAULT_QUERY_SETTINGS: Record<PersonType, ElasticQuerySettings> = 
  *           ...atLeastOneField → { bool: { should, minimum_should_match:1 } }
  *           ...conditions      (injected as-is)
  *         ],
+ *         should: [ ...score tiers ],                      // ranking only
  *         filter: { terms: { allowedList.field: [...] } }  // optional
  *     } }
  *   ] } },
@@ -109,8 +200,12 @@ export function buildElasticQuery(
     });
   }
 
-  // ── 3. Inner bool — optional allowedList terms filter ───────────────────
+  // ── 3. Inner bool — score tiers + optional allowedList terms filter ─────
   const innerBool: Record<string, unknown> = { must: innerMust };
+
+  const scoreTiers = buildScoreTiers(settings, query);
+  if (scoreTiers.length) innerBool['should'] = scoreTiers;
+
   if (settings.allowedList?.values.length) {
     innerBool['filter'] = {
       terms: { [settings.allowedList.field]: settings.allowedList.values },
