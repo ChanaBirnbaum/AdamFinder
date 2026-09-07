@@ -238,12 +238,20 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const remoteFieldConfigPromiseRef = useRef<Promise<void> | null>(null);
   const debouncedInput = useDebounce(inputValue, 300);
 
-  // Controlled state prop
+  // Controlled state prop — null clears the whole control (typed text, results, selection),
+  // not just the selection, matching the documented "pass null to clear" contract.
   useEffect(() => {
-    if (state !== undefined) {
+    if (state === null) {
+      setInputValueState('');
+      setResults(emptyResults);
+      setSelectedPerson(null);
+      setError(null);
+      setIsOffline(false);
+      resetPaging();
+    } else if (state !== undefined) {
       setSelectedPerson(state);
     }
-  }, [state]);
+  }, [state, resetPaging]);
 
   // Prisoner whitelist (מידור): fetch once on mount when asir is included and endpoint is configured
   useEffect(() => {
