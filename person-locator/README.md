@@ -300,6 +300,31 @@ per type — see `DEFAULT_QUERY_SETTINGS` in `src/services/elasticSearchService.
 built-in values (search fields, `isActive` as the active field, index names `asirs` /
 `sohers` / `ezrachs`).
 
+### Result ranking
+
+Every Elasticsearch query — whatever its `wrapMode` — carries a set of `bool.should`
+scoring tiers so an exact match always outranks a partial one:
+
+| Tier | Matches | Boost |
+| --- | --- | --- |
+| Exact | the whole field value equals the query (`term` on `<field>.keyword`) | `1000` |
+| Phrase | the query appears as a complete word/phrase in the field | `100` |
+| Prefix | a word in the field starts with the query — at any position, not only the start of the value | `10` |
+| Substring | anything else the `query_string` matched | `0` |
+
+The tiers are additive, so an exact hit scores `1110` and can't be overtaken. They live in
+`should` beside a non-empty `must`, so **nothing is filtered out** — partial matches still
+return, just later in the paged list. Tune or disable per type with `scoreTiers`:
+
+```ts
+querySettings: {
+  asir:  { /* … */ scoreTiers: { exactFields: ['idnt_asir'], exactBoost: 5000 } },
+  soher: { /* … */ scoreTiers: false },   // opt out — pure query_string relevance
+}
+```
+
+Note that a configured `scriptSort` outranks `_score` and therefore overrides these tiers.
+
 Two server-driven overrides layer on top of `querySettings`, applied in this order:
 whitelist (מידור, restricts asir results to a server-provided ID list) → remote field
 config (lets a server change `searchFields`/`sourceFields` without a client deploy) →

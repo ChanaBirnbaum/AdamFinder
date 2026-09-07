@@ -395,4 +395,76 @@ describe('usePersonSearch', () => {
     expect(result.current.selectedPerson).toBeNull();
     expect(onClear).toHaveBeenCalledTimes(1);
   });
+
+  // Regression: typing a long ID fires a search per debounce pause ("123" → "123456" → "123456789").
+  // The broad early search matches far more people and can resolve last; before the run-id guard
+  // its results overwrote the narrow final search, so the box showed matches for a few digits only.
+  it('a slower earlier search never overwrites the results of a later one', async () => {
+    const broadResults = [makeResult('broad-1'), makeResult('broad-2'), makeResult('broad-3')];
+    const narrowResults = [makeResult('narrow-1')];
+
+    let releaseBroad: () => void = () => {};
+    const broadReleased = new Promise<void>((resolve) => { releaseBroad = resolve; });
+
+    mockSearchPersons.mockImplementation(async ({ query, personType }) => {
+      if (personType !== 'ezrach') return { results: [], hasMore: false };
+      if (query === '123') {
+        await broadReleased; // the broad search resolves only after the narrow one has finished
+        return { results: broadResults, hasMore: false };
+      }
+      return { results: narrowResults, hasMore: false };
+    });
+
+    const { result } = renderHook(() =>
+      usePersonSearch({ ...baseConfig, minChars: 3, type: 'ezrach' })
+    );
+    await act(async () => {});
+
+    act(() => { result.current.setInputValue('123'); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
+
+    act(() => { result.current.setInputValue('123456789'); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
+
+    await waitFor(() => expect(result.current.results.ezrachs).toHaveLength(1));
+    expect(result.current.results.ezrachs[0].id).toBe('narrow-1');
+
+    // The superseded search now lands — it must not touch the state.
+    await act(async () => {
+      releaseBroad();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(result.current.results.ezrachs.map((p) => p.id)).toEqual(['narrow-1']);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('clearing the input below minChars discards a search still in flight', async () => {
+    let release: () => void = () => {};
+    const released = new Promise<void>((resolve) => { release = resolve; });
+
+    mockSearchPersons.mockImplementation(async ({ personType }) => {
+      if (personType !== 'ezrach') return { results: [], hasMore: false };
+      await released;
+      return { results: [makeResult('late-1')], hasMore: false };
+    });
+
+    const { result } = renderHook(() =>
+      usePersonSearch({ ...baseConfig, minChars: 3, type: 'ezrach' })
+    );
+    await act(async () => {});
+
+    act(() => { result.current.setInputValue('123'); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 350)); });
+
+    act(() => { result.current.setInputValue(''); });
+
+    await act(async () => {
+      release();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(result.current.results.ezrachs).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+  });
 });

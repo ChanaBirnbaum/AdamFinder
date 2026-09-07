@@ -232,6 +232,24 @@ interface AllowedListFilter {
     /** Allowed values — when empty the filter clause is omitted. */
     values: (string | number)[];
 }
+/**
+ * Relevance tiers that rank an exact match above a merely-contained one.
+ * Applied to every query regardless of `wrapMode` — see `buildElasticQuery`.
+ * Set `scoreTiers: false` on a PersonType to opt out.
+ */
+interface ScoreTiers {
+    /**
+     * Fields tested for whole-value equality via `term`.
+     * Default: every entry of `searchFields` with `.keyword` appended.
+     */
+    exactFields?: string[];
+    /** Whole field value equals the query. Default: `1000`. */
+    exactBoost?: number;
+    /** Query appears as a whole word/phrase inside the field. Default: `100`. */
+    phraseBoost?: number;
+    /** Field (or a phrase in it) starts with the query. Default: `10`. */
+    prefixBoost?: number;
+}
 /** Script-based primary sort (added before `_score`). */
 interface ScriptSort {
     script: string;
@@ -276,6 +294,12 @@ interface ElasticQuerySettings {
     }>;
     /** Primary sort by script — appended before `_score` sort. */
     scriptSort?: ScriptSort;
+    /**
+     * Ranking tiers pushing exact matches above partial ones. Enabled by default;
+     * pass `false` to disable, or an object to tune boosts / exact-match fields.
+     * Affects ordering only — never which documents match.
+     */
+    scoreTiers?: ScoreTiers | false;
     /**
      * The document field that represents the active/inactive state.
      * Used when `activeOnly` filtering is requested.
@@ -473,6 +497,7 @@ declare function initHttpClient(config: HttpClientConfig, force?: boolean): void
  *           ...atLeastOneField → { bool: { should, minimum_should_match:1 } }
  *           ...conditions      (injected as-is)
  *         ],
+ *         should: [ ...score tiers ],                      // ranking only
  *         filter: { terms: { allowedList.field: [...] } }  // optional
  *     } }
  *   ] } },
@@ -488,4 +513,4 @@ declare function buildElasticQuery(settings: ElasticQuerySettings, { query, size
     from: number;
 }): Record<string, unknown>;
 
-export { type AllowedListFilter, Avatar, Badge, type BadgeStatus, CitizenIcon, type ElasticQuerySettings, type FieldExceptionsMap, type FieldRef, type Filter, type FilterInput, GuardIcon, type HttpClientConfig, MAX_INLINE_TERMS, OfflineError, type PagingState, type Path, PersonLocator, type PersonLocatorProps, type PersonResult, type PersonType, PrisonerIcon, ProfilePlaceholder, type QueryWrapMode, type ScriptSort, SearchIcon, type SearchResults, type SingleSearch, Toggle, type UsePersonSearchReturn, type ValueAtPath, and, buildElasticQuery, compileToElasticQuery, compileToPredicate, composeWithBase, defaultFieldExceptions, eq, exists, highlightMatch, initHttpClient, mergeResults, noneOf, normalize, not, oneOf, or, range, usePersonSearch };
+export { type AllowedListFilter, Avatar, Badge, type BadgeStatus, CitizenIcon, type ElasticQuerySettings, type FieldExceptionsMap, type FieldRef, type Filter, type FilterInput, GuardIcon, type HttpClientConfig, MAX_INLINE_TERMS, OfflineError, type PagingState, type Path, PersonLocator, type PersonLocatorProps, type PersonResult, type PersonType, PrisonerIcon, ProfilePlaceholder, type QueryWrapMode, type ScoreTiers, type ScriptSort, SearchIcon, type SearchResults, type SingleSearch, Toggle, type UsePersonSearchReturn, type ValueAtPath, and, buildElasticQuery, compileToElasticQuery, compileToPredicate, composeWithBase, defaultFieldExceptions, eq, exists, highlightMatch, initHttpClient, mergeResults, noneOf, normalize, not, oneOf, or, range, usePersonSearch };
