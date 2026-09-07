@@ -247,7 +247,7 @@ interface ScoreTiers {
     exactBoost?: number;
     /** Query appears as a whole word/phrase inside the field. Default: `100`. */
     phraseBoost?: number;
-    /** Field (or a phrase in it) starts with the query. Default: `10`. */
+    /** A word in the field starts with the query, at any position. Default: `10`. */
     prefixBoost?: number;
 }
 /** Script-based primary sort (added before `_score`). */
