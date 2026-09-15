@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { PersonLocatorProps, PersonType } from '../types';
+import React, { useState, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import type { PersonLocatorHandle, PersonLocatorProps, PersonType } from '../types';
 import { usePersonSearch } from '../hooks/usePersonSearch';
 import { useRecentSearches } from '../hooks/useRecentSearches';
 import type { RecentPerson } from '../hooks/useRecentSearches';
@@ -8,7 +8,7 @@ import SearchInput from './SearchInput';
 import ResultsPanel from './ResultsPanel';
 import RecentSearchesPanel from './RecentSearchesPanel';
 
-const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
+const PersonLocator = React.forwardRef<PersonLocatorHandle, PersonLocatorProps>((props, ref) => {
   const {
     type,
     disabled,
@@ -22,6 +22,8 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     hideNavigationLinks,
     activeOnly,
     isDefaultActive,
+    error: hasError,
+    helperText,
   } = props;
 
   const [internalTypeFilter, setInternalTypeFilter] = useState<PersonType | undefined>(undefined);
@@ -74,7 +76,7 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     isLoading,
     isLoadingMore,
     isOffline,
-    error,
+    error: searchError,
     selectedPerson,
     inputValue,
     activeTab,
@@ -87,6 +89,13 @@ const PersonLocator: React.FC<PersonLocatorProps> = (props) => {
     setShowActiveOnly,
     displayFields,
   } = usePersonSearch(effectiveProps);
+
+  useImperativeHandle(ref, () => ({
+    clear: () => {
+      clearSelection();
+      setIsFocused(false);
+    },
+  }), [clearSelection]);
 
   const { recents, addPerson, removePerson, clearAll } = useRecentSearches();
 
@@ -163,11 +172,13 @@ onBlurCapture={() => {
         isSearchActive={isFocused && selectedPerson === null}
         activeToggleValue={showActiveOnly}
         onActiveToggle={setShowActiveOnly}
+        error={hasError}
+        helperText={helperText}
       />
 
-      {error && (
+      {searchError && (
         <div className="plib-mt-1 plib-text-xs plib-text-red-600 plib-text-right" role="alert" aria-live="assertive">
-          {error}
+          {searchError}
           <button
             type="button"
             onClick={() => setInputValue(inputValue)}
@@ -218,6 +229,8 @@ onBlurCapture={() => {
       )}
     </div>
   );
-};
+});
+
+PersonLocator.displayName = 'PersonLocator';
 
 export default PersonLocator;

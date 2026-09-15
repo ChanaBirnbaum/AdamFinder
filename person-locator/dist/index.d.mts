@@ -1,5 +1,5 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
 type ToggleProps = {
@@ -247,7 +247,7 @@ interface ScoreTiers {
     exactBoost?: number;
     /** Query appears as a whole word/phrase inside the field. Default: `100`. */
     phraseBoost?: number;
-    /** Field (or a phrase in it) starts with the query. Default: `10`. */
+    /** A word in the field starts with the query, at any position. Default: `10`. */
     prefixBoost?: number;
 }
 /** Script-based primary sort (added before `_score`). */
@@ -357,6 +357,14 @@ interface ServiceConfig {
     /** Per-type query settings — override library defaults per PersonType. */
     querySettings?: Partial<Record<PersonType, ElasticQuerySettings>>;
 }
+/** Imperative handle exposed through `<PersonLocator ref={...} />`. */
+interface PersonLocatorHandle {
+    /**
+     * Empties the input, drops the selected person and any pending results, and closes
+     * the dropdown. Use it for a form-level "נקה" button. Fires `onClear`.
+     */
+    clear: () => void;
+}
 interface PersonLocatorProps {
     /** Restrict search to one or more categories. Omit to search all three. */
     type?: PersonType | PersonType[];
@@ -366,6 +374,14 @@ interface PersonLocatorProps {
     onSelect?: (person: PersonResult) => void;
     /** Disables all input and interaction. */
     disabled?: boolean;
+    /**
+     * Marks the field invalid from the outside (form validation) — paints the input
+     * border and `helperText` in the error color and sets `aria-invalid`.
+     * Separate from internal search failures, which the component reports on its own.
+     */
+    error?: boolean;
+    /** Text under the input. Shown in the error color while `error` is true. */
+    helperText?: ReactNode;
     /** Direction the results dropdown opens. Default: 'down' */
     resultDirection?: 'up' | 'down';
     /** Extra ES index fields to include in the search query. */
@@ -428,7 +444,7 @@ interface PersonLocatorProps {
     serviceConfig?: Partial<ServiceConfig>;
 }
 
-declare const PersonLocator: React.FC<PersonLocatorProps>;
+declare const PersonLocator: React.ForwardRefExoticComponent<PersonLocatorProps & React.RefAttributes<PersonLocatorHandle>>;
 
 interface UsePersonSearchReturn {
     results: SearchResults;
@@ -513,4 +529,4 @@ declare function buildElasticQuery(settings: ElasticQuerySettings, { query, size
     from: number;
 }): Record<string, unknown>;
 
-export { type AllowedListFilter, Avatar, Badge, type BadgeStatus, CitizenIcon, type ElasticQuerySettings, type FieldExceptionsMap, type FieldRef, type Filter, type FilterInput, GuardIcon, type HttpClientConfig, MAX_INLINE_TERMS, OfflineError, type PagingState, type Path, PersonLocator, type PersonLocatorProps, type PersonResult, type PersonType, PrisonerIcon, ProfilePlaceholder, type QueryWrapMode, type ScoreTiers, type ScriptSort, SearchIcon, type SearchResults, type SingleSearch, Toggle, type UsePersonSearchReturn, type ValueAtPath, and, buildElasticQuery, compileToElasticQuery, compileToPredicate, composeWithBase, defaultFieldExceptions, eq, exists, highlightMatch, initHttpClient, mergeResults, noneOf, normalize, not, oneOf, or, range, usePersonSearch };
+export { type AllowedListFilter, Avatar, Badge, type BadgeStatus, CitizenIcon, type ElasticQuerySettings, type FieldExceptionsMap, type FieldRef, type Filter, type FilterInput, GuardIcon, type HttpClientConfig, MAX_INLINE_TERMS, OfflineError, type PagingState, type Path, PersonLocator, type PersonLocatorHandle, type PersonLocatorProps, type PersonResult, type PersonType, PrisonerIcon, ProfilePlaceholder, type QueryWrapMode, type ScoreTiers, type ScriptSort, SearchIcon, type SearchResults, type SingleSearch, Toggle, type UsePersonSearchReturn, type ValueAtPath, and, buildElasticQuery, compileToElasticQuery, compileToPredicate, composeWithBase, defaultFieldExceptions, eq, exists, highlightMatch, initHttpClient, mergeResults, noneOf, normalize, not, oneOf, or, range, usePersonSearch };

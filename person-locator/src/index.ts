@@ -24,6 +24,7 @@ export type {
   PagingState,
   SingleSearch,
   PersonLocatorProps,
+  PersonLocatorHandle,
   QueryWrapMode,
   AllowedListFilter,
   ScriptSort,

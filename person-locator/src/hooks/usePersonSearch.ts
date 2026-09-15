@@ -246,11 +246,34 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const remoteFieldConfigPromiseRef = useRef<Promise<void> | null>(null);
   const debouncedInput = useDebounce(inputValue, 300);
 
-  // Controlled state prop
+  // Controlled `state` prop — mirrors the parent's value into the whole control, not just
+  // `selectedPerson`: a form's reset/clear button expresses itself as `state={null}`, so the
+  // typed text and the results have to go with it or the box still reads as filled.
   useEffect(() => {
-    if (state !== undefined) {
-      setSelectedPerson(state);
+    if (state === undefined) return;
+
+    if (state === null) {
+      cancelPendingRequests();
+      setInputValueState('');
+      setResults(emptyResults);
+      setSelectedPerson(null);
+      setError(null);
+      setIsOffline(false);
+      setIsLoading(false);
+      setIsLoadingMore(false);
+      resetPaging();
+      return;
     }
+
+    // A person handed down by the parent fills the box exactly like an in-list pick does.
+    // Only claim the "skip the next search" flag when the text actually changes — otherwise
+    // no debounced run follows to consume it and it would swallow the user's next real search.
+    const text = String(state.data['fullName'] ?? '');
+    if (text !== inputValue && text.length >= minChars) justSelectedRef.current = true;
+    setSelectedPerson(state);
+    setInputValueState(text);
+    setActiveTabState(state.personType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   // Prisoner whitelist (מידור): fetch once on mount when asir is included and endpoint is configured
@@ -301,6 +324,20 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     const onlineController = new AbortController();
     const offlineController = new AbortController();
 
+    // Pre-filled person must show in the box like an in-list pick — name in the input, and the
+    // debounced search that the new text would trigger suppressed. The flag is only claimed when
+    // that search would really fire (text changed and reaches minChars), else it'd stay armed and
+    // swallow the user's next real search.
+    const fill = (person: PersonResult) => {
+      const text = String(person.data['fullName'] ?? '');
+      setInputValueState((prev) => {
+        if (prev !== text && text.length >= minChars) justSelectedRef.current = true;
+        return text;
+      });
+      setSelectedPerson(person);
+      setActiveTabState(person.personType);
+    };
+
     (async () => {
       if (asirWhitelistPromiseRef.current) {
         await asirWhitelistPromiseRef.current;
@@ -346,7 +383,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       const onlinePersonsFiltered = onlinePersons.filter(filterPredicate);
       const found = onlinePersonsFiltered[0] ?? esPersonFiltered ?? null;
       if (found) {
-        setSelectedPerson(found);
+        fill(found);
         return;
       }
 
@@ -358,7 +395,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
           signal: offlineController.signal,
         }).catch(() => [] as PersonResult[]);
         const offlinePersonsFiltered = offlinePersons.filter(filterPredicate);
-        if (offlinePersonsFiltered[0]) setSelectedPerson(offlinePersonsFiltered[0]);
+        if (offlinePersonsFiltered[0]) fill(offlinePersonsFiltered[0]);
       }
     })().catch(() => {/* silently ignore */});
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { FilterInput } from '../filters';
 
 // Person categories
@@ -186,6 +187,15 @@ export interface ServiceConfig {
   querySettings?: Partial<Record<PersonType, ElasticQuerySettings>>;
 }
 
+/** Imperative handle exposed through `<PersonLocator ref={...} />`. */
+export interface PersonLocatorHandle {
+  /**
+   * Empties the input, drops the selected person and any pending results, and closes
+   * the dropdown. Use it for a form-level "נקה" button. Fires `onClear`.
+   */
+  clear: () => void;
+}
+
 // The root component props – EVERY prop must have JSDoc
 export interface PersonLocatorProps {
   /** Restrict search to one or more categories. Omit to search all three. */
@@ -199,6 +209,16 @@ export interface PersonLocatorProps {
 
   /** Disables all input and interaction. */
   disabled?: boolean;
+
+  /**
+   * Marks the field invalid from the outside (form validation) — paints the input
+   * border and `helperText` in the error color and sets `aria-invalid`.
+   * Separate from internal search failures, which the component reports on its own.
+   */
+  error?: boolean;
+
+  /** Text under the input. Shown in the error color while `error` is true. */
+  helperText?: ReactNode;
 
   /** Direction the results dropdown opens. Default: 'down' */
   resultDirection?: 'up' | 'down';

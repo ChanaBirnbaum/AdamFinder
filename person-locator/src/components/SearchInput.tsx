@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import type { PersonLocatorProps, PersonType } from '../types';
 import Toggle from './Toggle';
 import Tip from './Tooltip';
@@ -22,6 +22,8 @@ interface SearchInputProps {
   isOpen?: boolean;
   hasSelectedPerson?: boolean;
   isSearchActive?: boolean;
+  error?: boolean;
+  helperText?: React.ReactNode;
 }
 
 const TYPE_CONFIG: {
@@ -72,7 +74,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
   isOpen = false,
   hasSelectedPerson = false,
   isSearchActive = false,
+  error = false,
+  helperText,
 }) => {
+  const helperId = useId();
   const [internalActive, setInternalActive] = useState(isDefaultActive ?? false);
   const isActive = activeToggleValue !== undefined ? activeToggleValue : internalActive;
 
@@ -93,10 +98,11 @@ const SearchInput: React.FC<SearchInputProps> = ({
       {/* ── Single bar ──────────────────────────────────────────────────────── */}
       <div
         className={[
-          'plib-group/filters plib-flex plib-items-center plib-gap-2 plib-bg-white plib-px-4 plib-h-input plib-transition-all',
+          'plib-group/filters plib-flex plib-items-center plib-gap-2 plib-bg-white plib-px-4 plib-h-input plib-transition-all plib-border',
           isOpen
-            ? 'plib-rounded-t-lg plib-rounded-b-none plib-border plib-border-primary-main plib-shadow-search-top'
-            : 'plib-rounded-lg plib-border plib-border-primary-main',
+            ? 'plib-rounded-t-lg plib-rounded-b-none plib-shadow-search-top'
+            : 'plib-rounded-lg',
+          error ? 'plib-border-error-main' : 'plib-border-primary-main',
           disabled ? 'plib-opacity-60 plib-cursor-not-allowed' : '',
         ].join(' ')}
       >
@@ -114,6 +120,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
           dir="rtl"
           className="plib-flex-1 plib-outline-none plib-text-right plib-font-rubik plib-font-normal plib-text-base plib-text-text-primary placeholder:plib-text-text-muted plib-bg-transparent plib-min-w-0"
           aria-label="חיפוש אדם"
+          aria-invalid={error || undefined}
+          aria-describedby={helperText ? helperId : undefined}
         />
 
         {/* ── Clear ─────────────────────────────────────────────────────── */}
@@ -181,7 +189,20 @@ const SearchInput: React.FC<SearchInputProps> = ({
       {/* Hint — absolutely positioned so it never reserves layout space; showing/hiding it
           must not resize this container, since anchored portals (results/recents panels)
           measure this container's rect to position themselves. */}
-      {inputValue.length > 0 && inputValue.length < minChars && (
+      {helperText ? (
+        <p
+          id={helperId}
+          className={[
+            'plib-absolute plib-top-full plib-inset-x-0 plib-mt-1 plib-pointer-events-none',
+            'plib-font-rubik plib-text-sm plib-text-right plib-px-1',
+            error ? 'plib-text-error-main' : 'plib-text-text-muted',
+          ].join(' ')}
+          role={error ? 'alert' : 'status'}
+          aria-live={error ? 'assertive' : 'polite'}
+        >
+          {helperText}
+        </p>
+      ) : inputValue.length > 0 && inputValue.length < minChars ? (
         <p
           className="plib-absolute plib-top-full plib-inset-x-0 plib-mt-1 plib-pointer-events-none plib-font-rubik plib-text-sm plib-text-text-muted plib-text-right plib-px-1"
           role="status"
@@ -189,7 +210,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         >
           הקלד לפחות {minChars} תווים לחיפוש
         </p>
-      )}
+      ) : null}
     </div>
   );
 };
