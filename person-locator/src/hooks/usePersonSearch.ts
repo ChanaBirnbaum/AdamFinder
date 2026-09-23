@@ -20,7 +20,6 @@ import type {
   SearchResults,
   ServiceConfig,
 } from '../types';
-import { useDebounce } from './useDebounce';
 import { usePaging } from './usePaging';
 
 function isAbortErrorLike(error: unknown): boolean {
@@ -244,7 +243,6 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const remoteFieldConfigRef = useRef<FieldConfigResponse | null>(null);
   /** Promise that resolves when the remote field config fetch completes — awaited before every ES call so fields are never stale on the very first search. */
   const remoteFieldConfigPromiseRef = useRef<Promise<void> | null>(null);
-  const debouncedInput = useDebounce(inputValue, 300);
 
   // Controlled state prop — null clears the whole control (typed text, results, selection),
   // not just the selection, matching the documented "pass null to clear" contract.
@@ -662,21 +660,26 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     ]
   );
 
-  // Fire search when debounced input changes
+  // Fire search 300ms after the user stops typing. Debounces via setTimeout tied to the raw
+  // `inputValue` (always changes on every keystroke) and calls runSearch directly from the
+  // timeout callback, rather than watching a separately-debounced *value* for changes — the
+  // latter would silently skip re-firing when the settled text repeats an earlier query, since
+  // React bails on a same-value state update.
   useEffect(() => {
-    if (debouncedInput.length < minChars) return;
+    if (inputValue.length < minChars) return;
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
       return;
     }
-    runSearch(debouncedInput);
+    const timer = setTimeout(() => runSearch(inputValue), 300);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedInput, minChars]);
+  }, [inputValue, minChars]);
 
   // Re-run search when type filter changes (while query is active)
   useEffect(() => {
-    if (debouncedInput.length >= minChars) {
-      runSearch(debouncedInput);
+    if (inputValue.length >= minChars) {
+      runSearch(inputValue);
     } else {
       setResults(emptyResults);
     }
@@ -685,16 +688,16 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   // Re-run search when the filter changes (while query is active)
   useEffect(() => {
-    if (debouncedInput.length >= minChars) {
-      runSearch(debouncedInput);
+    if (inputValue.length >= minChars) {
+      runSearch(inputValue);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterClause, filterPredicate]);
 
   // Re-run search when active toggle changes (while query is active)
   useEffect(() => {
-    if (debouncedInput.length >= minChars) {
-      runSearch(debouncedInput);
+    if (inputValue.length >= minChars) {
+      runSearch(inputValue);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showActiveOnly]);
@@ -778,12 +781,12 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
 
   const loadMore = useCallback(
     (tab: PersonType) => {
-      if (debouncedInput.length < minChars) return;
+      if (inputValue.length < minChars) return;
       const key = tab === 'asir' ? 'asirs' : tab === 'soher' ? 'sohers' : 'ezrachs';
       if (!pagingState[key].hasMore || isLoadingMore) return;
-      runSearch(debouncedInput, true, tab);
+      runSearch(inputValue, true, tab);
     },
-    [debouncedInput, minChars, pagingState, isLoadingMore, runSearch]
+    [inputValue, minChars, pagingState, isLoadingMore, runSearch]
   );
 
   const baseDisplayFields =
