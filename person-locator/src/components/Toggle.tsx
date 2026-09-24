@@ -27,7 +27,7 @@ export default function Toggle({ checked, onChange, className }: ToggleProps) {
         className="plib-m-0 plib-font-rubik plib-font-normal plib-leading-tight plib-text-text-muted plib-text-sm plib-text-right plib-whitespace-nowrap"
         dir="auto"
       >
-        {checked ? 'לא פעיל' : 'פעיל'}
+        פעילים בלבד
       </p>
     </button>
   );

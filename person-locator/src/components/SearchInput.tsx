@@ -37,22 +37,22 @@ const TYPE_CONFIG: {
     type: 'asir',
     label: 'אסיר',
     Icon: PrisonerIcon,
-    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
-    idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
+    activeClass: 'plib-text-primary-dark plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
+    idleClass:   'plib-text-primary-dark plib-bg-transparent plib-rounded-lg plib-p-1',
   },
   {
     type: 'soher',
     label: 'סוהר',
     Icon: GuardIcon,
-    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
-    idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
+    activeClass: 'plib-text-primary-dark plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
+    idleClass:   'plib-text-primary-dark plib-bg-transparent plib-rounded-lg plib-p-1',
   },
   {
     type: 'ezrach',
     label: 'אזרח',
     Icon: CitizenIcon,
-    activeClass: 'plib-text-primary-main plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
-    idleClass:   'plib-text-text-muted plib-bg-transparent plib-rounded-lg plib-p-1',
+    activeClass: 'plib-text-primary-dark plib-bg-primary-soft plib-rounded-lg plib-p-0.5',
+    idleClass:   'plib-text-primary-dark plib-bg-transparent plib-rounded-lg plib-p-1',
   },
 ];
 
@@ -107,7 +107,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         ].join(' ')}
       >
         {/* Search icon */}
-        <SearchIcon className="plib-flex-shrink-0 plib-text-text-muted" size={20} />
+        <SearchIcon className="plib-flex-shrink-0 plib-text-primary-dark" size={20} />
 
         {/* Input */}
         <input
@@ -118,7 +118,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
           placeholder="חיפוש אדם"
           disabled={disabled}
           dir="rtl"
-          className="plib-flex-1 plib-outline-none plib-text-right plib-font-rubik plib-font-normal plib-text-base plib-text-text-primary placeholder:plib-text-text-muted plib-bg-transparent plib-min-w-0"
+          className="plib-flex-1 plib-outline-none plib-text-right plib-font-rubik plib-font-semibold plib-text-base plib-text-text-primary placeholder:plib-text-text-muted plib-bg-transparent plib-min-w-0"
           aria-label="חיפוש אדם"
           aria-invalid={error || undefined}
           aria-describedby={helperText ? helperId : undefined}

@@ -246,35 +246,20 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const remoteFieldConfigPromiseRef = useRef<Promise<void> | null>(null);
   const debouncedInput = useDebounce(inputValue, 300);
 
-  // Controlled `state` prop — mirrors the parent's value into the whole control, not just
-  // `selectedPerson`: a form's reset/clear button expresses itself as `state={null}`, so the
-  // typed text and the results have to go with it or the box still reads as filled.
+  // Controlled state prop — null clears the whole control (typed text, results, selection),
+  // not just the selection, matching the documented "pass null to clear" contract.
   useEffect(() => {
-    if (state === undefined) return;
-
     if (state === null) {
-      cancelPendingRequests();
       setInputValueState('');
       setResults(emptyResults);
       setSelectedPerson(null);
       setError(null);
       setIsOffline(false);
-      setIsLoading(false);
-      setIsLoadingMore(false);
       resetPaging();
-      return;
+    } else if (state !== undefined) {
+      setSelectedPerson(state);
     }
-
-    // A person handed down by the parent fills the box exactly like an in-list pick does.
-    // Only claim the "skip the next search" flag when the text actually changes — otherwise
-    // no debounced run follows to consume it and it would swallow the user's next real search.
-    const text = String(state.data['fullName'] ?? '');
-    if (text !== inputValue && text.length >= minChars) justSelectedRef.current = true;
-    setSelectedPerson(state);
-    setInputValueState(text);
-    setActiveTabState(state.personType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  }, [state, resetPaging]);
 
   // Prisoner whitelist (מידור): fetch once on mount when asir is included and endpoint is configured
   useEffect(() => {
