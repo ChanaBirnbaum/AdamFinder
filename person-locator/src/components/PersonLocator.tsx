@@ -34,12 +34,14 @@ const PersonLocator = React.forwardRef<PersonLocatorHandle, PersonLocatorProps>(
   // track them separately for outside-click / focus checks below.
   const resultsPanelRef = useRef<HTMLDivElement>(null);
   const recentsPanelRef = useRef<HTMLDivElement>(null);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
 
   const isInsideLocator = useCallback((target: Node) => {
     return Boolean(
       containerRef.current?.contains(target) ||
       resultsPanelRef.current?.contains(target) ||
-      recentsPanelRef.current?.contains(target),
+      recentsPanelRef.current?.contains(target) ||
+      filterMenuRef.current?.contains(target),
     );
   }, []);
 
@@ -176,6 +178,8 @@ onBlurCapture={() => {
         onActiveToggle={setShowActiveOnly}
         error={hasError}
         helperText={helperText}
+        resultDirection={resultDirection}
+        filterMenuRef={filterMenuRef}
       />
 
       {searchError && (

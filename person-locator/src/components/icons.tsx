@@ -9,6 +9,16 @@ export function SearchIcon({ className, size = 24 }: { className?: string; size?
   );
 }
 
+export function FilterIcon({ className, size = 24 }: { className?: string; size?: number }) {
+  return (
+    <div className={`plib-root plib-relative plib-shrink-0 ${className ?? ''}`} style={{ width: size, height: size }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="plib-absolute plib-inset-0 plib-w-full plib-h-full" aria-hidden="true">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+      </svg>
+    </div>
+  );
+}
+
 export function CitizenIcon({ active = false, className, size = 30 }: { active?: boolean; className?: string; size?: number }) {
   return (
     <div className={`plib-root plib-relative plib-shrink-0 ${active ? 'plib-text-primary-main' : ''} ${className ?? ''}`} style={{ width: size, height: size }}>

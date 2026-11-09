@@ -122,6 +122,23 @@ export default function App() {
 
         <hr className="border-gray-200" />
 
+        {/* ── רוחב צר — הסינונים עוברים לתפריט ── */}
+        <section className="space-y-2">
+          <p className="text-xs font-medium text-gray-400 text-right">
+            רוחב צר (288px) · תצוגה מצומצמת · הסינונים בתפריט שנפתח מאייקון המשפך
+          </p>
+          <div className="w-72">
+            <PersonLocator
+              env="dev"
+              minChars={2}
+              serviceConfig={mockServiceConfig}
+              onSelect={(p: PersonResult) => console.log('נבחר:', p.data['fullName'], p.personType)}
+            />
+          </div>
+        </section>
+
+        <hr className="border-gray-200" />
+
         {/* ── בתוך קונטיינר עם overflow:hidden — בודק שהתפריט לא נחתך ──
             (מדמה אפליקציית host שעוטפת את הרכיב בקונטיינר חונק, למשל כרטיס/מודל) */}
         <section className="space-y-2">
