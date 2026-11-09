@@ -115,6 +115,8 @@ export interface UsePersonSearchReturn {
   loadMore: (tab: PersonType) => void;
   showActiveOnly: boolean;
   setShowActiveOnly: (v: boolean) => void;
+  /** True when the active toggle is forced on and can't be changed by the user. */
+  isActiveLocked: boolean;
   /** Fields to display in the expanded card section — sourced from config.querySettings[activeTab].sourceFields */
   displayFields: string[];
 }
@@ -398,8 +400,10 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     runIdRef.current++;
   }, []);
 
+  // Citizens can only be searched as active; an explicit activeOnly prop still takes precedence.
+  const isActiveLocked = activeOnly === undefined && singleType === 'ezrach';
   const effectiveActiveOnly =
-    activeOnly !== undefined ? activeOnly : showActiveOnly;
+    activeOnly !== undefined ? activeOnly : (isActiveLocked || showActiveOnly);
 
   const runSearch = useCallback(
     async (rawQuery: string, isLoadMore = false, loadMoreTab?: PersonType) => {
@@ -834,6 +838,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
+    isActiveLocked,
     displayFields,
   };
 }

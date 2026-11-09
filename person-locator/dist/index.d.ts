@@ -5,9 +5,10 @@ import { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 type ToggleProps = {
     checked: boolean;
     onChange?: (checked: boolean) => void;
+    disabled?: boolean;
     className?: string;
 };
-declare function Toggle({ checked, onChange, className }: ToggleProps): react_jsx_runtime.JSX.Element;
+declare function Toggle({ checked, onChange, disabled, className }: ToggleProps): react_jsx_runtime.JSX.Element;
 
 declare function SearchIcon({ className, size }: {
     className?: string;
@@ -465,6 +466,8 @@ interface UsePersonSearchReturn {
     loadMore: (tab: PersonType) => void;
     showActiveOnly: boolean;
     setShowActiveOnly: (v: boolean) => void;
+    /** True when the active toggle is forced on and can't be changed by the user. */
+    isActiveLocked: boolean;
     /** Fields to display in the expanded card section — sourced from config.querySettings[activeTab].sourceFields */
     displayFields: string[];
 }

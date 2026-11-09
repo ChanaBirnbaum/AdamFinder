@@ -87,6 +87,7 @@ const PersonLocator = React.forwardRef<PersonLocatorHandle, PersonLocatorProps>(
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
+    isActiveLocked,
     displayFields,
   } = usePersonSearch(effectiveProps);
 
@@ -170,7 +171,8 @@ onBlurCapture={() => {
         isOpen={isOpen}
         hasSelectedPerson={selectedPerson !== null}
         isSearchActive={isFocused && selectedPerson === null}
-        activeToggleValue={showActiveOnly}
+        activeToggleValue={isActiveLocked || showActiveOnly}
+        activeToggleLocked={isActiveLocked}
         onActiveToggle={setShowActiveOnly}
         error={hasError}
         helperText={helperText}
@@ -202,7 +204,8 @@ onBlurCapture={() => {
           query={inputValue}
           resultDirection={resultDirection}
           showTabBar={showTabBar}
-          allowedTypes={allowedTypes}
+          // TabBar shows every allowed tab while loading, so narrow it to the selected type.
+          allowedTypes={internalTypeFilter ? [internalTypeFilter] : allowedTypes}
           onTabChange={setActiveTab}
           onSelect={handleSelect}
           loadMore={loadMore}

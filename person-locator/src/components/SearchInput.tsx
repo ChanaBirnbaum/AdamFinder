@@ -19,6 +19,7 @@ interface SearchInputProps {
   minChars?: number;
   onActiveToggle?: (active: boolean) => void;
   activeToggleValue?: boolean;
+  activeToggleLocked?: boolean;
   isOpen?: boolean;
   hasSelectedPerson?: boolean;
   isSearchActive?: boolean;
@@ -71,6 +72,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   minChars = 3,
   onActiveToggle,
   activeToggleValue,
+  activeToggleLocked = false,
   isOpen = false,
   hasSelectedPerson = false,
   isSearchActive = false,
@@ -90,7 +92,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
     onTypeFilterChange?.(typeFilter === type ? undefined : type);
   };
 
-  const showTypeButtons = !lockedType && (!hasSelectedPerson || isOpen) && isSearchActive;
+  const showFilters = (!hasSelectedPerson || isOpen) && isSearchActive;
+  const showTypeButtons = showFilters && !lockedType;
+  const showActiveToggle = showFilters && activeOnly === undefined;
   const visibleTypes = allowedTypes ? TYPE_CONFIG.filter(c => allowedTypes.includes(c.type)) : TYPE_CONFIG;
 
   return (
@@ -141,25 +145,25 @@ const SearchInput: React.FC<SearchInputProps> = ({
         )}
 
         {/* ── Active toggle + type filter icons — visible while focused ─── */}
-        {showTypeButtons && (
+        {(showTypeButtons || showActiveToggle) && (
           <>
             <div className="plib-w-px plib-h-6 plib-bg-divider plib-flex-shrink-0" aria-hidden="true" />
             <div className="plib-flex plib-items-center plib-gap-0.5 plib-flex-shrink-0">
               {/* ── Active toggle ─────────────────────────────────────────── */}
-              {activeOnly === undefined && (
+              {showActiveToggle && (
                 <Toggle
                   checked={isActive}
-                  onChange={disabled ? undefined : handleToggle}
-                  className={disabled ? 'plib-opacity-50 plib-pointer-events-none' : ''}
+                  onChange={handleToggle}
+                  disabled={disabled || activeToggleLocked}
                 />
               )}
 
-              {activeOnly === undefined && visibleTypes.length > 0 && (
+              {showActiveToggle && showTypeButtons && visibleTypes.length > 0 && (
                 <div className="plib-w-px plib-h-6 plib-bg-divider plib-flex-shrink-0 plib-mx-1" aria-hidden="true" />
               )}
 
               {/* ── Type filter icons ─────────────────────────────────────── */}
-              {visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
+              {showTypeButtons && visibleTypes.map(({ type, label, Icon, activeClass, idleClass }) => {
                 const isSelected = typeFilter === type;
                 return (
                   <Tip key={type} label={label}>
