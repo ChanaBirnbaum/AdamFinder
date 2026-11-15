@@ -7,6 +7,13 @@ import type { RecentPerson } from '../hooks/useRecentSearches';
 import SearchInput from './SearchInput';
 import ResultsPanel from './ResultsPanel';
 import RecentSearchesPanel from './RecentSearchesPanel';
+import type { FilterChip } from './FilterChips';
+
+const TYPE_CHIP_LABELS: Record<PersonType, string> = {
+  asir: 'אסירים',
+  soher: 'סוהרים',
+  ezrach: 'אזרחים',
+};
 
 const PersonLocator = React.forwardRef<PersonLocatorHandle, PersonLocatorProps>((props, ref) => {
   const {
@@ -28,6 +35,7 @@ const PersonLocator = React.forwardRef<PersonLocatorHandle, PersonLocatorProps>(
 
   const [internalTypeFilter, setInternalTypeFilter] = useState<PersonType | undefined>(undefined);
   const [isFocused, setIsFocused] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   // ResultsPanel/RecentSearchesPanel portal their DOM out to <body> (to escape
   // overflow:hidden ancestors), so they're no longer DOM descendants of containerRef —
@@ -89,6 +97,7 @@ const PersonLocator = React.forwardRef<PersonLocatorHandle, PersonLocatorProps>(
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
+    typeCounts,
     isActiveLocked,
     displayFields,
   } = usePersonSearch(effectiveProps);
@@ -112,6 +121,25 @@ const PersonLocator = React.forwardRef<PersonLocatorHandle, PersonLocatorProps>(
   const showRecents = isFocused && !showResults && filteredRecents.length > 0;
   const isOpen = showResults || showRecents;
   const showTabBar = !lockedType;
+
+  // In compact mode the filters are hidden in a menu, so the applied ones are shown as chips.
+  const filterChips: FilterChip[] = [];
+  if (isCompact && selectedPerson === null) {
+    if (activeOnly === undefined && (isActiveLocked || showActiveOnly)) {
+      filterChips.push({
+        key: 'active',
+        label: 'פעילים בלבד',
+        onRemove: isActiveLocked ? undefined : () => setShowActiveOnly(false),
+      });
+    }
+    if (internalTypeFilter) {
+      filterChips.push({
+        key: 'type',
+        label: TYPE_CHIP_LABELS[internalTypeFilter],
+        onRemove: () => setInternalTypeFilter(undefined),
+      });
+    }
+  }
 
   const handleSelect = useCallback((person: Parameters<typeof selectPerson>[0], refreshPhoto = false) => {
     addPerson(person);
@@ -180,6 +208,8 @@ onBlurCapture={() => {
         helperText={helperText}
         resultDirection={resultDirection}
         filterMenuRef={filterMenuRef}
+        typeCounts={typeCounts}
+        onCompactChange={setIsCompact}
       />
 
       {searchError && (
@@ -220,6 +250,7 @@ onBlurCapture={() => {
           HideMishmorot={HideMishmorot}
           hideNavigationLinks={hideNavigationLinks}
           additionalResultFields={displayFields}
+          filterChips={filterChips}
         />
       )}
 

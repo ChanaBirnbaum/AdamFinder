@@ -29,7 +29,69 @@ interface SearchInputProps {
   resultDirection?: 'up' | 'down';
   /** Lets PersonLocator treat the portaled filter menu as part of the control. */
   filterMenuRef: React.RefObject<HTMLDivElement>;
+  /** Result count per type, shown in the compact filter menu. Missing types show no count. */
+  typeCounts?: Partial<Record<PersonType, number>>;
+  /** Reports switching between inline filters and the compact filter menu. */
+  onCompactChange?: (isCompact: boolean) => void;
 }
+
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+interface TypeMenuRowProps {
+  label: string;
+  ariaLabel: string;
+  Icon?: React.ComponentType<{ size?: number }>;
+  selected: boolean;
+  count?: number;
+  disabled?: boolean;
+  onClick: () => void;
+}
+
+/** One row in the compact filter menu: checkbox, icon, label and result count. */
+const TypeMenuRow: React.FC<TypeMenuRowProps> = ({ label, ariaLabel, Icon, selected, count, disabled, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className={[
+      'plib-flex plib-items-center plib-gap-3 plib-w-full plib-px-4 plib-py-2 plib-border-0 plib-font-rubik plib-text-base plib-text-right plib-transition-colors',
+      'focus-visible:plib-outline-none focus-visible:plib-ring-2 focus-visible:plib-ring-inset focus-visible:plib-ring-primary-main',
+      selected ? 'plib-bg-primary-soft plib-text-primary-main plib-font-semibold' : 'plib-bg-transparent plib-text-text-primary hover:plib-bg-grey-50',
+      disabled ? 'plib-cursor-not-allowed' : 'plib-cursor-pointer',
+    ].join(' ')}
+    aria-pressed={selected}
+    aria-label={count !== undefined ? `${ariaLabel}, ${count} תוצאות` : ariaLabel}
+  >
+    <span
+      className={[
+        'plib-flex plib-items-center plib-justify-center plib-w-6 plib-h-6 plib-rounded-md plib-border-2 plib-border-solid plib-border-primary-main plib-flex-shrink-0 plib-transition-colors',
+        selected ? 'plib-bg-primary-main plib-text-white' : 'plib-bg-white',
+      ].join(' ')}
+      aria-hidden="true"
+    >
+      {selected && <CheckIcon />}
+    </span>
+    <span className="plib-flex plib-items-center plib-justify-center plib-w-7 plib-flex-shrink-0 plib-text-primary-dark" aria-hidden="true">
+      {Icon && <Icon size={28} />}
+    </span>
+    <span className="plib-flex-1">{label}</span>
+    {count !== undefined && (
+      <span
+        className={[
+          'plib-min-w-8 plib-h-6 plib-px-2 plib-rounded-full plib-flex plib-items-center plib-justify-center plib-text-xs plib-font-semibold plib-flex-shrink-0',
+          selected ? 'plib-bg-white plib-text-primary-main' : 'plib-bg-grey-100 plib-text-text-secondary',
+        ].join(' ')}
+        aria-hidden="true"
+      >
+        {count}
+      </span>
+    )}
+  </button>
+);
 
 // Pixel widths of the bar's parts, used to decide when the inline filters no longer fit.
 const MIN_INPUT_WIDTH = 120; // 10 characters of 16px semibold Rubik, allowing for wide Hebrew letters
@@ -91,6 +153,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
   helperText,
   resultDirection = 'down',
   filterMenuRef,
+  typeCounts = {},
+  onCompactChange,
 }) => {
   const helperId = useId();
   const [internalActive, setInternalActive] = useState(isDefaultActive ?? false);
@@ -144,14 +208,21 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const showInlineFilters = !isCompact && (showTypeButtons || showActiveToggle);
   const isMenuVisible = showMenuTrigger && isMenuOpen;
 
+  useEffect(() => {
+    onCompactChange?.(isCompact);
+  }, [isCompact, onCompactChange]);
+
   // Otherwise a menu left open would reappear by itself when the control regains focus.
   useEffect(() => {
     if (!showMenuTrigger) setIsMenuOpen(false);
   }, [showMenuTrigger]);
 
-  const hasAppliedFilter =
-    typeFilter !== undefined ||
-    (showActiveToggle && !activeToggleLocked && isActive !== (isDefaultActive ?? true));
+  const appliedFilterCount = (typeFilter !== undefined ? 1 : 0) + (showActiveToggle && isActive ? 1 : 0);
+
+  const visibleTypeCounts = visibleTypes.map((c) => typeCounts[c.type]);
+  const allCount = visibleTypeCounts.every((n) => n !== undefined)
+    ? visibleTypeCounts.reduce<number>((sum, n) => sum + (n ?? 0), 0)
+    : undefined;
 
   return (
     <div className="plib-relative">
@@ -214,18 +285,23 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 onMouseDown={(e) => e.preventDefault()}
                 disabled={disabled}
                 className={[
-                  'plib-relative plib-flex plib-items-center plib-justify-center plib-flex-shrink-0 plib-rounded-lg plib-p-1 plib-text-primary-dark plib-transition-all',
+                  'plib-relative plib-flex plib-items-center plib-justify-center plib-flex-shrink-0 plib-w-8 plib-h-8 plib-rounded-lg plib-border-0 plib-text-primary-dark plib-transition-colors',
                   'focus-visible:plib-outline-none focus-visible:plib-ring-2 focus-visible:plib-ring-primary-main focus-visible:plib-ring-offset-1',
-                  isMenuVisible ? 'plib-bg-primary-soft' : 'plib-bg-transparent',
+                  isMenuVisible ? 'plib-bg-primary-soft' : 'plib-bg-transparent hover:plib-bg-primary-soft',
                   disabled ? 'plib-cursor-not-allowed' : 'plib-cursor-pointer',
                 ].join(' ')}
-                aria-label={hasAppliedFilter ? 'סינון תוצאות, יש סינון פעיל' : 'סינון תוצאות'}
+                aria-label={appliedFilterCount > 0 ? `סינון תוצאות, ${appliedFilterCount} סינונים פעילים` : 'סינון תוצאות'}
                 aria-expanded={isMenuVisible}
                 aria-controls={isMenuVisible ? menuId : undefined}
               >
                 <FilterIcon size={20} />
-                {hasAppliedFilter && (
-                  <span className="plib-absolute plib-top-0.5 plib-left-0.5 plib-w-2 plib-h-2 plib-rounded-full plib-bg-primary-main" aria-hidden="true" />
+                {appliedFilterCount > 0 && (
+                  <span
+                    className="plib-absolute -plib-top-1.5 -plib-right-1.5 plib-min-w-4.5 plib-h-4.5 plib-px-1 plib-rounded-full plib-bg-primary-main plib-text-white plib-text-2xs plib-font-semibold plib-leading-none plib-flex plib-items-center plib-justify-center plib-ring-2 plib-ring-white"
+                    aria-hidden="true"
+                  >
+                    {appliedFilterCount}
+                  </span>
                 )}
               </button>
             </Tip>
@@ -233,12 +309,13 @@ const SearchInput: React.FC<SearchInputProps> = ({
               <FilterMenu
                 id={menuId}
                 anchorRef={menuTriggerRef}
+                positionRef={barRef}
                 menuRef={filterMenuRef}
                 direction={resultDirection}
                 onClose={closeMenu}
               >
                 {showActiveToggle && (
-                  <div className="plib-px-2 plib-py-1.5">
+                  <div className="plib-px-4 plib-pb-2">
                     <Toggle
                       checked={isActive}
                       onChange={handleToggle}
@@ -246,31 +323,29 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     />
                   </div>
                 )}
-                {showActiveToggle && showTypeButtons && visibleTypes.length > 0 && (
-                  <div className="plib-h-px plib-bg-divider" aria-hidden="true" />
-                )}
-                {showTypeButtons && visibleTypes.map(({ type, label, Icon }) => {
-                  const isSelected = typeFilter === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => handleTypeClick(type)}
-                      disabled={disabled}
-                      className={[
-                        'plib-flex plib-items-center plib-gap-2 plib-w-full plib-rounded-lg plib-px-2 plib-py-1 plib-font-rubik plib-text-sm plib-text-right plib-text-primary-dark plib-transition-colors',
-                        'focus-visible:plib-outline-none focus-visible:plib-ring-2 focus-visible:plib-ring-primary-main',
-                        isSelected ? 'plib-bg-primary-soft plib-font-semibold' : 'plib-bg-transparent hover:plib-bg-grey-50',
-                        disabled ? 'plib-cursor-not-allowed' : 'plib-cursor-pointer',
-                      ].join(' ')}
-                      aria-pressed={isSelected}
-                      aria-label={`סנן לפי ${label}`}
+                {showTypeButtons && visibleTypes.length > 0 && (
+                  <div role="group" aria-labelledby={`${menuId}-types`}>
+                    <p
+                      id={`${menuId}-types`}
+                      className={`plib-m-0 plib-px-4 plib-pb-1 plib-font-rubik plib-text-sm plib-text-text-muted plib-text-right ${showActiveToggle ? 'plib-pt-2 plib-border-t plib-border-solid plib-border-0 plib-border-divider' : 'plib-pt-1'}`}
                     >
-                      <Icon size={28} />
-                      {label}
-                    </button>
-                  );
-                })}
+                      סוג אדם
+                    </p>
+                 
+                    {visibleTypes.map(({ type, label, Icon }) => (
+                      <TypeMenuRow
+                        key={type}
+                        label={label}
+                        ariaLabel={`סנן לפי ${label}`}
+                        Icon={Icon}
+                        selected={typeFilter === type}
+                        count={typeCounts[type]}
+                        disabled={disabled}
+                        onClick={() => handleTypeClick(type)}
+                      />
+                    ))}
+                  </div>
+                )}
               </FilterMenu>
             )}
           </>

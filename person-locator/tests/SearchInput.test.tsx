@@ -26,6 +26,22 @@ describe('SearchInput', () => {
     expect(screen.queryByLabelText(/סינון תוצאות/)).not.toBeInTheDocument();
   });
 
+  it('shows applied-filter count and per-type result counts in compact mode', () => {
+    mockBarWidth(300);
+    render(
+      <SearchInput
+        {...baseProps}
+        typeFilter="asir"
+        activeToggleValue
+        typeCounts={{ asir: 10, soher: 12, ezrach: 8 }}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText('סינון תוצאות, 2 סינונים פעילים'));
+    expect(screen.getByLabelText('סנן לפי אסיר, 10 תוצאות')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('סנן לפי סוהר, 12 תוצאות')).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('moves filters into a menu when the bar is too narrow', () => {
     mockBarWidth(300);
     const onTypeFilterChange = vi.fn();

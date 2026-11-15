@@ -115,6 +115,12 @@ export interface UsePersonSearchReturn {
   loadMore: (tab: PersonType) => void;
   showActiveOnly: boolean;
   setShowActiveOnly: (v: boolean) => void;
+  /**
+   * Result count per type for the current query, active toggle and filters. A type filter only
+   * searches the chosen type, so the other types keep their count from the last search that
+   * included them; a type is missing when its count isn't known.
+   */
+  typeCounts: Partial<Record<PersonType, number>>;
   /** True when the active toggle is forced on and can't be changed by the user. */
   isActiveLocked: boolean;
   /** Fields to display in the expanded card section — sourced from config.querySettings[activeTab].sourceFields */
@@ -209,6 +215,9 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
   const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null);
   const [activeTab, setActiveTabState] = useState<PersonType>(singleType ?? 'asir');
   const [showActiveOnly, setShowActiveOnly] = useState(isDefaultActive ?? true);
+  const [typeCounts, setTypeCounts] = useState<Partial<Record<PersonType, number>>>({});
+  /** What typeCounts were computed for — counts from a different search must not be mixed in. */
+  const typeCountsKeyRef = useRef<{ query: string; activeOnly: boolean; filterTree: unknown } | null>(null);
   /** Mirrors remoteFieldConfigRef as state — displayFields is computed at render time and needs to react once the fetch resolves. */
   const [remoteFieldConfig, setRemoteFieldConfig] = useState<FieldConfigResponse | null>(null);
 
@@ -658,6 +667,17 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
         };
         setResults(newResults);
 
+        const searchedCounts: Partial<Record<PersonType, number>> = {};
+        for (const pt of types) searchedCounts[pt] = totalsByType[pt];
+        const prevKey = typeCountsKeyRef.current;
+        const isSameSearch =
+          prevKey !== null &&
+          prevKey.query === query &&
+          prevKey.activeOnly === effectiveActiveOnly &&
+          prevKey.filterTree === filterTree;
+        typeCountsKeyRef.current = { query, activeOnly: effectiveActiveOnly, filterTree };
+        setTypeCounts((prev) => (isSameSearch ? { ...prev, ...searchedCounts } : searchedCounts));
+
         // Advance offset and update hasMore per category so the first
         // load-more request uses offset=pageSize instead of 0.
         if (asirES) advance('asir', pageSize, asirES.hasMore);
@@ -673,7 +693,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      cancelPendingRequests, fallbackToOfflineIfNoAuth, filterClause, filterPredicate,
+      cancelPendingRequests, fallbackToOfflineIfNoAuth, filterTree, filterClause, filterPredicate,
       pageSize, config, typeArr, effectiveActiveOnly,
     ]
   );
@@ -736,6 +756,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
       // for the longer text — cancel it explicitly or its results would land on an empty box.
       cancelPendingRequests();
       setResults(emptyResults);
+      setTypeCounts({});
       setError(null);
       setIsOffline(false);
       setIsLoading(false);
@@ -788,6 +809,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     cancelPendingRequests();
     setInputValueState('');
     setResults(emptyResults);
+    setTypeCounts({});
     setSelectedPerson(null);
     setError(null);
     setIsOffline(false);
@@ -838,6 +860,7 @@ export function usePersonSearch(props: PersonLocatorProps): UsePersonSearchRetur
     loadMore,
     showActiveOnly,
     setShowActiveOnly,
+    typeCounts,
     isActiveLocked,
     displayFields,
   };

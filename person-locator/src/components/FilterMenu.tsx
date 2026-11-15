@@ -4,16 +4,18 @@ import { useAnchoredPosition } from '../hooks/useAnchoredPosition';
 
 interface FilterMenuProps {
   id: string;
-  /** The button that opened the menu — the menu is positioned against it. */
+  /** The button that opens the menu — receives focus back on Escape. */
   anchorRef: React.RefObject<HTMLElement | null>;
+  /** The element whose left edge the menu lines up with (the search bar). */
+  positionRef: React.RefObject<HTMLElement | null>;
   menuRef: React.RefObject<HTMLDivElement>;
   direction: 'up' | 'down';
   onClose: () => void;
   children: React.ReactNode;
 }
 
-const FilterMenu: React.FC<FilterMenuProps> = ({ id, anchorRef, menuRef, direction, onClose, children }) => {
-  const anchoredStyle = useAnchoredPosition(anchorRef, direction);
+const FilterMenu: React.FC<FilterMenuProps> = ({ id, anchorRef, positionRef, menuRef, direction, onClose, children }) => {
+  const anchoredStyle = useAnchoredPosition(positionRef, direction);
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
@@ -47,8 +49,8 @@ const FilterMenu: React.FC<FilterMenuProps> = ({ id, anchorRef, menuRef, directi
       role="group"
       aria-label="סינון תוצאות"
       dir="rtl"
-      className={`plib-root plib-font-sans plib-z-[60] plib-flex plib-flex-col plib-gap-1 plib-bg-white plib-rounded-lg plib-border plib-border-gray-200 plib-shadow-search plib-p-2 ${direction === 'up' ? 'plib-mb-1' : 'plib-mt-1'}`}
-      style={{ ...anchoredStyle, width: 'max-content', minWidth: 176 }}
+      className={`plib-root plib-font-sans plib-z-[60] plib-flex plib-flex-col plib-py-2 plib-overflow-hidden plib-bg-white plib-rounded-lg plib-border plib-border-gray-200 plib-shadow-search ${direction === 'up' ? 'plib-mb-2' : 'plib-mt-2'}`}
+      style={{ ...anchoredStyle, width: 'max-content', minWidth: 240 }}
       // Keep focus in the input so the typed search stays active while filters change.
       onMouseDown={(e) => e.preventDefault()}
     >

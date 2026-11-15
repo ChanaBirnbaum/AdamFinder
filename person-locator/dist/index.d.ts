@@ -466,6 +466,12 @@ interface UsePersonSearchReturn {
     loadMore: (tab: PersonType) => void;
     showActiveOnly: boolean;
     setShowActiveOnly: (v: boolean) => void;
+    /**
+     * Result count per type for the current query, active toggle and filters. A type filter only
+     * searches the chosen type, so the other types keep their count from the last search that
+     * included them; a type is missing when its count isn't known.
+     */
+    typeCounts: Partial<Record<PersonType, number>>;
     /** True when the active toggle is forced on and can't be changed by the user. */
     isActiveLocked: boolean;
     /** Fields to display in the expanded card section — sourced from config.querySettings[activeTab].sourceFields */

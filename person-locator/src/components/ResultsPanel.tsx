@@ -8,6 +8,8 @@ import ResultCard from './ResultCard';
 import SkeletonCard from './SkeletonCard';
 import OfflineBanner from './OfflineBanner';
 import EmptyState from './EmptyState';
+import FilterChips from './FilterChips';
+import type { FilterChip } from './FilterChips';
 
 interface ResultsPanelProps {
   results: SearchResults;
@@ -29,6 +31,8 @@ interface ResultsPanelProps {
   HideMishmorot?: PersonLocatorProps['HideMishmorot'];
   hideNavigationLinks?: PersonLocatorProps['hideNavigationLinks'];
   additionalResultFields?: string[];
+  /** Applied filters to show as chips above the results (compact mode). */
+  filterChips?: FilterChip[];
   /** Element the panel should be positioned under/over. Required to portal the panel out of clipping ancestors. */
   anchorRef: React.RefObject<HTMLElement | null>;
 }
@@ -59,6 +63,7 @@ const ResultsPanel = React.forwardRef<HTMLDivElement, ResultsPanelProps>(({
   HideMishmorot,
   hideNavigationLinks,
   additionalResultFields = [],
+  filterChips = [],
   anchorRef,
 }, forwardedRef) => {
   // plib-root scopes the library reset onto this portaled subtree; plib-font-sans
@@ -94,6 +99,8 @@ const ResultsPanel = React.forwardRef<HTMLDivElement, ResultsPanelProps>(({
     // root container — set it explicitly or the whole layout mirrors to LTR.
     <div ref={forwardedRef} className={panelClass} style={panelStyle} role="listbox" aria-label="תוצאות חיפוש" dir="rtl">
       {isOffline && <OfflineBanner />}
+
+      {filterChips.length > 0 && <FilterChips chips={filterChips} />}
 
       {showTabBar && (
         <TabBar
