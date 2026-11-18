@@ -75,7 +75,10 @@ const TypeMenuRow: React.FC<TypeMenuRowProps> = ({ label, ariaLabel, Icon, selec
     >
       {selected && <CheckIcon />}
     </span>
-    <span className="plib-flex plib-items-center plib-justify-center plib-w-7 plib-flex-shrink-0 plib-text-primary-dark" aria-hidden="true">
+    <span
+      className={`plib-flex plib-items-center plib-justify-center plib-w-7 plib-flex-shrink-0 plib-transition-colors ${selected ? 'plib-text-primary-main' : 'plib-text-primary-dark'}`}
+      aria-hidden="true"
+    >
       {Icon && <Icon size={28} />}
     </span>
     <span className="plib-flex-1">{label}</span>
